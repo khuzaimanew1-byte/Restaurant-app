@@ -1,669 +1,518 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
-interface Page {
-  id: number;
-  headline: string;
-  description: string;
-  illustration: React.ReactNode;
-}
+/* ─── Keyframes injected once ─────────────────────────────────────── */
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-function AttendanceIllustration() {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body, html { width: 100%; height: 100%; overflow: hidden; }
+
+  @keyframes pulse-ring {
+    0%,100% { opacity:.45; transform:translate(-50%,-50%) scale(1); }
+    50%      { opacity:.9;  transform:translate(-50%,-50%) scale(1.055); }
+  }
+  @keyframes float0 {
+    0%,100% { transform:translateY(0px); }
+    50%     { transform:translateY(-7px); }
+  }
+  @keyframes float1 {
+    0%,100% { transform:translateY(0px); }
+    50%     { transform:translateY(-5px); }
+  }
+  @keyframes float2 {
+    0%,100% { transform:translateY(0px); }
+    50%     { transform:translateY(-8px); }
+  }
+  @keyframes bar-grow {
+    from { transform:scaleY(0); transform-origin:bottom; opacity:0; }
+    to   { transform:scaleY(1); transform-origin:bottom; opacity:1; }
+  }
+  @keyframes fade-up {
+    from { opacity:0; transform:translateY(22px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes fade-down {
+    from { opacity:0; transform:translateY(-14px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes scale-in {
+    from { opacity:0; transform:scale(.86); }
+    to   { opacity:1; transform:scale(1); }
+  }
+  @keyframes btn-tap {
+    0%  { transform:scale(1); }
+    40% { transform:scale(.955); }
+    100%{ transform:scale(1); }
+  }
+  .illus-enter  { animation: scale-in .44s cubic-bezier(.22,1,.36,1) both; }
+  .text-enter   { animation: fade-up  .38s cubic-bezier(.22,1,.36,1) both; }
+  .top-enter    { animation: fade-down .45s cubic-bezier(.22,1,.36,1) both; }
+  .btn-tap      { animation: btn-tap  .16s ease both; }
+`;
+
+/* ─── Tiny helpers ──────────────────────────────────────────────── */
+const glass = (dark: boolean, alpha = 0.07) =>
+  dark ? `rgba(255,255,255,${alpha})` : `rgba(255,255,255,${alpha + 0.55})`;
+
+const border = (dark: boolean) =>
+  dark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.055)";
+
+const shadow = (dark: boolean) =>
+  dark ? "0 8px 32px rgba(0,0,0,.28)" : "0 8px 32px rgba(0,0,0,.07)";
+
+/* ─── Illustrations ─────────────────────────────────────────────── */
+function AttendanceIllustration({ dark }: { dark: boolean }) {
+  const indigo = "#6366F1";
+  const rings = [80, 128, 176];
+
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
-      <div className="relative w-72 h-72">
-        {/* Soft glow background */}
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 50%, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0.04) 60%, transparent 80%)",
-          }}
-        />
+    <div style={{ position: "relative", width: 260, height: 260, margin: "auto" }}>
+      {/* Glow */}
+      <div style={{
+        position: "absolute", inset: 0, borderRadius: "50%",
+        background: `radial-gradient(circle, rgba(99,102,241,.14) 0%, transparent 72%)`
+      }} />
 
-        {/* Center device card */}
-        <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-40 rounded-2xl flex flex-col items-center justify-center gap-2"
-          style={{
-            background: "rgba(255,255,255,0.08)",
-            backdropFilter: "blur(24px)",
-            border: "1px solid rgba(255,255,255,0.14)",
-            boxShadow:
-              "0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.15)",
-          }}
-        >
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(99,102,241,0.2)" }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="8" r="4" fill="rgba(180,185,255,0.9)" />
-              <path
-                d="M4 20c0-4 3.6-7 8-7s8 3 8 7"
-                stroke="rgba(180,185,255,0.9)"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
-          <div className="space-y-1 w-full px-3">
-            <div
-              className="h-1.5 rounded-full w-full"
-              style={{ background: "rgba(255,255,255,0.2)" }}
-            />
-            <div
-              className="h-1.5 rounded-full w-3/4"
-              style={{ background: "rgba(255,255,255,0.12)" }}
-            />
-            <div
-              className="h-1.5 rounded-full w-5/6"
-              style={{ background: "rgba(255,255,255,0.12)" }}
-            />
-          </div>
-          <div
-            className="w-12 h-5 rounded-full flex items-center justify-center mt-1"
-            style={{ background: "rgba(99,102,241,0.35)" }}
-          >
-            <span className="text-[8px] font-semibold text-indigo-200">
-              CHECK IN
-            </span>
-          </div>
+      {/* Rings */}
+      {rings.map((size, i) => (
+        <div key={i} style={{
+          position: "absolute",
+          width: size, height: size,
+          left: "50%", top: "50%",
+          border: `1.5px solid rgba(99,102,241,${.22 - i * .055})`,
+          borderRadius: "50%",
+          animation: `pulse-ring ${1.9 + i * .45}s ease-in-out infinite`,
+          animationDelay: `${i * .28}s`,
+        }} />
+      ))}
+
+      {/* Center card */}
+      <div style={{
+        position: "absolute",
+        width: 104, height: 136,
+        left: "50%", top: "50%",
+        transform: "translate(-50%,-50%)",
+        background: glass(dark, .08),
+        backdropFilter: "blur(28px)",
+        border: `1px solid ${border(dark)}`,
+        borderRadius: 22,
+        boxShadow: shadow(dark),
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", gap: 8,
+      }}>
+        <div style={{
+          width: 34, height: 34, borderRadius: "50%",
+          background: `rgba(99,102,241,.22)`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="4" fill="rgba(180,183,255,.92)" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="rgba(180,183,255,.92)" strokeWidth="2" strokeLinecap="round" />
+          </svg>
         </div>
-
-        {/* Wi-Fi arcs */}
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border"
-            style={{
-              width: `${72 + i * 52}px`,
-              height: `${72 + i * 52}px`,
-              borderColor: `rgba(99,102,241,${0.18 - i * 0.04})`,
-              animation: `pulseRing ${1.8 + i * 0.4}s ease-in-out infinite`,
-              animationDelay: `${i * 0.3}s`,
-            }}
-          />
-        ))}
-
-        {/* Floating stat cards */}
-        <StatCard
-          value="98%"
-          label="On-Time"
-          top="4px"
-          left="0px"
-          delay="0s"
-          color="rgba(99,102,241,0.25)"
-        />
-        <StatCard
-          value="12"
-          label="Checked in"
-          top="40px"
-          right="0px"
-          delay="0.2s"
-          color="rgba(16,185,129,0.2)"
-        />
-        <StatCard
-          value="✓"
-          label="Synced"
-          bottom="32px"
-          left="8px"
-          delay="0.4s"
-          color="rgba(245,158,11,0.2)"
-        />
+        <div style={{ width: "72%", display: "flex", flexDirection: "column", gap: 4 }}>
+          {[1, .72, .88].map((w, i) => (
+            <div key={i} style={{
+              height: 4, borderRadius: 2, width: `${w * 100}%`,
+              background: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.1)"
+            }} />
+          ))}
+        </div>
+        <div style={{
+          padding: "4px 10px", borderRadius: 20,
+          background: `rgba(99,102,241,.32)`,
+          fontSize: 7, fontWeight: 700, letterSpacing: .7,
+          color: "rgba(200,202,255,.95)",
+        }}>CHECK IN</div>
       </div>
+
+      {/* Float chips */}
+      <FloatChip dark={dark} val="98%" sub="On-Time" top={6} left={-4} delay={0} color="rgba(99,102,241,.22)" />
+      <FloatChip dark={dark} val="12"  sub="Checked in" top={52} right={-10} delay={.22} color="rgba(16,185,129,.18)" />
+      <FloatChip dark={dark} val="✓"  sub="Synced" bottom={28} left={4} delay={.44} color="rgba(245,158,11,.18)" />
     </div>
   );
 }
 
-function StatCard({
-  value,
-  label,
-  top,
-  left,
-  right,
-  bottom,
-  delay,
-  color,
-}: {
-  value: string;
-  label: string;
-  top?: string;
-  left?: string;
-  right?: string;
-  bottom?: string;
-  delay: string;
-  color: string;
+function FloatChip({ dark, val, sub, top, left, right, bottom, delay, color }: {
+  dark: boolean; val: string; sub: string; delay: number; color: string;
+  top?: number; left?: number; right?: number; bottom?: number;
 }) {
+  const idx = Math.round(delay * 2);
   return (
-    <div
-      className="absolute flex flex-col items-center justify-center w-16 h-14 rounded-xl"
-      style={{
-        top,
-        left,
-        right,
-        bottom,
-        background: color,
-        backdropFilter: "blur(20px)",
-        border: "1px solid rgba(255,255,255,0.1)",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.14)",
-        animation: `floatCard 3s ease-in-out infinite`,
-        animationDelay: delay,
-      }}
-    >
-      <span className="text-sm font-bold text-white/90">{value}</span>
-      <span className="text-[9px] text-white/50 font-medium">{label}</span>
+    <div style={{
+      position: "absolute", top, left, right, bottom,
+      width: 60, height: 50, borderRadius: 16,
+      background: color, backdropFilter: "blur(20px)",
+      border: `1px solid ${border(dark)}`,
+      boxShadow: shadow(dark),
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", gap: 2,
+      animation: `float${idx} ${3.2 + idx * .4}s ease-in-out infinite`,
+      animationDelay: `${delay}s`,
+    }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: dark ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.8)" }}>{val}</span>
+      <span style={{ fontSize: 7, fontWeight: 500, color: dark ? "rgba(255,255,255,.42)" : "rgba(0,0,0,.38)" }}>{sub}</span>
     </div>
   );
 }
 
-function LeaveIllustration() {
+function LeaveIllustration({ dark }: { dark: boolean }) {
+  const emerald = "#10B981";
+  const indigo = "#6366F1";
+  const leaveDays = new Set([10, 11, 12, 13, 14]);
+
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
-      <div className="relative w-72 h-72">
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 50%, rgba(16,185,129,0.1) 0%, transparent 70%)",
-          }}
-        />
+    <div style={{ position: "relative", width: 260, height: 260, margin: "auto" }}>
+      <div style={{
+        position: "absolute", inset: 0, borderRadius: "50%",
+        background: `radial-gradient(circle, rgba(16,185,129,.09) 0%, transparent 70%)`
+      }} />
 
-        {/* Calendar card */}
-        <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-44 h-44 rounded-3xl p-3"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            backdropFilter: "blur(24px)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.2)",
-          }}
-        >
-          {/* Calendar header */}
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-semibold text-white/60">
-              June 2025
-            </span>
-            <div
-              className="px-2 py-0.5 rounded-full text-[8px] font-medium"
-              style={{ background: "rgba(16,185,129,0.25)", color: "#6ee7b7" }}
-            >
-              Approved
-            </div>
-          </div>
-          {/* Grid */}
-          <div className="grid grid-cols-7 gap-0.5">
-            {["M", "T", "W", "T", "F", "S", "S"].map((d) => (
-              <div
-                key={d}
-                className="text-center text-[7px] text-white/30 font-medium"
-              >
-                {d}
-              </div>
-            ))}
-            {Array.from({ length: 30 }, (_, i) => i + 1).map((day) => {
-              const isLeave = [10, 11, 12, 13, 14].includes(day);
-              const isToday = day === 6;
-              return (
-                <div
-                  key={day}
-                  className="aspect-square flex items-center justify-center rounded-md text-[7px] font-medium"
-                  style={{
-                    background: isLeave
-                      ? "rgba(16,185,129,0.3)"
-                      : isToday
-                        ? "rgba(99,102,241,0.35)"
-                        : "transparent",
-                    color: isLeave
-                      ? "#6ee7b7"
-                      : isToday
-                        ? "rgba(200,203,255,0.95)"
-                        : "rgba(255,255,255,0.4)",
-                  }}
-                >
-                  {day}
-                </div>
-              );
-            })}
-          </div>
+      {/* Calendar card */}
+      <div style={{
+        position: "absolute", left: "50%", top: "50%",
+        transform: "translate(-50%,-50%)",
+        width: 156, height: 156,
+        background: glass(dark, .07),
+        backdropFilter: "blur(28px)",
+        border: `1px solid ${border(dark)}`,
+        borderRadius: 22, boxShadow: shadow(dark),
+        padding: 12, display: "flex", flexDirection: "column", gap: 5,
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 8.5, fontWeight: 600, color: dark ? "rgba(255,255,255,.52)" : "rgba(0,0,0,.46)" }}>June 2025</span>
+          <div style={{
+            padding: "2px 6px", borderRadius: 20, fontSize: 7, fontWeight: 700,
+            background: `rgba(16,185,129,.22)`, color: emerald,
+          }}>Approved</div>
         </div>
-
-        {/* Leave request card */}
-        <div
-          className="absolute flex flex-col gap-1 px-3 py-2 rounded-xl w-36"
-          style={{
-            top: "8px",
-            right: "-4px",
-            background: "rgba(255,255,255,0.07)",
-            backdropFilter: "blur(16px)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-            animation: "floatCard 3.5s ease-in-out infinite",
-            animationDelay: "0.3s",
-          }}
-        >
-          <div className="flex items-center gap-1.5">
-            <div
-              className="w-4 h-4 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(16,185,129,0.25)" }}
-            >
-              <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
-                <path
-                  d="M2 5l2.5 2.5L8 3"
-                  stroke="#6ee7b7"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <span className="text-[9px] font-semibold text-white/80">
-              Leave Approved
-            </span>
-          </div>
-          <span className="text-[8px] text-white/40">
-            Annual Leave · Jun 10–14
-          </span>
+        {/* Day headers */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
+          {["M","T","W","T","F","S","S"].map((d, i) => (
+            <div key={i} style={{ textAlign: "center", fontSize: 6.5, fontWeight: 600, color: dark ? "rgba(255,255,255,.24)" : "rgba(0,0,0,.24)" }}>{d}</div>
+          ))}
         </div>
+        {/* Days */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 1, flex: 1 }}>
+          {Array.from({ length: 30 }, (_, i) => i + 1).map(day => {
+            const leave = leaveDays.has(day);
+            const today = day === 6;
+            return (
+              <div key={day} style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                borderRadius: 4, fontSize: 6.5,
+                fontWeight: leave || today ? 700 : 400,
+                background: leave ? `rgba(16,185,129,.26)` : today ? `rgba(99,102,241,.3)` : "transparent",
+                color: leave ? `rgba(110,231,183,.95)` : today ? "#b4b8ff" : dark ? "rgba(255,255,255,.36)" : "rgba(0,0,0,.36)",
+              }}>{day}</div>
+            );
+          })}
+        </div>
+      </div>
 
-        {/* Timeline item */}
-        <div
-          className="absolute flex items-center gap-2 px-3 py-2 rounded-xl w-32"
-          style={{
-            bottom: "16px",
-            left: "-8px",
-            background: "rgba(255,255,255,0.06)",
-            backdropFilter: "blur(16px)",
-            border: "1px solid rgba(255,255,255,0.09)",
-            animation: "floatCard 4s ease-in-out infinite",
-            animationDelay: "0.8s",
-          }}
-        >
-          <div
-            className="w-1.5 h-8 rounded-full"
-            style={{
-              background:
-                "linear-gradient(to bottom, rgba(99,102,241,0.7), rgba(16,185,129,0.5))",
-            }}
-          />
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[8px] font-semibold text-white/70">
-              2 requests
-            </span>
-            <span className="text-[7px] text-white/35">pending review</span>
-          </div>
+      {/* Approval chip */}
+      <div style={{
+        position: "absolute", top: 10, right: -6,
+        padding: "7px 10px", borderRadius: 14,
+        background: glass(dark, .07), backdropFilter: "blur(20px)",
+        border: `1px solid ${border(dark)}`, boxShadow: shadow(dark),
+        display: "flex", alignItems: "center", gap: 5,
+        animation: "float1 3.5s ease-in-out infinite",
+      }}>
+        <div style={{
+          width: 14, height: 14, borderRadius: "50%",
+          background: `rgba(16,185,129,.22)`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+            <path d="M2 5l2.5 2.5L8 3" stroke={emerald} strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </div>
+        <span style={{ fontSize: 8, fontWeight: 600, color: dark ? "rgba(255,255,255,.78)" : "rgba(0,0,0,.72)" }}>Leave Approved</span>
+      </div>
+
+      {/* Timeline */}
+      <div style={{
+        position: "absolute", bottom: 18, left: -10,
+        padding: "7px 10px", borderRadius: 14,
+        background: glass(dark, .07), backdropFilter: "blur(20px)",
+        border: `1px solid ${border(dark)}`, boxShadow: shadow(dark),
+        display: "flex", alignItems: "center", gap: 7,
+        animation: "float2 4s ease-in-out infinite", animationDelay: ".5s",
+      }}>
+        <div style={{
+          width: 3, height: 26, borderRadius: 2,
+          background: `linear-gradient(to bottom, rgba(99,102,241,.72), rgba(16,185,129,.5))`,
+        }} />
+        <div>
+          <div style={{ fontSize: 8, fontWeight: 600, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.65)" }}>2 requests</div>
+          <div style={{ fontSize: 7, color: dark ? "rgba(255,255,255,.32)" : "rgba(0,0,0,.3)" }}>pending review</div>
         </div>
       </div>
     </div>
   );
 }
 
-function AnalyticsIllustration() {
+function AnalyticsIllustration({ dark }: { dark: boolean }) {
   const bars = [65, 82, 58, 91, 74, 88, 96];
+  const indigo = "#6366F1";
+
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
-      <div className="relative w-72 h-72">
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 50%, rgba(245,158,11,0.09) 0%, transparent 70%)",
-          }}
-        />
+    <div style={{ position: "relative", width: 260, height: 260, margin: "auto" }}>
+      <div style={{
+        position: "absolute", inset: 0, borderRadius: "50%",
+        background: `radial-gradient(circle, rgba(245,158,11,.08) 0%, transparent 70%)`
+      }} />
 
-        {/* Main analytics card */}
-        <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-40 rounded-3xl p-4"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            backdropFilter: "blur(24px)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.2)",
-          }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[9px] font-semibold text-white/50">
-              Attendance Score
-            </span>
-            <span className="text-sm font-bold text-white/90">94%</span>
-          </div>
-
-          {/* Progress arc — simplified as bar */}
-          <div
-            className="w-full h-1 rounded-full mb-3"
-            style={{ background: "rgba(255,255,255,0.08)" }}
-          >
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: "94%",
-                background:
-                  "linear-gradient(to right, rgba(99,102,241,0.8), rgba(99,102,241,0.4))",
-              }}
-            />
-          </div>
-
-          {/* Mini bar chart */}
-          <div className="flex items-end gap-1 h-12">
-            {bars.map((h, i) => (
-              <div
-                key={i}
-                className="flex-1 rounded-sm"
-                style={{
-                  height: `${h}%`,
-                  background:
-                    i === 6
-                      ? "rgba(99,102,241,0.7)"
-                      : "rgba(255,255,255,0.12)",
-                  animation: `barGrow 0.6s ease-out both`,
-                  animationDelay: `${i * 0.07}s`,
-                }}
-              />
-            ))}
-          </div>
-          <div className="flex justify-between mt-1">
-            {["M", "T", "W", "T", "F", "S", "S"].map((d) => (
-              <span key={d} className="text-[6px] text-white/25 flex-1 text-center">
-                {d}
-              </span>
-            ))}
-          </div>
+      {/* Main card */}
+      <div style={{
+        position: "absolute", left: "50%", top: "50%",
+        transform: "translate(-50%,-50%)",
+        width: 180, height: 148,
+        background: glass(dark, .07),
+        backdropFilter: "blur(28px)",
+        border: `1px solid ${border(dark)}`,
+        borderRadius: 22, boxShadow: shadow(dark),
+        padding: "14px 14px 10px",
+        display: "flex", flexDirection: "column",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+          <span style={{ fontSize: 8.5, fontWeight: 500, color: dark ? "rgba(255,255,255,.46)" : "rgba(0,0,0,.42)" }}>Attendance Score</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: dark ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.85)" }}>94%</span>
         </div>
-
-        {/* Score badge */}
-        <div
-          className="absolute flex flex-col items-center justify-center w-16 h-16 rounded-2xl"
-          style={{
-            top: "8px",
-            right: "8px",
-            background: "rgba(99,102,241,0.18)",
-            backdropFilter: "blur(16px)",
-            border: "1px solid rgba(99,102,241,0.25)",
-            animation: "floatCard 3.2s ease-in-out infinite",
-            animationDelay: "0.1s",
-          }}
-        >
-          <span className="text-base font-bold text-indigo-300">A+</span>
-          <span className="text-[7px] text-white/40">Rating</span>
+        {/* Progress */}
+        <div style={{ height: 3, borderRadius: 2, background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)", marginBottom: 10 }}>
+          <div style={{ height: "100%", width: "94%", borderRadius: 2, background: `linear-gradient(90deg, rgba(99,102,241,.85), rgba(99,102,241,.42))` }} />
         </div>
-
-        {/* Hours card */}
-        <div
-          className="absolute flex flex-col gap-0.5 px-3 py-2 rounded-xl"
-          style={{
-            bottom: "16px",
-            right: "0px",
-            background: "rgba(245,158,11,0.12)",
-            backdropFilter: "blur(16px)",
-            border: "1px solid rgba(245,158,11,0.18)",
-            animation: "floatCard 3.8s ease-in-out infinite",
-            animationDelay: "0.5s",
-          }}
-        >
-          <span className="text-sm font-bold text-amber-200">42h</span>
-          <span className="text-[8px] text-white/40">This week</span>
+        {/* Bars */}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 2, flex: 1 }}>
+          {bars.map((h, i) => (
+            <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: 3,
+              background: i === 6 ? "rgba(99,102,241,.72)" : dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)",
+              animation: `bar-grow .6s ease-out ${i * .07}s both`,
+            }} />
+          ))}
         </div>
-
-        {/* Punctuality tag */}
-        <div
-          className="absolute flex items-center gap-1.5 px-3 py-2 rounded-xl"
-          style={{
-            bottom: "24px",
-            left: "-4px",
-            background: "rgba(16,185,129,0.12)",
-            backdropFilter: "blur(16px)",
-            border: "1px solid rgba(16,185,129,0.18)",
-            animation: "floatCard 4.2s ease-in-out infinite",
-            animationDelay: "0.7s",
-          }}
-        >
-          <div
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: "#6ee7b7" }}
-          />
-          <span className="text-[8px] font-medium text-emerald-300">
-            100% Punctual
-          </span>
+        <div style={{ display: "flex", marginTop: 3 }}>
+          {["M","T","W","T","F","S","S"].map((d, i) => (
+            <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 6, color: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.22)" }}>{d}</div>
+          ))}
         </div>
+      </div>
+
+      {/* A+ badge */}
+      <div style={{
+        position: "absolute", top: 6, right: 4,
+        width: 54, height: 54, borderRadius: 18,
+        background: `rgba(99,102,241,.18)`, backdropFilter: "blur(16px)",
+        border: `1px solid rgba(99,102,241,.24)`, boxShadow: shadow(dark),
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        animation: "float0 3.2s ease-in-out infinite",
+      }}>
+        <span style={{ fontSize: 16, fontWeight: 700, color: "#b4b8ff" }}>A+</span>
+        <span style={{ fontSize: 7, color: dark ? "rgba(255,255,255,.38)" : "rgba(0,0,0,.34)" }}>Rating</span>
+      </div>
+
+      {/* Hours */}
+      <div style={{
+        position: "absolute", bottom: 14, right: -2,
+        padding: "7px 11px", borderRadius: 14,
+        background: `rgba(245,158,11,.12)`, backdropFilter: "blur(16px)",
+        border: `1px solid rgba(245,158,11,.18)`, boxShadow: shadow(dark),
+        animation: "float1 3.8s ease-in-out infinite", animationDelay: ".4s",
+      }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#fde68a" }}>42h</div>
+        <div style={{ fontSize: 7, color: dark ? "rgba(255,255,255,.36)" : "rgba(0,0,0,.34)" }}>This week</div>
+      </div>
+
+      {/* Punctuality */}
+      <div style={{
+        position: "absolute", bottom: 20, left: -6,
+        padding: "7px 10px", borderRadius: 14, display: "flex", alignItems: "center", gap: 6,
+        background: `rgba(16,185,129,.11)`, backdropFilter: "blur(16px)",
+        border: `1px solid rgba(16,185,129,.18)`, boxShadow: shadow(dark),
+        animation: "float2 4.2s ease-in-out infinite", animationDelay: ".7s",
+      }}>
+        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#6ee7b7" }} />
+        <span style={{ fontSize: 8, fontWeight: 600, color: "#6ee7b7" }}>100% Punctual</span>
       </div>
     </div>
   );
 }
 
-const PAGES: Page[] = [
+/* ─── Page data ─────────────────────────────────────────────────── */
+const PAGES = [
   {
-    id: 0,
-    headline: "Attendance, Simplified",
-    description:
-      "Track attendance securely through office Wi-Fi with offline support and automatic synchronization.",
-    illustration: <AttendanceIllustration />,
+    headline: "Attendance,\nSimplified",
+    desc: "Track attendance securely through office Wi-Fi with offline support and automatic synchronization.",
+    Illus: AttendanceIllustration,
   },
   {
-    id: 1,
-    headline: "Manage Leave Effortlessly",
-    description:
-      "Apply for leave, track requests, and receive approvals through a professional digital workflow.",
-    illustration: <LeaveIllustration />,
+    headline: "Manage Leave\nEffortlessly",
+    desc: "Apply for leave, track requests, and receive approvals through a professional digital workflow.",
+    Illus: LeaveIllustration,
   },
   {
-    id: 2,
-    headline: "Know Your Progress",
-    description:
-      "Monitor attendance score, punctuality, working hours, and performance trends in one place.",
-    illustration: <AnalyticsIllustration />,
+    headline: "Know Your\nProgress",
+    desc: "Monitor attendance score, punctuality, working hours, and performance trends in one place.",
+    Illus: AnalyticsIllustration,
   },
 ];
 
+/* ─── Main component ────────────────────────────────────────────── */
 export function OnboardingFlow() {
-  const [current, setCurrent] = useState(0);
-  const [animating, setAnimating] = useState(false);
-  const [direction, setDirection] = useState<"next" | "prev">("next");
-  const [visible, setVisible] = useState(true);
-  const [dark, setDark] = useState(true);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const [idx, setIdx]           = useState(0);
+  const [busy, setBusy]         = useState(false);
+  const [illusKey, setIllusKey] = useState(0);
+  const [textKey, setTextKey]   = useState(0);
+  const [dark, setDark]         = useState(true);
+  const [btnTap, setBtnTap]     = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
 
-  const goTo = (idx: number, dir: "next" | "prev" = "next") => {
-    if (animating || idx === current) return;
-    setDirection(dir);
-    setAnimating(true);
-    setVisible(false);
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      setCurrent(idx);
-      setVisible(true);
-      setTimeout(() => setAnimating(false), 420);
-    }, 300);
-  };
+  // Listen to system dark-mode too
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    setDark(mq.matches);
+  }, []);
 
-  const handleNext = () => {
-    if (current < PAGES.length - 1) goTo(current + 1, "next");
-  };
+  const goTo = useCallback((next: number) => {
+    if (busy || next === idx) return;
+    setBusy(true);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      setIdx(next);
+      setIllusKey(k => k + 1);
+      setTimeout(() => setTextKey(k => k + 1), 55);
+      setTimeout(() => setBusy(false), 420);
+    }, 260);
+  }, [busy, idx]);
 
-  const handleSkip = () => goTo(PAGES.length - 1, "next");
+  const page = PAGES[idx];
+  const isLast = idx === PAGES.length - 1;
 
-  const page = PAGES[current];
-
-  const bg = dark
-    ? "linear-gradient(165deg, #0c0c14 0%, #10101e 50%, #0a0a10 100%)"
-    : "linear-gradient(165deg, #f5f5f9 0%, #f0f0f5 50%, #ebebf0 100%)";
-
-  const textPrimary = dark ? "rgba(255,255,255,0.92)" : "rgba(10,10,20,0.88)";
-  const textSecondary = dark ? "rgba(255,255,255,0.42)" : "rgba(10,10,20,0.42)";
-  const textSkip = dark ? "rgba(255,255,255,0.35)" : "rgba(10,10,20,0.35)";
-  const dotActive = dark ? "rgba(255,255,255,0.85)" : "rgba(20,20,40,0.8)";
-  const dotInactive = dark ? "rgba(255,255,255,0.18)" : "rgba(20,20,40,0.18)";
-  const btnBg = dark ? "rgba(255,255,255,0.92)" : "rgba(10,10,20,0.88)";
-  const btnText = dark ? "#0a0a14" : "#ffffff";
+  /* ── colours ── */
+  const bg      = dark ? "#0C0C14" : "#F5F5F9";
+  const cPri    = dark ? "rgba(255,255,255,.92)" : "rgba(10,10,20,.88)";
+  const cSec    = dark ? "rgba(255,255,255,.4)"  : "rgba(10,10,20,.4)";
+  const cSkip   = dark ? "rgba(255,255,255,.3)"  : "rgba(10,10,20,.3)";
+  const dotOn   = dark ? "rgba(255,255,255,.85)" : "rgba(10,10,20,.8)";
+  const dotOff  = dark ? "rgba(255,255,255,.16)" : "rgba(10,10,20,.16)";
+  const btnBg   = dark ? "rgba(255,255,255,.93)" : "rgba(10,10,20,.88)";
+  const btnTxt  = dark ? "#0A0A14"               : "#ffffff";
 
   return (
-    <div
-      className="relative w-full h-full flex flex-col overflow-hidden select-none"
-      style={{ background: bg, fontFamily: "'SF Pro Display', -apple-system, 'Helvetica Neue', sans-serif" }}
-    >
-      <style>{`
-        @keyframes pulseRing {
-          0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); }
-        }
-        @keyframes floatCard {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-6px); }
-        }
-        @keyframes barGrow {
-          from { transform: scaleY(0); transform-origin: bottom; }
-          to { transform: scaleY(1); transform-origin: bottom; }
-        }
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(18px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeSlideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes btnPress {
-          0% { transform: scale(1); }
-          50% { transform: scale(0.96); }
-          100% { transform: scale(1); }
-        }
-        .btn-press:active { animation: btnPress 0.15s ease; }
-        .slide-enter-next { animation: fadeSlideUp 0.38s cubic-bezier(.22,1,.36,1) both; }
-        .slide-enter-prev { animation: fadeSlideDown 0.38s cubic-bezier(.22,1,.36,1) both; }
-        .illus-enter { animation: scaleIn 0.42s cubic-bezier(.22,1,.36,1) both; }
-      `}</style>
+    <>
+      <style>{CSS}</style>
+      {/* Full-bleed wrapper — fills whatever the iframe gives us */}
+      <div style={{
+        width: "100vw", height: "100dvh",
+        background: bg,
+        display: "flex", flexDirection: "column",
+        fontFamily: "'Inter', -apple-system, 'Helvetica Neue', sans-serif",
+        overflow: "hidden",
+        position: "relative",
+      }}>
 
-      {/* Top bar */}
-      <div
-        className="flex items-center justify-between px-6 pt-14 pb-2"
-        style={{ animation: "fadeSlideDown 0.5s ease both" }}
-      >
-        {/* Dark mode toggle */}
-        <button
-          onClick={() => setDark(!dark)}
-          className="w-8 h-8 rounded-full flex items-center justify-center"
-          style={{
-            background: dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)",
-          }}
-        >
-          {dark ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="5" fill="rgba(255,255,255,0.5)" />
-              <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="rgba(0,0,0,0.4)" />
-            </svg>
-          )}
-        </button>
-
-        {current < PAGES.length - 1 && (
-          <button
-            onClick={handleSkip}
-            className="btn-press px-4 py-2 rounded-full text-sm font-medium"
+        {/* ── Status-bar spacer + top row ─────────────────────── */}
+        <div className="top-enter" style={{ padding: "52px 22px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          {/* Theme toggle */}
+          <button onClick={() => setDark(d => !d)}
             style={{
-              color: textSkip,
-              letterSpacing: "-0.01em",
-            }}
-          >
-            Skip
+              width: 34, height: 34, borderRadius: "50%", border: "none", cursor: "pointer",
+              background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+            {dark
+              ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="5" fill="rgba(255,255,255,.55)" />
+                  <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                    stroke="rgba(255,255,255,.55)" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              : <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="rgba(0,0,0,.45)" />
+                </svg>
+            }
           </button>
-        )}
-      </div>
 
-      {/* Illustration area */}
-      <div className="flex-1 flex items-center justify-center px-6 py-4">
-        <div
-          key={`illus-${current}`}
-          className="w-full h-full illus-enter"
-          style={{ maxHeight: "340px" }}
-        >
-          {page.illustration}
-        </div>
-      </div>
-
-      {/* Bottom content */}
-      <div
-        className="px-7 pb-12"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 48px)" }}
-      >
-        {/* Text block */}
-        <div
-          key={`text-${current}`}
-          className={direction === "next" ? "slide-enter-next" : "slide-enter-prev"}
-        >
-          <h1
-            className="text-3xl font-bold mb-3 leading-tight"
-            style={{
-              color: textPrimary,
-              letterSpacing: "-0.03em",
-              lineHeight: "1.15",
-            }}
-          >
-            {page.headline}
-          </h1>
-          <p
-            className="text-base leading-relaxed mb-6"
-            style={{
-              color: textSecondary,
-              letterSpacing: "-0.005em",
-              lineHeight: "1.55",
-            }}
-          >
-            {page.description}
-          </p>
-        </div>
-
-        {/* Page dots */}
-        <div className="flex items-center gap-2 mb-7">
-          {PAGES.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goTo(i, i > current ? "next" : "prev")}
-              className="rounded-full transition-all duration-500"
+          {!isLast && (
+            <button onClick={() => goTo(PAGES.length - 1)}
               style={{
-                width: i === current ? "24px" : "6px",
-                height: "6px",
-                background: i === current ? dotActive : dotInactive,
-              }}
-            />
-          ))}
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 15, fontWeight: 400, letterSpacing: -.15,
+                color: cSkip, padding: "8px 8px",
+              }}>Skip</button>
+          )}
         </div>
 
-        {/* CTA button */}
-        <button
-          onClick={handleNext}
-          className="btn-press w-full h-14 rounded-2xl flex items-center justify-center font-semibold text-base transition-transform"
-          style={{
-            background: btnBg,
-            color: btnText,
-            letterSpacing: "-0.02em",
-            boxShadow: dark
-              ? "0 2px 24px rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.3)"
-              : "0 2px 24px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.08)",
-          }}
-        >
-          {current === PAGES.length - 1 ? "Get Started" : "Continue"}
-          {current < PAGES.length - 1 && (
-            <svg
-              className="ml-2"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
-              <path
-                d="M5 12h14M13 6l6 6-6 6"
-                stroke={btnText}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
-        </button>
+        {/* ── Illustration (flex: 1) ─────────────────────────── */}
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 20px" }}>
+          <div key={illusKey} className="illus-enter" style={{ width: "100%", maxWidth: 320 }}>
+            <page.Illus dark={dark} />
+          </div>
+        </div>
+
+        {/* ── Bottom content ─────────────────────────────────── */}
+        <div style={{ padding: "0 26px 42px", flexShrink: 0 }}>
+          <div key={textKey} className="text-enter">
+            {/* Headline */}
+            <h1 style={{
+              fontSize: 32, fontWeight: 800,
+              lineHeight: 1.13, letterSpacing: -.9,
+              color: cPri, whiteSpace: "pre-line",
+              marginBottom: 12,
+            }}>{page.headline}</h1>
+
+            {/* Description */}
+            <p style={{
+              fontSize: 15.5, lineHeight: 1.58,
+              letterSpacing: -.1, color: cSec,
+              marginBottom: 28,
+            }}>{page.desc}</p>
+          </div>
+
+          {/* Dots */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 26 }}>
+            {PAGES.map((_, i) => (
+              <button key={i} onClick={() => goTo(i)}
+                style={{
+                  height: 6, borderRadius: 3, border: "none", cursor: "pointer",
+                  background: i === idx ? dotOn : dotOff,
+                  padding: 0,
+                  transition: "width .38s cubic-bezier(.22,1,.36,1), background .3s",
+                  width: i === idx ? 24 : 6,
+                }} />
+            ))}
+          </div>
+
+          {/* CTA */}
+          <button
+            className={btnTap ? "btn-tap" : ""}
+            onMouseDown={() => setBtnTap(false)}
+            onPointerDown={() => setBtnTap(true)}
+            onPointerUp={() => { setBtnTap(false); !isLast ? goTo(idx + 1) : undefined; }}
+            onPointerLeave={() => setBtnTap(false)}
+            style={{
+              width: "100%", height: 56,
+              borderRadius: 18, border: "none", cursor: "pointer",
+              background: btnBg, color: btnTxt,
+              fontSize: 16, fontWeight: 650, letterSpacing: -.3,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              boxShadow: dark
+                ? "0 2px 24px rgba(255,255,255,.06), 0 1px 2px rgba(0,0,0,.28)"
+                : "0 2px 24px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.06)",
+              transition: "transform .12s",
+            }}>
+            {isLast ? "Get Started" : "Continue"}
+            {!isLast && (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12h14M13 6l6 6-6 6" stroke={btnTxt} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

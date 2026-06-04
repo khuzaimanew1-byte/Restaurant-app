@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 class AnalyticsIllustration extends StatefulWidget {
@@ -5,55 +6,54 @@ class AnalyticsIllustration extends StatefulWidget {
   const AnalyticsIllustration({super.key, required this.isDark});
 
   @override
-  State<AnalyticsIllustration> createState() => _AnalyticsIllustrationState();
+  State<AnalyticsIllustration> createState() =>
+      _AnalyticsIllustrationState();
 }
 
 class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
     with TickerProviderStateMixin {
-  late final AnimationController _barController;
-  late final List<AnimationController> _floatControllers;
+  late final AnimationController _bars;
+  late final List<AnimationController> _floats;
 
-  static const _bars = [0.65, 0.82, 0.58, 0.91, 0.74, 0.88, 0.96];
+  static const _barData = [0.65, 0.82, 0.58, 0.91, 0.74, 0.88, 0.96];
 
   @override
   void initState() {
     super.initState();
-    _barController = AnimationController(
-      duration: const Duration(milliseconds: 900),
+    _bars = AnimationController(
       vsync: this,
+      duration: const Duration(milliseconds: 900),
     )..forward();
 
-    _floatControllers = List.generate(
-      3,
-      (i) => AnimationController(
-        duration: Duration(milliseconds: 3000 + i * 600),
+    _floats = List.generate(3, (i) {
+      final c = AnimationController(
         vsync: this,
-      )..repeat(reverse: true),
-    );
-    for (var i = 0; i < _floatControllers.length; i++) {
-      Future.delayed(Duration(milliseconds: i * 180), () {
-        if (mounted) _floatControllers[i].value = i * 0.25;
-      });
-    }
+        duration: Duration(milliseconds: 3000 + i * 600),
+      )..repeat(reverse: true);
+      if (i > 0) c.value = i * 0.25;
+      return c;
+    });
   }
 
   @override
   void dispose() {
-    _barController.dispose();
-    for (final c in _floatControllers) c.dispose();
+    _bars.dispose();
+    for (final c in _floats) c.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final indigo = const Color(0xFF6366F1);
-    final amber = const Color(0xFFF59E0B);
-    final emerald = const Color(0xFF10B981);
+    final size = MediaQuery.of(context).size;
+    final dim = math.min(size.width * 0.72, 280.0);
+    const indigo = Color(0xFF6366F1);
+    const amber = Color(0xFFF59E0B);
+    const emerald = Color(0xFF10B981);
 
     return Center(
       child: SizedBox(
-        width: 280,
-        height: 280,
+        width: dim,
+        height: dim,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -61,24 +61,22 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    amber.withValues(alpha: 0.07),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.4, 1.0],
-                ),
+                gradient: RadialGradient(colors: [
+                  amber.withValues(alpha: 0.07),
+                  Colors.transparent,
+                ], stops: const [0.4, 1]),
               ),
             ),
 
-            // Main analytics card
+            // Main card
             Container(
-              width: 188,
-              height: 156,
+              width: dim * 0.68,
+              height: dim * 0.56,
+              padding: const EdgeInsets.fromLTRB(14, 13, 14, 9),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(22),
                 color: widget.isDark
-                    ? Colors.white.withValues(alpha: 0.06)
+                    ? Colors.white.withValues(alpha: 0.07)
                     : Colors.white.withValues(alpha: 0.8),
                 border: Border.all(
                   color: widget.isDark
@@ -87,13 +85,13 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: widget.isDark ? 0.22 : 0.07),
+                    color: Colors.black.withValues(
+                        alpha: widget.isDark ? 0.24 : 0.07),
                     blurRadius: 32,
                     offset: const Offset(0, 10),
                   ),
                 ],
               ),
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -103,73 +101,72 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                       Text(
                         'Attendance Score',
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: 8.5,
                           fontWeight: FontWeight.w500,
                           color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.48)
+                              ? Colors.white.withValues(alpha: 0.46)
                               : Colors.black.withValues(alpha: 0.42),
                         ),
                       ),
                       Text(
                         '94%',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: widget.isDark
                               ? Colors.white.withValues(alpha: 0.9)
-                              : Colors.black.withValues(alpha: 0.85),
+                              : Colors.black.withValues(alpha: 0.86),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-
+                  const SizedBox(height: 7),
                   // Progress bar
-                  Container(
-                    height: 3,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(2),
-                      color: widget.isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.06),
-                    ),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: 0.94,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(2),
-                          gradient: LinearGradient(
-                            colors: [
-                              indigo.withValues(alpha: 0.85),
-                              indigo.withValues(alpha: 0.45),
-                            ],
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: SizedBox(
+                      height: 3,
+                      child: Stack(children: [
+                        Container(
+                          color: widget.isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.06),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: 0.94,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  indigo.withValues(alpha: 0.88),
+                                  indigo.withValues(alpha: 0.44),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ]),
                     ),
                   ),
-                  const SizedBox(height: 12),
-
+                  const SizedBox(height: 10),
                   // Bar chart
                   Expanded(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
-                      children: _bars.asMap().entries.map((entry) {
-                        final i = entry.key;
-                        final h = entry.value;
-                        final isActive = i == _bars.length - 1;
+                      children: _barData.asMap().entries.map((e) {
+                        final i = e.key;
+                        final h = e.value;
+                        final isActive = i == _barData.length - 1;
                         return Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 1.5),
                             child: AnimatedBuilder(
-                              animation: _barController,
-                              builder: (context, _) {
+                              animation: _bars,
+                              builder: (_, __) {
                                 final animH = h *
                                     Curves.easeOutCubic.transform(
-                                      (_barController.value -
-                                              i * 0.08)
-                                          .clamp(0.0, 1.0),
+                                      (_bars.value - i * 0.08).clamp(0.0, 1.0),
                                     );
                                 return FractionallySizedBox(
                                   alignment: Alignment.bottomCenter,
@@ -178,10 +175,12 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(3),
                                       color: isActive
-                                          ? indigo.withValues(alpha: 0.7)
+                                          ? indigo.withValues(alpha: 0.72)
                                           : widget.isDark
-                                              ? Colors.white.withValues(alpha: 0.12)
-                                              : Colors.black.withValues(alpha: 0.1),
+                                              ? Colors.white
+                                                  .withValues(alpha: 0.12)
+                                              : Colors.black
+                                                  .withValues(alpha: 0.1),
                                     ),
                                   ),
                                 );
@@ -192,49 +191,48 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                       }).toList(),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Row(
-                    children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                        .map((d) => Expanded(
-                              child: Text(
-                                d,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 6,
-                                  color: widget.isDark
-                                      ? Colors.white.withValues(alpha: 0.22)
-                                      : Colors.black.withValues(alpha: 0.22),
-                                ),
-                              ),
-                            ))
-                        .toList(),
+                    children: ['M','T','W','T','F','S','S'].map((d) =>
+                      Expanded(
+                        child: Text(
+                          d,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 6,
+                            color: widget.isDark
+                                ? Colors.white.withValues(alpha: 0.22)
+                                : Colors.black.withValues(alpha: 0.22),
+                          ),
+                        ),
+                      ),
+                    ).toList(),
                   ),
                 ],
               ),
             ),
 
-            // Score badge — top right
+            // A+ badge
             AnimatedBuilder(
-              animation: _floatControllers[0],
-              builder: (context, child) => Transform.translate(
-                offset: Offset(0, -6 * _floatControllers[0].value),
+              animation: _floats[0],
+              builder: (_, child) => Transform.translate(
+                offset: Offset(0, -6 * _floats[0].value),
                 child: child,
               ),
               child: Align(
-                alignment: const Alignment(1.2, -1.0),
+                alignment: const Alignment(1.25, -0.95),
                 child: Container(
-                  width: 56,
-                  height: 56,
+                  width: 54,
+                  height: 54,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    color: indigo.withValues(alpha: 0.16),
+                    color: indigo.withValues(alpha: 0.17),
                     border: Border.all(
-                      color: indigo.withValues(alpha: 0.22),
-                    ),
+                        color: indigo.withValues(alpha: 0.24)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 16,
+                        color: Colors.black.withValues(alpha: 0.13),
+                        blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
                     ],
@@ -242,12 +240,12 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
+                      const Text(
                         'A+',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFFB4B8FF),
+                          color: Color(0xFFB4B8FF),
                         ),
                       ),
                       Text(
@@ -256,7 +254,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                           fontSize: 7,
                           color: widget.isDark
                               ? Colors.white.withValues(alpha: 0.38)
-                              : Colors.black.withValues(alpha: 0.35),
+                              : Colors.black.withValues(alpha: 0.34),
                         ),
                       ),
                     ],
@@ -265,24 +263,23 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
               ),
             ),
 
-            // Hours card — bottom right
+            // Hours
             AnimatedBuilder(
-              animation: _floatControllers[1],
-              builder: (context, child) => Transform.translate(
-                offset: Offset(0, -5 * _floatControllers[1].value),
+              animation: _floats[1],
+              builder: (_, child) => Transform.translate(
+                offset: Offset(0, -5 * _floats[1].value),
                 child: child,
               ),
               child: Align(
-                alignment: const Alignment(1.25, 1.1),
+                alignment: const Alignment(1.28, 1.1),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                      horizontal: 11, vertical: 7),
                   decoration: BoxDecoration(
-                    color: amber.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
+                    color: amber.withValues(alpha: 0.11),
                     border: Border.all(
-                      color: amber.withValues(alpha: 0.16),
-                    ),
+                        color: amber.withValues(alpha: 0.18)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.1),
@@ -295,12 +292,12 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         '42h',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: const Color(0xFFFDE68A),
+                          color: Color(0xFFFDE68A),
                         ),
                       ),
                       Text(
@@ -308,8 +305,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         style: TextStyle(
                           fontSize: 7,
                           color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.38)
-                              : Colors.black.withValues(alpha: 0.35),
+                              ? Colors.white.withValues(alpha: 0.36)
+                              : Colors.black.withValues(alpha: 0.34),
                         ),
                       ),
                     ],
@@ -318,24 +315,23 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
               ),
             ),
 
-            // Punctuality pill — bottom left
+            // Punctuality
             AnimatedBuilder(
-              animation: _floatControllers[2],
-              builder: (context, child) => Transform.translate(
-                offset: Offset(0, -5 * _floatControllers[2].value),
+              animation: _floats[2],
+              builder: (_, child) => Transform.translate(
+                offset: Offset(0, -5 * _floats[2].value),
                 child: child,
               ),
               child: Align(
-                alignment: const Alignment(-1.25, 1.1),
+                alignment: const Alignment(-1.28, 1.1),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 7),
                   decoration: BoxDecoration(
-                    color: emerald.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
+                    color: emerald.withValues(alpha: 0.11),
                     border: Border.all(
-                      color: emerald.withValues(alpha: 0.16),
-                    ),
+                        color: emerald.withValues(alpha: 0.18)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.1),
@@ -350,18 +346,18 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                       Container(
                         width: 6,
                         height: 6,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: emerald,
+                          color: Color(0xFF6EE7B7),
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text(
+                      const Text(
                         '100% Punctual',
                         style: TextStyle(
                           fontSize: 8,
                           fontWeight: FontWeight.w600,
-                          color: emerald.withValues(alpha: 0.9),
+                          color: Color(0xFF6EE7B7),
                         ),
                       ),
                     ],

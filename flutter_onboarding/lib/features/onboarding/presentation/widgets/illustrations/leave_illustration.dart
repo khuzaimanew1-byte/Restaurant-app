@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 class LeaveIllustration extends StatefulWidget {
@@ -10,69 +11,63 @@ class LeaveIllustration extends StatefulWidget {
 
 class _LeaveIllustrationState extends State<LeaveIllustration>
     with TickerProviderStateMixin {
-  late final List<AnimationController> _floatControllers;
+  late final List<AnimationController> _floats;
+
+  static const _leaveDays = {10, 11, 12, 13, 14};
 
   @override
   void initState() {
     super.initState();
-    _floatControllers = List.generate(
-      3,
-      (i) => AnimationController(
-        duration: Duration(milliseconds: 3200 + i * 500),
+    _floats = List.generate(3, (i) {
+      final c = AnimationController(
         vsync: this,
-      )..repeat(reverse: true),
-    );
-    for (var i = 0; i < _floatControllers.length; i++) {
-      Future.delayed(Duration(milliseconds: i * 300), () {
-        if (mounted) _floatControllers[i].value = i * 0.33;
-      });
-    }
+        duration: Duration(milliseconds: 3200 + i * 550),
+      )..repeat(reverse: true);
+      if (i > 0) c.value = i * 0.3;
+      return c;
+    });
   }
 
   @override
   void dispose() {
-    for (final c in _floatControllers) c.dispose();
+    for (final c in _floats) c.dispose();
     super.dispose();
   }
 
-  static const _leaveDays = {10, 11, 12, 13, 14};
-  static const _todayDay = 6;
-
   @override
   Widget build(BuildContext context) {
-    final emerald = const Color(0xFF10B981);
-    final indigo = const Color(0xFF6366F1);
+    final size = MediaQuery.of(context).size;
+    final dim = math.min(size.width * 0.72, 280.0);
+    const emerald = Color(0xFF10B981);
+    const indigo = Color(0xFF6366F1);
 
     return Center(
       child: SizedBox(
-        width: 280,
-        height: 280,
+        width: dim,
+        height: dim,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Subtle glow
+            // Glow
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    emerald.withValues(alpha: 0.08),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.4, 1.0],
-                ),
+                gradient: RadialGradient(colors: [
+                  emerald.withValues(alpha: 0.08),
+                  Colors.transparent,
+                ], stops: const [0.4, 1]),
               ),
             ),
 
-            // Calendar card (center)
+            // Calendar card
             Container(
-              width: 168,
-              height: 168,
+              width: dim * 0.58,
+              height: dim * 0.58,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(22),
                 color: widget.isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.white.withValues(alpha: 0.75),
+                    ? Colors.white.withValues(alpha: 0.07)
+                    : Colors.white.withValues(alpha: 0.78),
                 border: Border.all(
                   color: widget.isDark
                       ? Colors.white.withValues(alpha: 0.09)
@@ -80,108 +75,109 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: widget.isDark ? 0.22 : 0.07),
+                    color: Colors.black.withValues(
+                        alpha: widget.isDark ? 0.24 : 0.07),
                     blurRadius: 32,
                     offset: const Offset(0, 10),
                   ),
                 ],
               ),
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(13),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         'June 2025',
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: 8.5,
                           fontWeight: FontWeight.w600,
                           color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.55)
-                              : Colors.black.withValues(alpha: 0.5),
+                              ? Colors.white.withValues(alpha: 0.52)
+                              : Colors.black.withValues(alpha: 0.46),
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: emerald.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
+                          color: emerald.withValues(alpha: 0.2),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Approved',
                           style: TextStyle(
                             fontSize: 7,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                             color: emerald,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-
-                  // Day headers
+                  const SizedBox(height: 5),
+                  // Day labels
                   Row(
-                    children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                        .map((d) => Expanded(
-                              child: Text(
-                                d,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 6.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: widget.isDark
-                                      ? Colors.white.withValues(alpha: 0.25)
-                                      : Colors.black.withValues(alpha: 0.25),
-                                ),
-                              ),
-                            ))
-                        .toList(),
+                    children: ['M','T','W','T','F','S','S'].map((d) =>
+                      Expanded(
+                        child: Text(
+                          d,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 6.5,
+                            fontWeight: FontWeight.w600,
+                            color: widget.isDark
+                                ? Colors.white.withValues(alpha: 0.24)
+                                : Colors.black.withValues(alpha: 0.24),
+                          ),
+                        ),
+                      ),
+                    ).toList(),
                   ),
-                  const SizedBox(height: 4),
-
-                  // Days grid
+                  const SizedBox(height: 3),
+                  // Grid
                   Expanded(
                     child: GridView.builder(
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 7,
-                        mainAxisSpacing: 2,
+                        mainAxisSpacing: 1.5,
                         crossAxisSpacing: 1,
                       ),
                       itemCount: 30,
-                      itemBuilder: (context, i) {
+                      itemBuilder: (_, i) {
                         final day = i + 1;
                         final isLeave = _leaveDays.contains(day);
-                        final isToday = day == _todayDay;
+                        const isToday = 6;
+                        final isT = day == isToday;
                         return Container(
                           decoration: BoxDecoration(
-                            color: isLeave
-                                ? emerald.withValues(alpha: 0.25)
-                                : isToday
-                                    ? indigo.withValues(alpha: 0.3)
-                                    : Colors.transparent,
                             borderRadius: BorderRadius.circular(4),
+                            color: isLeave
+                                ? emerald.withValues(alpha: 0.24)
+                                : isT
+                                    ? indigo.withValues(alpha: 0.28)
+                                    : Colors.transparent,
                           ),
                           child: Center(
                             child: Text(
                               '$day',
                               style: TextStyle(
                                 fontSize: 6.5,
-                                fontWeight: isLeave || isToday
+                                fontWeight: (isLeave || isT)
                                     ? FontWeight.w700
                                     : FontWeight.w400,
                                 color: isLeave
-                                    ? emerald.withValues(alpha: 0.9)
-                                    : isToday
+                                    ? Colors.greenAccent.shade200
+                                        .withValues(alpha: 0.9)
+                                    : isT
                                         ? const Color(0xFFB4B8FF)
                                         : widget.isDark
-                                            ? Colors.white.withValues(alpha: 0.38)
-                                            : Colors.black.withValues(alpha: 0.38),
+                                            ? Colors.white.withValues(alpha: 0.36)
+                                            : Colors.black.withValues(alpha: 0.36),
                               ),
                             ),
                           ),
@@ -193,23 +189,23 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
               ),
             ),
 
-            // Approval chip — top right
+            // Approval chip
             AnimatedBuilder(
-              animation: _floatControllers[0],
-              builder: (context, child) => Transform.translate(
-                offset: Offset(0, -6 * _floatControllers[0].value),
+              animation: _floats[0],
+              builder: (_, child) => Transform.translate(
+                offset: Offset(0, -6 * _floats[0].value),
                 child: child,
               ),
               child: Align(
-                alignment: const Alignment(1.2, -0.95),
+                alignment: const Alignment(1.25, -0.9),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
                     color: widget.isDark
                         ? Colors.white.withValues(alpha: 0.07)
-                        : Colors.white.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(14),
+                        : Colors.white.withValues(alpha: 0.82),
                     border: Border.all(
                       color: widget.isDark
                           ? Colors.white.withValues(alpha: 0.08)
@@ -217,7 +213,7 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.14),
+                        color: Colors.black.withValues(alpha: 0.13),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
@@ -231,10 +227,13 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                         height: 14,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: emerald.withValues(alpha: 0.2),
+                          color: emerald.withValues(alpha: 0.22),
                         ),
-                        child: Icon(Icons.check,
-                            size: 8, color: emerald),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          size: 9,
+                          color: emerald,
+                        ),
                       ),
                       const SizedBox(width: 5),
                       Text(
@@ -243,8 +242,8 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                           fontSize: 8,
                           fontWeight: FontWeight.w600,
                           color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.8)
-                              : Colors.black.withValues(alpha: 0.75),
+                              ? Colors.white.withValues(alpha: 0.78)
+                              : Colors.black.withValues(alpha: 0.72),
                         ),
                       ),
                     ],
@@ -253,11 +252,11 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
               ),
             ),
 
-            // Timeline pill — bottom left
+            // Timeline pill
             AnimatedBuilder(
-              animation: _floatControllers[2],
-              builder: (context, child) => Transform.translate(
-                offset: Offset(0, -6 * _floatControllers[2].value),
+              animation: _floats[2],
+              builder: (_, child) => Transform.translate(
+                offset: Offset(0, -6 * _floats[2].value),
                 child: child,
               ),
               child: Align(
@@ -266,10 +265,10 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
                     color: widget.isDark
                         ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.white.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(14),
+                        : Colors.white.withValues(alpha: 0.78),
                     border: Border.all(
                       color: widget.isDark
                           ? Colors.white.withValues(alpha: 0.08)
@@ -277,7 +276,7 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
+                        color: Colors.black.withValues(alpha: 0.11),
                         blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
@@ -288,23 +287,23 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                     children: [
                       Container(
                         width: 3,
-                        height: 28,
+                        height: 26,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(2),
-                          gradient: LinearGradient(
+                          gradient: const LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              indigo.withValues(alpha: 0.7),
-                              emerald.withValues(alpha: 0.5),
+                              Color(0xFF6366F1),
+                              Color(0xFF10B981),
                             ],
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             '2 requests',
@@ -321,8 +320,8 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                             style: TextStyle(
                               fontSize: 7,
                               color: widget.isDark
-                                  ? Colors.white.withValues(alpha: 0.32)
-                                  : Colors.black.withValues(alpha: 0.32),
+                                  ? Colors.white.withValues(alpha: 0.3)
+                                  : Colors.black.withValues(alpha: 0.3),
                             ),
                           ),
                         ],
