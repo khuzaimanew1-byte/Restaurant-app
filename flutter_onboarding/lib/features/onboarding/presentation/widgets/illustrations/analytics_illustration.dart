@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'illustration_shared.dart';
 
 class AnalyticsIllustration extends StatefulWidget {
   final bool isDark;
@@ -25,14 +26,13 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
       duration: const Duration(milliseconds: 900),
     )..forward();
 
-    _floats = List.generate(3, (i) {
-      final c = AnimationController(
-        vsync: this,
-        duration: Duration(milliseconds: 3000 + i * 600),
-      )..repeat(reverse: true);
-      if (i > 0) c.value = i * 0.25;
-      return c;
-    });
+    _floats = buildFloatControllers(
+      vsync: this,
+      count: 3,
+      baseMs: 3000,
+      stepMs: 600,
+      startOffsetStep: 0.25,
+    );
   }
 
   @override
@@ -44,8 +44,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final dim = math.min(size.width * 0.72, 280.0);
+    final dim = illustrationDim(context);
     const indigo = Color(0xFF6366F1);
     const amber = Color(0xFFF59E0B);
     const emerald = Color(0xFF10B981);
@@ -68,7 +67,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
               ),
             ),
 
-            // Main card
+            // Main chart card
             Container(
               width: dim * 0.68,
               height: dim * 0.56,
@@ -121,7 +120,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                     ],
                   ),
                   const SizedBox(height: 7),
-                  // Progress bar
+                  // Progress bar track + fill
                   ClipRRect(
                     borderRadius: BorderRadius.circular(2),
                     child: SizedBox(
@@ -193,7 +192,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                   ),
                   const SizedBox(height: 3),
                   Row(
-                    children: ['M','T','W','T','F','S','S'].map((d) =>
+                    children: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) =>
                       Expanded(
                         child: Text(
                           d,
@@ -212,7 +211,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
               ),
             ),
 
-            // A+ badge
+            // A+ badge (float 0)
             AnimatedBuilder(
               animation: _floats[0],
               builder: (_, child) => Transform.translate(
@@ -227,8 +226,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
                     color: indigo.withValues(alpha: 0.17),
-                    border: Border.all(
-                        color: indigo.withValues(alpha: 0.24)),
+                    border: Border.all(color: indigo.withValues(alpha: 0.24)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.13),
@@ -263,7 +261,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
               ),
             ),
 
-            // Hours
+            // Hours chip (float 1)
             AnimatedBuilder(
               animation: _floats[1],
               builder: (_, child) => Transform.translate(
@@ -278,11 +276,10 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
                     color: amber.withValues(alpha: 0.11),
-                    border: Border.all(
-                        color: amber.withValues(alpha: 0.18)),
+                    border: Border.all(color: amber.withValues(alpha: 0.18)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: Colors.black.withValues(alpha: 0.10),
                         blurRadius: 14,
                         offset: const Offset(0, 3),
                       ),
@@ -315,7 +312,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
               ),
             ),
 
-            // Punctuality
+            // Punctuality chip (float 2)
             AnimatedBuilder(
               animation: _floats[2],
               builder: (_, child) => Transform.translate(
@@ -334,7 +331,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         color: emerald.withValues(alpha: 0.18)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: Colors.black.withValues(alpha: 0.10),
                         blurRadius: 14,
                         offset: const Offset(0, 3),
                       ),

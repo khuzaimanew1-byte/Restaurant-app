@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'illustration_shared.dart';
 
 class LeaveIllustration extends StatefulWidget {
   final bool isDark;
@@ -18,14 +19,14 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
   @override
   void initState() {
     super.initState();
-    _floats = List.generate(3, (i) {
-      final c = AnimationController(
-        vsync: this,
-        duration: Duration(milliseconds: 3200 + i * 550),
-      )..repeat(reverse: true);
-      if (i > 0) c.value = i * 0.3;
-      return c;
-    });
+    // Only 2 controllers needed: approval chip + pending pill.
+    _floats = buildFloatControllers(
+      vsync: this,
+      count: 2,
+      baseMs: 3200,
+      stepMs: 550,
+      startOffsetStep: 0.30,
+    );
   }
 
   @override
@@ -36,8 +37,7 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final dim = math.min(size.width * 0.72, 280.0);
+    final dim = illustrationDim(context);
     const emerald = Color(0xFF10B981);
     const indigo = Color(0xFF6366F1);
 
@@ -120,7 +120,7 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                   const SizedBox(height: 5),
                   // Day labels
                   Row(
-                    children: ['M','T','W','T','F','S','S'].map((d) =>
+                    children: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) =>
                       Expanded(
                         child: Text(
                           d,
@@ -151,14 +151,13 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                       itemBuilder: (_, i) {
                         final day = i + 1;
                         final isLeave = _leaveDays.contains(day);
-                        const isToday = 6;
-                        final isT = day == isToday;
+                        final isToday = day == 6;
                         return Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(4),
                             color: isLeave
                                 ? emerald.withValues(alpha: 0.24)
-                                : isT
+                                : isToday
                                     ? indigo.withValues(alpha: 0.28)
                                     : Colors.transparent,
                           ),
@@ -167,13 +166,13 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                               '$day',
                               style: TextStyle(
                                 fontSize: 6.5,
-                                fontWeight: (isLeave || isT)
+                                fontWeight: (isLeave || isToday)
                                     ? FontWeight.w700
                                     : FontWeight.w400,
                                 color: isLeave
                                     ? Colors.greenAccent.shade200
                                         .withValues(alpha: 0.9)
-                                    : isT
+                                    : isToday
                                         ? const Color(0xFFB4B8FF)
                                         : widget.isDark
                                             ? Colors.white.withValues(alpha: 0.36)
@@ -189,7 +188,7 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
               ),
             ),
 
-            // Approval chip
+            // Approval chip (float 0)
             AnimatedBuilder(
               animation: _floats[0],
               builder: (_, child) => Transform.translate(
@@ -252,11 +251,11 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
               ),
             ),
 
-            // Timeline pill
+            // Pending review pill (float 1)
             AnimatedBuilder(
-              animation: _floats[2],
+              animation: _floats[1],
               builder: (_, child) => Transform.translate(
-                offset: Offset(0, -6 * _floats[2].value),
+                offset: Offset(0, -6 * _floats[1].value),
                 child: child,
               ),
               child: Align(

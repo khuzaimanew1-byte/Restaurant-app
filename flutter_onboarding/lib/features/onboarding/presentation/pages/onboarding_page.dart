@@ -20,11 +20,11 @@ class _OnboardingPageState extends State<OnboardingPage>
   late final AnimationController _textController;
   late final AnimationController _buttonController;
 
-  late Animation<double> _illustrationScale;
-  late Animation<double> _illustrationOpacity;
-  late Animation<Offset> _textSlide;
-  late Animation<double> _textOpacity;
-  late Animation<double> _buttonScale;
+  late final Animation<double> _illustrationScale;
+  late final Animation<double> _illustrationOpacity;
+  late final Animation<Offset> _textSlide;
+  late final Animation<double> _textOpacity;
+  late final Animation<double> _buttonScale;
 
   @override
   void initState() {
@@ -44,7 +44,8 @@ class _OnboardingPageState extends State<OnboardingPage>
     );
 
     _illustrationScale = Tween<double>(begin: 0.88, end: 1.0).animate(
-      CurvedAnimation(parent: _illustrationController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+          parent: _illustrationController, curve: Curves.easeOutCubic),
     );
     _illustrationOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _illustrationController, curve: Curves.easeOut),
@@ -79,7 +80,6 @@ class _OnboardingPageState extends State<OnboardingPage>
   void _goToNext() {
     if (_isAnimating) return;
     HapticFeedback.lightImpact();
-
     if (_currentIndex < onboardingPages.length - 1) {
       _animateToPage(_currentIndex + 1);
     } else {
@@ -102,18 +102,16 @@ class _OnboardingPageState extends State<OnboardingPage>
       setState(() => _currentIndex = index);
       _illustrationController.forward();
       Future.delayed(const Duration(milliseconds: 60), () {
-        if (mounted) {
-          _textController.forward().then((_) {
-            if (mounted) setState(() => _isAnimating = false);
-          });
-        }
+        if (!mounted) return;
+        _textController.forward().then((_) {
+          if (mounted) setState(() => _isAnimating = false);
+        });
       });
     });
   }
 
   void _handleGetStarted() {
     HapticFeedback.mediumImpact();
-    // Navigate to main app
     // Navigator.of(context).pushReplacementNamed('/home');
   }
 
@@ -125,24 +123,19 @@ class _OnboardingPageState extends State<OnboardingPage>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final size = MediaQuery.of(context).size;
     final page = onboardingPages[_currentIndex];
     final isLast = _currentIndex == onboardingPages.length - 1;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0C0C14) : const Color(0xFFF5F5F9),
+      backgroundColor:
+          isDark ? const Color(0xFF0C0C14) : const Color(0xFFF5F5F9),
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: isDark
-            ? SystemUiOverlayStyle.light
-            : SystemUiOverlayStyle.dark,
+        value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         child: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Top bar
               _buildTopBar(isDark, isLast),
-
-              // Illustration
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -161,9 +154,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                   ),
                 ),
               ),
-
-              // Bottom content
-              _buildBottomContent(isDark, isLast, size),
+              _buildBottomContent(isDark, isLast),
             ],
           ),
         ),
@@ -177,7 +168,6 @@ class _OnboardingPageState extends State<OnboardingPage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Logo / brand mark
           Container(
             width: 32,
             height: 32,
@@ -195,13 +185,13 @@ class _OnboardingPageState extends State<OnboardingPage>
                   : Colors.black.withValues(alpha: 0.4),
             ),
           ),
-
           if (!isLast)
             GestureDetector(
               onTap: _handleSkip,
               behavior: HitTestBehavior.opaque,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Text(
                   'Skip',
                   style: TextStyle(
@@ -220,28 +210,24 @@ class _OnboardingPageState extends State<OnboardingPage>
     );
   }
 
-  Widget _buildBottomContent(bool isDark, bool isLast, Size size) {
+  Widget _buildBottomContent(bool isDark, bool isLast) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         28,
         0,
         28,
-        MediaQuery.of(context).padding.bottom + 32,
+        MediaQuery.paddingOf(context).bottom + 32,
       ),
       child: AnimatedBuilder(
         animation: _textController,
         builder: (context, child) => Opacity(
           opacity: _textOpacity.value,
-          child: SlideTransition(
-            position: _textSlide,
-            child: child,
-          ),
+          child: SlideTransition(position: _textSlide, child: child),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Headline
             Text(
               onboardingPages[_currentIndex].headline,
               style: TextStyle(
@@ -255,8 +241,6 @@ class _OnboardingPageState extends State<OnboardingPage>
               ),
             ),
             const SizedBox(height: 12),
-
-            // Description
             Text(
               onboardingPages[_currentIndex].description,
               style: TextStyle(
@@ -270,8 +254,6 @@ class _OnboardingPageState extends State<OnboardingPage>
               ),
             ),
             const SizedBox(height: 28),
-
-            // Page indicator
             PageIndicator(
               count: onboardingPages.length,
               current: _currentIndex,
@@ -279,8 +261,6 @@ class _OnboardingPageState extends State<OnboardingPage>
               onTap: _goToPage,
             ),
             const SizedBox(height: 28),
-
-            // CTA button
             _buildButton(isDark, isLast),
           ],
         ),
@@ -298,10 +278,8 @@ class _OnboardingPageState extends State<OnboardingPage>
       onTapCancel: () => _buttonController.reverse(),
       child: AnimatedBuilder(
         animation: _buttonController,
-        builder: (context, child) => Transform.scale(
-          scale: _buttonScale.value,
-          child: child,
-        ),
+        builder: (context, child) =>
+            Transform.scale(scale: _buttonScale.value, child: child),
         child: Container(
           height: 56,
           decoration: BoxDecoration(

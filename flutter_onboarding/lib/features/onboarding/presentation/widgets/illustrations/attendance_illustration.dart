@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'illustration_shared.dart';
 
 class AttendanceIllustration extends StatefulWidget {
   final bool isDark;
@@ -23,16 +24,13 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
       duration: const Duration(milliseconds: 2200),
     )..repeat(reverse: true);
 
-    _floats = List.generate(3, (i) {
-      final c = AnimationController(
-        vsync: this,
-        duration: Duration(milliseconds: 3000 + i * 500),
-      )..repeat(reverse: true);
-      if (i > 0) {
-        c.value = i * 0.28;
-      }
-      return c;
-    });
+    _floats = buildFloatControllers(
+      vsync: this,
+      count: 3,
+      baseMs: 3000,
+      stepMs: 500,
+      startOffsetStep: 0.28,
+    );
   }
 
   @override
@@ -44,8 +42,7 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final dim = math.min(size.width * 0.72, 280.0);
+    final dim = illustrationDim(context);
     const indigo = Color(0xFF6366F1);
 
     return Center(
@@ -93,7 +90,7 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
               ),
 
             // Center glass card
-            _GlassCard(
+            IllusGlassCard(
               isDark: widget.isDark,
               width: dim * 0.39,
               height: dim * 0.52,
@@ -197,7 +194,7 @@ class _FloatChip extends StatelessWidget {
           offset: Offset(0, -7 * controller.value),
           child: child,
         ),
-        child: _GlassCard(
+        child: IllusGlassCard(
           isDark: isDark,
           width: 62,
           height: 52,
@@ -259,57 +256,6 @@ class _ShimmerLines extends StatelessWidget {
           const SizedBox(height: 4),
         ],
       ],
-    );
-  }
-}
-
-class _GlassCard extends StatelessWidget {
-  final bool isDark;
-  final double width;
-  final double height;
-  final double radius;
-  final Widget child;
-  final Color? borderColor;
-
-  const _GlassCard({
-    required this.isDark,
-    required this.width,
-    required this.height,
-    required this.radius,
-    required this.child,
-    this.borderColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.07)
-            : Colors.white.withValues(alpha: 0.72),
-        border: Border.all(
-          color: borderColor ??
-              (isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : Colors.black.withValues(alpha: 0.055)),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.26)
-                : Colors.black.withValues(alpha: 0.065),
-            blurRadius: 28,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(radius),
-        child: child,
-      ),
     );
   }
 }
