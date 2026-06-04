@@ -1,211 +1,185 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
-/* ─── Keyframes injected once ─────────────────────────────────────── */
+/* ─── Global styles ─────────────────────────────────────────────── */
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body, html { width: 100%; height: 100%; overflow: hidden; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0C0C14; }
 
   @keyframes pulse-ring {
-    0%,100% { opacity:.45; transform:translate(-50%,-50%) scale(1); }
-    50%      { opacity:.9;  transform:translate(-50%,-50%) scale(1.055); }
+    0%,100% { opacity: .5; transform: scale(1); }
+    50%      { opacity: 1; transform: scale(1.06); }
   }
-  @keyframes float0 {
-    0%,100% { transform:translateY(0px); }
-    50%     { transform:translateY(-7px); }
-  }
-  @keyframes float1 {
-    0%,100% { transform:translateY(0px); }
-    50%     { transform:translateY(-5px); }
-  }
-  @keyframes float2 {
-    0%,100% { transform:translateY(0px); }
-    50%     { transform:translateY(-8px); }
-  }
+  @keyframes float-a { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  @keyframes float-b { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  @keyframes float-c { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
   @keyframes bar-grow {
-    from { transform:scaleY(0); transform-origin:bottom; opacity:0; }
-    to   { transform:scaleY(1); transform-origin:bottom; opacity:1; }
+    from { transform: scaleY(0); opacity: 0; }
+    to   { transform: scaleY(1); opacity: 1; }
   }
-  @keyframes fade-up {
-    from { opacity:0; transform:translateY(22px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-  @keyframes fade-down {
-    from { opacity:0; transform:translateY(-14px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-  @keyframes scale-in {
-    from { opacity:0; transform:scale(.86); }
-    to   { opacity:1; transform:scale(1); }
-  }
-  @keyframes btn-tap {
-    0%  { transform:scale(1); }
-    40% { transform:scale(.955); }
-    100%{ transform:scale(1); }
-  }
-  .illus-enter  { animation: scale-in .44s cubic-bezier(.22,1,.36,1) both; }
-  .text-enter   { animation: fade-up  .38s cubic-bezier(.22,1,.36,1) both; }
-  .top-enter    { animation: fade-down .45s cubic-bezier(.22,1,.36,1) both; }
-  .btn-tap      { animation: btn-tap  .16s ease both; }
+  @keyframes page-in  { from{opacity:0;transform:scale(.88)} to{opacity:1;transform:scale(1)} }
+  @keyframes text-up  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes top-in   { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes dot-press{ 0%{transform:scale(1)} 50%{transform:scale(.88)} 100%{transform:scale(1)} }
+
+  .illus-enter { animation: page-in .44s cubic-bezier(.22,1,.36,1) both }
+  .text-enter  { animation: text-up .4s cubic-bezier(.22,1,.36,1) both }
+  .top-enter   { animation: top-in .46s cubic-bezier(.22,1,.36,1) both }
 `;
 
-/* ─── Tiny helpers ──────────────────────────────────────────────── */
-const glass = (dark: boolean, alpha = 0.07) =>
-  dark ? `rgba(255,255,255,${alpha})` : `rgba(255,255,255,${alpha + 0.55})`;
+/* ─── Responsive illustration container ─────────────────────────
+   All illustrations live inside a square whose side = min(82vw, 340px).
+   Child elements use % so they scale automatically.
+   ─────────────────────────────────────────────────────────────── */
+const SIDE = "min(82vw, 340px)";
 
-const border = (dark: boolean) =>
-  dark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.055)";
+interface IllusProps { dark: boolean }
 
-const shadow = (dark: boolean) =>
-  dark ? "0 8px 32px rgba(0,0,0,.28)" : "0 8px 32px rgba(0,0,0,.07)";
-
-/* ─── Illustrations ─────────────────────────────────────────────── */
-function AttendanceIllustration({ dark }: { dark: boolean }) {
-  const indigo = "#6366F1";
-  const rings = [80, 128, 176];
-
+/* ── Page 1: Attendance ─────────────────────────────────────────── */
+function AttendanceIllus({ dark }: IllusProps) {
   return (
-    <div style={{ position: "relative", width: 260, height: 260, margin: "auto" }}>
+    <div style={{ position:"relative", width:SIDE, height:SIDE }}>
       {/* Glow */}
       <div style={{
-        position: "absolute", inset: 0, borderRadius: "50%",
-        background: `radial-gradient(circle, rgba(99,102,241,.14) 0%, transparent 72%)`
-      }} />
+        position:"absolute", inset:0, borderRadius:"50%",
+        background:"radial-gradient(circle, rgba(99,102,241,.16) 0%, transparent 70%)"
+      }}/>
 
-      {/* Rings */}
-      {rings.map((size, i) => (
+      {/* Rings — centered with % */}
+      {[38,55,72].map((pct, i) => (
         <div key={i} style={{
-          position: "absolute",
-          width: size, height: size,
-          left: "50%", top: "50%",
-          border: `1.5px solid rgba(99,102,241,${.22 - i * .055})`,
-          borderRadius: "50%",
-          animation: `pulse-ring ${1.9 + i * .45}s ease-in-out infinite`,
-          animationDelay: `${i * .28}s`,
-        }} />
+          position:"absolute",
+          width:`${pct}%`, height:`${pct}%`,
+          top:`${(100-pct)/2}%`, left:`${(100-pct)/2}%`,
+          borderRadius:"50%",
+          border:`1.5px solid rgba(99,102,241,${.28-i*.07})`,
+          animation:`pulse-ring ${1.9+i*.45}s ease-in-out infinite`,
+          animationDelay:`${i*.28}s`,
+        }}/>
       ))}
 
-      {/* Center card */}
+      {/* Center glass card — 36×48% */}
       <div style={{
-        position: "absolute",
-        width: 104, height: 136,
-        left: "50%", top: "50%",
-        transform: "translate(-50%,-50%)",
-        background: glass(dark, .08),
-        backdropFilter: "blur(28px)",
-        border: `1px solid ${border(dark)}`,
-        borderRadius: 22,
-        boxShadow: shadow(dark),
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center", gap: 8,
+        position:"absolute",
+        width:"36%", height:"48%",
+        top:"26%", left:"32%",
+        background: dark?"rgba(255,255,255,.08)":"rgba(255,255,255,.75)",
+        backdropFilter:"blur(28px)",
+        border:`1px solid ${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.07)"}`,
+        borderRadius:"18%",
+        boxShadow: dark?"0 8px 32px rgba(0,0,0,.3)":"0 8px 32px rgba(0,0,0,.08)",
+        display:"flex", flexDirection:"column",
+        alignItems:"center", justifyContent:"center", gap:"7%",
       }}>
+        {/* Avatar */}
         <div style={{
-          width: 34, height: 34, borderRadius: "50%",
-          background: `rgba(99,102,241,.22)`,
-          display: "flex", alignItems: "center", justifyContent: "center",
+          width:"38%", height:"auto", aspectRatio:"1",
+          borderRadius:"50%", background:"rgba(99,102,241,.24)",
+          display:"flex", alignItems:"center", justifyContent:"center",
         }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="8" r="4" fill="rgba(180,183,255,.92)" />
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="rgba(180,183,255,.92)" strokeWidth="2" strokeLinecap="round" />
+          <svg viewBox="0 0 24 24" fill="none" style={{width:"60%"}}>
+            <circle cx="12" cy="8" r="4" fill="rgba(180,183,255,.9)"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="rgba(180,183,255,.9)" strokeWidth="2" strokeLinecap="round"/>
           </svg>
         </div>
-        <div style={{ width: "72%", display: "flex", flexDirection: "column", gap: 4 }}>
-          {[1, .72, .88].map((w, i) => (
-            <div key={i} style={{
-              height: 4, borderRadius: 2, width: `${w * 100}%`,
-              background: dark ? "rgba(255,255,255,.16)" : "rgba(0,0,0,.1)"
-            }} />
+        {/* Lines */}
+        <div style={{width:"72%", display:"flex", flexDirection:"column", gap:4}}>
+          {[1,.7,.86].map((w,i) => (
+            <div key={i} style={{height:3, borderRadius:2, width:`${w*100}%`,
+              background:dark?"rgba(255,255,255,.18)":"rgba(0,0,0,.1)"}}/>
           ))}
         </div>
+        {/* Badge */}
         <div style={{
-          padding: "4px 10px", borderRadius: 20,
-          background: `rgba(99,102,241,.32)`,
-          fontSize: 7, fontWeight: 700, letterSpacing: .7,
-          color: "rgba(200,202,255,.95)",
+          padding:"3px 10px", borderRadius:20, fontSize:"clamp(7px,1.8vw,9px)",
+          fontWeight:700, letterSpacing:.6,
+          background:"rgba(99,102,241,.32)", color:"rgba(200,202,255,.95)",
         }}>CHECK IN</div>
       </div>
 
-      {/* Float chips */}
-      <FloatChip dark={dark} val="98%" sub="On-Time" top={6} left={-4} delay={0} color="rgba(99,102,241,.22)" />
-      <FloatChip dark={dark} val="12"  sub="Checked in" top={52} right={-10} delay={.22} color="rgba(16,185,129,.18)" />
-      <FloatChip dark={dark} val="✓"  sub="Synced" bottom={28} left={4} delay={.44} color="rgba(245,158,11,.18)" />
+      {/* Floating chips */}
+      <Chip dark={dark} val="98%" sub="On-Time"    t="12%" l="2%"  delay="0s"    anim="float-a" col="rgba(99,102,241,.24)"/>
+      <Chip dark={dark} val="12"  sub="Checked in" t="28%" r="1%"  delay=".22s"  anim="float-b" col="rgba(16,185,129,.2)"/>
+      <Chip dark={dark} val="✓"   sub="Synced"     b="15%" l="6%"  delay=".44s"  anim="float-c" col="rgba(245,158,11,.2)"/>
     </div>
   );
 }
 
-function FloatChip({ dark, val, sub, top, left, right, bottom, delay, color }: {
-  dark: boolean; val: string; sub: string; delay: number; color: string;
-  top?: number; left?: number; right?: number; bottom?: number;
+function Chip({ dark, val, sub, t, l, r, b, delay, anim, col }: {
+  dark:boolean; val:string; sub:string; delay:string; anim:string; col:string;
+  t?:string; l?:string; r?:string; b?:string;
 }) {
-  const idx = Math.round(delay * 2);
   return (
     <div style={{
-      position: "absolute", top, left, right, bottom,
-      width: 60, height: 50, borderRadius: 16,
-      background: color, backdropFilter: "blur(20px)",
-      border: `1px solid ${border(dark)}`,
-      boxShadow: shadow(dark),
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center", gap: 2,
-      animation: `float${idx} ${3.2 + idx * .4}s ease-in-out infinite`,
-      animationDelay: `${delay}s`,
+      position:"absolute", top:t, left:l, right:r, bottom:b,
+      width:"20%", minWidth:52,
+      background:col, backdropFilter:"blur(20px)",
+      border:`1px solid ${dark?"rgba(255,255,255,.12)":"rgba(0,0,0,.06)"}`,
+      borderRadius:14,
+      boxShadow: dark?"0 6px 20px rgba(0,0,0,.25)":"0 4px 14px rgba(0,0,0,.07)",
+      aspectRatio:"1.15",
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
+      animation:`${anim} ${3+parseFloat(delay)*2}s ease-in-out infinite`,
+      animationDelay:delay,
     }}>
-      <span style={{ fontSize: 13, fontWeight: 700, color: dark ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.8)" }}>{val}</span>
-      <span style={{ fontSize: 7, fontWeight: 500, color: dark ? "rgba(255,255,255,.42)" : "rgba(0,0,0,.38)" }}>{sub}</span>
+      <span style={{fontSize:"clamp(11px,3.2vw,15px)", fontWeight:700,
+        color:dark?"rgba(255,255,255,.92)":"rgba(0,0,0,.82)"}}>{val}</span>
+      <span style={{fontSize:"clamp(6px,1.6vw,8px)", fontWeight:500,
+        color:dark?"rgba(255,255,255,.42)":"rgba(0,0,0,.38)"}}>{sub}</span>
     </div>
   );
 }
 
-function LeaveIllustration({ dark }: { dark: boolean }) {
+/* ── Page 2: Leave ──────────────────────────────────────────────── */
+function LeaveIllus({ dark }: IllusProps) {
   const emerald = "#10B981";
-  const indigo = "#6366F1";
-  const leaveDays = new Set([10, 11, 12, 13, 14]);
-
+  const leaveDays = new Set([10,11,12,13,14]);
   return (
-    <div style={{ position: "relative", width: 260, height: 260, margin: "auto" }}>
+    <div style={{position:"relative", width:SIDE, height:SIDE}}>
       <div style={{
-        position: "absolute", inset: 0, borderRadius: "50%",
-        background: `radial-gradient(circle, rgba(16,185,129,.09) 0%, transparent 70%)`
-      }} />
+        position:"absolute", inset:0, borderRadius:"50%",
+        background:"radial-gradient(circle, rgba(16,185,129,.1) 0%, transparent 70%)"
+      }}/>
 
-      {/* Calendar card */}
+      {/* Calendar — 60×60% centered */}
       <div style={{
-        position: "absolute", left: "50%", top: "50%",
-        transform: "translate(-50%,-50%)",
-        width: 156, height: 156,
-        background: glass(dark, .07),
-        backdropFilter: "blur(28px)",
-        border: `1px solid ${border(dark)}`,
-        borderRadius: 22, boxShadow: shadow(dark),
-        padding: 12, display: "flex", flexDirection: "column", gap: 5,
+        position:"absolute", width:"58%", height:"58%",
+        top:"21%", left:"21%",
+        background:dark?"rgba(255,255,255,.07)":"rgba(255,255,255,.8)",
+        backdropFilter:"blur(28px)",
+        border:`1px solid ${dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.05)"}`,
+        borderRadius:"14%",
+        boxShadow:dark?"0 10px 36px rgba(0,0,0,.28)":"0 8px 28px rgba(0,0,0,.07)",
+        padding:"4.5%", display:"flex", flexDirection:"column", gap:"3%",
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 8.5, fontWeight: 600, color: dark ? "rgba(255,255,255,.52)" : "rgba(0,0,0,.46)" }}>June 2025</span>
+        {/* Header */}
+        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+          <span style={{fontSize:"clamp(7px,1.9vw,9.5px)", fontWeight:600,
+            color:dark?"rgba(255,255,255,.52)":"rgba(0,0,0,.46)"}}>June 2025</span>
           <div style={{
-            padding: "2px 6px", borderRadius: 20, fontSize: 7, fontWeight: 700,
-            background: `rgba(16,185,129,.22)`, color: emerald,
+            padding:"2px 6px", borderRadius:20, fontSize:"clamp(6px,1.6vw,8px)", fontWeight:700,
+            background:"rgba(16,185,129,.22)", color:emerald,
           }}>Approved</div>
         </div>
-        {/* Day headers */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
-          {["M","T","W","T","F","S","S"].map((d, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 6.5, fontWeight: 600, color: dark ? "rgba(255,255,255,.24)" : "rgba(0,0,0,.24)" }}>{d}</div>
+        {/* Days header */}
+        <div style={{display:"grid", gridTemplateColumns:"repeat(7,1fr)"}}>
+          {["M","T","W","T","F","S","S"].map((d,i)=>(
+            <div key={i} style={{textAlign:"center", fontSize:"clamp(6px,1.5vw,7.5px)", fontWeight:600,
+              color:dark?"rgba(255,255,255,.24)":"rgba(0,0,0,.24)"}}>{d}</div>
           ))}
         </div>
-        {/* Days */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 1, flex: 1 }}>
-          {Array.from({ length: 30 }, (_, i) => i + 1).map(day => {
-            const leave = leaveDays.has(day);
-            const today = day === 6;
+        {/* Day grid */}
+        <div style={{display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, flex:1}}>
+          {Array.from({length:30},(_,i)=>i+1).map(day=>{
+            const leave=leaveDays.has(day), today=day===6;
             return (
               <div key={day} style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                borderRadius: 4, fontSize: 6.5,
-                fontWeight: leave || today ? 700 : 400,
-                background: leave ? `rgba(16,185,129,.26)` : today ? `rgba(99,102,241,.3)` : "transparent",
-                color: leave ? `rgba(110,231,183,.95)` : today ? "#b4b8ff" : dark ? "rgba(255,255,255,.36)" : "rgba(0,0,0,.36)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                borderRadius:4, fontSize:"clamp(5.5px,1.4vw,7px)",
+                fontWeight:leave||today?700:400,
+                background:leave?"rgba(16,185,129,.26)":today?"rgba(99,102,241,.3)":"transparent",
+                color:leave?"rgba(110,231,183,.95)":today?"#b4b8ff":dark?"rgba(255,255,255,.36)":"rgba(0,0,0,.36)",
               }}>{day}</div>
             );
           })}
@@ -214,129 +188,147 @@ function LeaveIllustration({ dark }: { dark: boolean }) {
 
       {/* Approval chip */}
       <div style={{
-        position: "absolute", top: 10, right: -6,
-        padding: "7px 10px", borderRadius: 14,
-        background: glass(dark, .07), backdropFilter: "blur(20px)",
-        border: `1px solid ${border(dark)}`, boxShadow: shadow(dark),
-        display: "flex", alignItems: "center", gap: 5,
-        animation: "float1 3.5s ease-in-out infinite",
+        position:"absolute", top:"6%", right:"2%",
+        padding:"6px 10px", borderRadius:13,
+        background:dark?"rgba(255,255,255,.07)":"rgba(255,255,255,.82)",
+        backdropFilter:"blur(20px)",
+        border:`1px solid ${dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.05)"}`,
+        boxShadow:dark?"0 5px 18px rgba(0,0,0,.22)":"0 4px 14px rgba(0,0,0,.07)",
+        display:"flex", alignItems:"center", gap:5,
+        animation:"float-b 3.5s ease-in-out infinite",
       }}>
         <div style={{
-          width: 14, height: 14, borderRadius: "50%",
-          background: `rgba(16,185,129,.22)`,
-          display: "flex", alignItems: "center", justifyContent: "center",
+          width:14, height:14, borderRadius:"50%", flexShrink:0,
+          background:"rgba(16,185,129,.22)", display:"flex", alignItems:"center", justifyContent:"center",
         }}>
           <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
-            <path d="M2 5l2.5 2.5L8 3" stroke={emerald} strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M2 5l2.5 2.5L8 3" stroke={emerald} strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
         </div>
-        <span style={{ fontSize: 8, fontWeight: 600, color: dark ? "rgba(255,255,255,.78)" : "rgba(0,0,0,.72)" }}>Leave Approved</span>
+        <span style={{fontSize:"clamp(7px,1.9vw,9px)", fontWeight:600, whiteSpace:"nowrap",
+          color:dark?"rgba(255,255,255,.8)":"rgba(0,0,0,.72)"}}>Leave Approved</span>
       </div>
 
-      {/* Timeline */}
+      {/* Timeline pill */}
       <div style={{
-        position: "absolute", bottom: 18, left: -10,
-        padding: "7px 10px", borderRadius: 14,
-        background: glass(dark, .07), backdropFilter: "blur(20px)",
-        border: `1px solid ${border(dark)}`, boxShadow: shadow(dark),
-        display: "flex", alignItems: "center", gap: 7,
-        animation: "float2 4s ease-in-out infinite", animationDelay: ".5s",
+        position:"absolute", bottom:"6%", left:"3%",
+        padding:"7px 10px", borderRadius:13,
+        background:dark?"rgba(255,255,255,.06)":"rgba(255,255,255,.78)",
+        backdropFilter:"blur(20px)",
+        border:`1px solid ${dark?"rgba(255,255,255,.09)":"rgba(0,0,0,.05)"}`,
+        boxShadow:dark?"0 5px 18px rgba(0,0,0,.2)":"0 4px 14px rgba(0,0,0,.06)",
+        display:"flex", alignItems:"center", gap:7,
+        animation:"float-c 4s ease-in-out infinite", animationDelay:".5s",
       }}>
         <div style={{
-          width: 3, height: 26, borderRadius: 2,
-          background: `linear-gradient(to bottom, rgba(99,102,241,.72), rgba(16,185,129,.5))`,
-        }} />
+          width:3, height:26, borderRadius:2, flexShrink:0,
+          background:"linear-gradient(to bottom, rgba(99,102,241,.75), rgba(16,185,129,.5))",
+        }}/>
         <div>
-          <div style={{ fontSize: 8, fontWeight: 600, color: dark ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.65)" }}>2 requests</div>
-          <div style={{ fontSize: 7, color: dark ? "rgba(255,255,255,.32)" : "rgba(0,0,0,.3)" }}>pending review</div>
+          <div style={{fontSize:"clamp(7px,1.9vw,9px)", fontWeight:600,
+            color:dark?"rgba(255,255,255,.7)":"rgba(0,0,0,.65)"}}>2 requests</div>
+          <div style={{fontSize:"clamp(6px,1.6vw,8px)",
+            color:dark?"rgba(255,255,255,.32)":"rgba(0,0,0,.3)"}}>pending review</div>
         </div>
       </div>
     </div>
   );
 }
 
-function AnalyticsIllustration({ dark }: { dark: boolean }) {
-  const bars = [65, 82, 58, 91, 74, 88, 96];
-  const indigo = "#6366F1";
-
+/* ── Page 3: Analytics ──────────────────────────────────────────── */
+function AnalyticsIllus({ dark }: IllusProps) {
+  const bars = [.65,.82,.58,.91,.74,.88,.96];
   return (
-    <div style={{ position: "relative", width: 260, height: 260, margin: "auto" }}>
+    <div style={{position:"relative", width:SIDE, height:SIDE}}>
       <div style={{
-        position: "absolute", inset: 0, borderRadius: "50%",
-        background: `radial-gradient(circle, rgba(245,158,11,.08) 0%, transparent 70%)`
-      }} />
+        position:"absolute", inset:0, borderRadius:"50%",
+        background:"radial-gradient(circle, rgba(245,158,11,.09) 0%, transparent 70%)"
+      }}/>
 
-      {/* Main card */}
+      {/* Main card — 66×56% centered */}
       <div style={{
-        position: "absolute", left: "50%", top: "50%",
-        transform: "translate(-50%,-50%)",
-        width: 180, height: 148,
-        background: glass(dark, .07),
-        backdropFilter: "blur(28px)",
-        border: `1px solid ${border(dark)}`,
-        borderRadius: 22, boxShadow: shadow(dark),
-        padding: "14px 14px 10px",
-        display: "flex", flexDirection: "column",
+        position:"absolute", width:"66%", height:"54%",
+        top:"23%", left:"17%",
+        background:dark?"rgba(255,255,255,.07)":"rgba(255,255,255,.8)",
+        backdropFilter:"blur(28px)",
+        border:`1px solid ${dark?"rgba(255,255,255,.1)":"rgba(0,0,0,.05)"}`,
+        borderRadius:"14%",
+        boxShadow:dark?"0 10px 36px rgba(0,0,0,.28)":"0 8px 28px rgba(0,0,0,.07)",
+        padding:"5% 5% 4%",
+        display:"flex", flexDirection:"column",
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-          <span style={{ fontSize: 8.5, fontWeight: 500, color: dark ? "rgba(255,255,255,.46)" : "rgba(0,0,0,.42)" }}>Attendance Score</span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: dark ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.85)" }}>94%</span>
+        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"5%"}}>
+          <span style={{fontSize:"clamp(7px,1.9vw,9.5px)", fontWeight:500,
+            color:dark?"rgba(255,255,255,.46)":"rgba(0,0,0,.42)"}}>Attendance Score</span>
+          <span style={{fontSize:"clamp(12px,3.5vw,16px)", fontWeight:700,
+            color:dark?"rgba(255,255,255,.9)":"rgba(0,0,0,.86)"}}>94%</span>
         </div>
-        {/* Progress */}
-        <div style={{ height: 3, borderRadius: 2, background: dark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.06)", marginBottom: 10 }}>
-          <div style={{ height: "100%", width: "94%", borderRadius: 2, background: `linear-gradient(90deg, rgba(99,102,241,.85), rgba(99,102,241,.42))` }} />
+        {/* Progress bar */}
+        <div style={{height:3, borderRadius:2, background:dark?"rgba(255,255,255,.08)":"rgba(0,0,0,.06)", marginBottom:"8%"}}>
+          <div style={{height:"100%", width:"94%", borderRadius:2,
+            background:"linear-gradient(90deg,rgba(99,102,241,.88),rgba(99,102,241,.44))"}}/>
         </div>
-        {/* Bars */}
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 2, flex: 1 }}>
-          {bars.map((h, i) => (
-            <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: 3,
-              background: i === 6 ? "rgba(99,102,241,.72)" : dark ? "rgba(255,255,255,.12)" : "rgba(0,0,0,.1)",
-              animation: `bar-grow .6s ease-out ${i * .07}s both`,
-            }} />
+        {/* Bar chart */}
+        <div style={{display:"flex", alignItems:"flex-end", gap:"3%", flex:1}}>
+          {bars.map((h,i)=>(
+            <div key={i} style={{
+              flex:1, height:`${h*100}%`, borderRadius:3,
+              background:i===6?"rgba(99,102,241,.72)":dark?"rgba(255,255,255,.13)":"rgba(0,0,0,.1)",
+              animation:`bar-grow .6s ease-out ${i*.07}s both`,
+              transformOrigin:"bottom",
+            }}/>
           ))}
         </div>
-        <div style={{ display: "flex", marginTop: 3 }}>
-          {["M","T","W","T","F","S","S"].map((d, i) => (
-            <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 6, color: dark ? "rgba(255,255,255,.22)" : "rgba(0,0,0,.22)" }}>{d}</div>
+        <div style={{display:"flex", marginTop:"4%"}}>
+          {["M","T","W","T","F","S","S"].map((d,i)=>(
+            <div key={i} style={{flex:1, textAlign:"center", fontSize:"clamp(5.5px,1.4vw,7px)",
+              color:dark?"rgba(255,255,255,.22)":"rgba(0,0,0,.22)"}}>{d}</div>
           ))}
         </div>
       </div>
 
       {/* A+ badge */}
       <div style={{
-        position: "absolute", top: 6, right: 4,
-        width: 54, height: 54, borderRadius: 18,
-        background: `rgba(99,102,241,.18)`, backdropFilter: "blur(16px)",
-        border: `1px solid rgba(99,102,241,.24)`, boxShadow: shadow(dark),
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        animation: "float0 3.2s ease-in-out infinite",
+        position:"absolute", top:"6%", right:"6%",
+        width:"18%", aspectRatio:"1",
+        background:"rgba(99,102,241,.18)", backdropFilter:"blur(16px)",
+        border:"1px solid rgba(99,102,241,.26)", borderRadius:"20%",
+        boxShadow:dark?"0 5px 18px rgba(0,0,0,.22)":"0 4px 14px rgba(0,0,0,.07)",
+        display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+        animation:"float-a 3.2s ease-in-out infinite",
       }}>
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#b4b8ff" }}>A+</span>
-        <span style={{ fontSize: 7, color: dark ? "rgba(255,255,255,.38)" : "rgba(0,0,0,.34)" }}>Rating</span>
+        <span style={{fontSize:"clamp(12px,3.5vw,17px)", fontWeight:700, color:"#b4b8ff"}}>A+</span>
+        <span style={{fontSize:"clamp(5.5px,1.5vw,7.5px)",
+          color:dark?"rgba(255,255,255,.38)":"rgba(0,0,0,.34)"}}>Rating</span>
       </div>
 
       {/* Hours */}
       <div style={{
-        position: "absolute", bottom: 14, right: -2,
-        padding: "7px 11px", borderRadius: 14,
-        background: `rgba(245,158,11,.12)`, backdropFilter: "blur(16px)",
-        border: `1px solid rgba(245,158,11,.18)`, boxShadow: shadow(dark),
-        animation: "float1 3.8s ease-in-out infinite", animationDelay: ".4s",
+        position:"absolute", bottom:"6%", right:"4%",
+        padding:"6px 11px", borderRadius:13,
+        background:"rgba(245,158,11,.12)", backdropFilter:"blur(16px)",
+        border:"1px solid rgba(245,158,11,.2)",
+        boxShadow:dark?"0 5px 18px rgba(0,0,0,.2)":"0 4px 14px rgba(0,0,0,.06)",
+        animation:"float-b 3.8s ease-in-out infinite", animationDelay:".4s",
       }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#fde68a" }}>42h</div>
-        <div style={{ fontSize: 7, color: dark ? "rgba(255,255,255,.36)" : "rgba(0,0,0,.34)" }}>This week</div>
+        <div style={{fontSize:"clamp(11px,3.2vw,15px)", fontWeight:700, color:"#fde68a"}}>42h</div>
+        <div style={{fontSize:"clamp(6px,1.6vw,8px)",
+          color:dark?"rgba(255,255,255,.36)":"rgba(0,0,0,.34)"}}>This week</div>
       </div>
 
       {/* Punctuality */}
       <div style={{
-        position: "absolute", bottom: 20, left: -6,
-        padding: "7px 10px", borderRadius: 14, display: "flex", alignItems: "center", gap: 6,
-        background: `rgba(16,185,129,.11)`, backdropFilter: "blur(16px)",
-        border: `1px solid rgba(16,185,129,.18)`, boxShadow: shadow(dark),
-        animation: "float2 4.2s ease-in-out infinite", animationDelay: ".7s",
+        position:"absolute", bottom:"7%", left:"3%",
+        padding:"6px 10px", borderRadius:13,
+        display:"flex", alignItems:"center", gap:6,
+        background:"rgba(16,185,129,.12)", backdropFilter:"blur(16px)",
+        border:"1px solid rgba(16,185,129,.2)",
+        boxShadow:dark?"0 5px 18px rgba(0,0,0,.2)":"0 4px 14px rgba(0,0,0,.06)",
+        animation:"float-c 4.2s ease-in-out infinite", animationDelay:".7s",
       }}>
-        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#6ee7b7" }} />
-        <span style={{ fontSize: 8, fontWeight: 600, color: "#6ee7b7" }}>100% Punctual</span>
+        <div style={{width:7, height:7, borderRadius:"50%", background:"#6ee7b7", flexShrink:0}}/>
+        <span style={{fontSize:"clamp(7px,1.9vw,9px)", fontWeight:600, color:"#6ee7b7",
+          whiteSpace:"nowrap"}}>100% Punctual</span>
       </div>
     </div>
   );
@@ -345,33 +337,31 @@ function AnalyticsIllustration({ dark }: { dark: boolean }) {
 /* ─── Page data ─────────────────────────────────────────────────── */
 const PAGES = [
   {
-    headline: "Attendance,\nSimplified",
-    desc: "Track attendance securely through office Wi-Fi with offline support and automatic synchronization.",
-    Illus: AttendanceIllustration,
+    headline:"Attendance,\nSimplified",
+    desc:"Track attendance securely through office Wi‑Fi with offline support and automatic synchronization.",
+    Illus: AttendanceIllus,
   },
   {
-    headline: "Manage Leave\nEffortlessly",
-    desc: "Apply for leave, track requests, and receive approvals through a professional digital workflow.",
-    Illus: LeaveIllustration,
+    headline:"Manage Leave\nEffortlessly",
+    desc:"Apply for leave, track requests, and receive approvals through a professional digital workflow.",
+    Illus: LeaveIllus,
   },
   {
-    headline: "Know Your\nProgress",
-    desc: "Monitor attendance score, punctuality, working hours, and performance trends in one place.",
-    Illus: AnalyticsIllustration,
+    headline:"Know Your\nProgress",
+    desc:"Monitor attendance score, punctuality, working hours, and performance trends in one place.",
+    Illus: AnalyticsIllus,
   },
 ];
 
-/* ─── Main component ────────────────────────────────────────────── */
+/* ─── Root ──────────────────────────────────────────────────────── */
 export function OnboardingFlow() {
-  const [idx, setIdx]           = useState(0);
-  const [busy, setBusy]         = useState(false);
-  const [illusKey, setIllusKey] = useState(0);
-  const [textKey, setTextKey]   = useState(0);
-  const [dark, setDark]         = useState(true);
-  const [btnTap, setBtnTap]     = useState(false);
+  const [idx, setIdx]     = useState(0);
+  const [busy, setBusy]   = useState(false);
+  const [ilKey, setIlKey] = useState(0);
+  const [txKey, setTxKey] = useState(0);
+  const [dark, setDark]   = useState(true);
   const timer = useRef<ReturnType<typeof setTimeout>>();
 
-  // Listen to system dark-mode too
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     setDark(mq.matches);
@@ -383,135 +373,136 @@ export function OnboardingFlow() {
     clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       setIdx(next);
-      setIllusKey(k => k + 1);
-      setTimeout(() => setTextKey(k => k + 1), 55);
+      setIlKey(k => k+1);
+      setTimeout(() => setTxKey(k => k+1), 55);
       setTimeout(() => setBusy(false), 420);
-    }, 260);
+    }, 240);
   }, [busy, idx]);
 
-  const page = PAGES[idx];
-  const isLast = idx === PAGES.length - 1;
+  const isLast = idx === PAGES.length-1;
+  const page   = PAGES[idx];
 
-  /* ── colours ── */
-  const bg      = dark ? "#0C0C14" : "#F5F5F9";
-  const cPri    = dark ? "rgba(255,255,255,.92)" : "rgba(10,10,20,.88)";
-  const cSec    = dark ? "rgba(255,255,255,.4)"  : "rgba(10,10,20,.4)";
-  const cSkip   = dark ? "rgba(255,255,255,.3)"  : "rgba(10,10,20,.3)";
-  const dotOn   = dark ? "rgba(255,255,255,.85)" : "rgba(10,10,20,.8)";
-  const dotOff  = dark ? "rgba(255,255,255,.16)" : "rgba(10,10,20,.16)";
-  const btnBg   = dark ? "rgba(255,255,255,.93)" : "rgba(10,10,20,.88)";
-  const btnTxt  = dark ? "#0A0A14"               : "#ffffff";
+  /* colours */
+  const bg     = dark ? "#0C0C14" : "#F4F4F8";
+  const cPri   = dark ? "rgba(255,255,255,.93)" : "rgba(8,8,18,.88)";
+  const cSec   = dark ? "rgba(255,255,255,.42)" : "rgba(8,8,18,.42)";
+  const cSkip  = dark ? "rgba(255,255,255,.3)"  : "rgba(8,8,18,.3)";
+  const dotOn  = dark ? "rgba(255,255,255,.86)" : "rgba(8,8,18,.8)";
+  const dotOff = dark ? "rgba(255,255,255,.15)" : "rgba(8,8,18,.15)";
+  const btnBg  = dark ? "rgba(255,255,255,.93)" : "rgba(8,8,18,.88)";
+  const btnTxt = dark ? "#0A0A14"               : "#ffffff";
 
   return (
     <>
       <style>{CSS}</style>
-      {/* Full-bleed wrapper — fills whatever the iframe gives us */}
+
       <div style={{
-        width: "100vw", height: "100dvh",
-        background: bg,
-        display: "flex", flexDirection: "column",
-        fontFamily: "'Inter', -apple-system, 'Helvetica Neue', sans-serif",
-        overflow: "hidden",
-        position: "relative",
+        width:"100vw", height:"100dvh",
+        background:bg,
+        display:"flex", flexDirection:"column",
+        fontFamily:"'Inter',-apple-system,'Helvetica Neue',sans-serif",
+        overflow:"hidden",
       }}>
 
-        {/* ── Status-bar spacer + top row ─────────────────────── */}
-        <div className="top-enter" style={{ padding: "52px 22px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          {/* Theme toggle */}
-          <button onClick={() => setDark(d => !d)}
-            style={{
-              width: 34, height: 34, borderRadius: "50%", border: "none", cursor: "pointer",
-              background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
+        {/* ── Top bar ── */}
+        <div className="top-enter" style={{
+          display:"flex", justifyContent:"space-between", alignItems:"center",
+          padding:"clamp(40px,10vw,56px) clamp(18px,5vw,24px) 0",
+          flexShrink:0,
+        }}>
+          <button onClick={() => setDark(d=>!d)} style={{
+            width:34, height:34, borderRadius:"50%", border:"none", cursor:"pointer",
+            background:dark?"rgba(255,255,255,.07)":"rgba(0,0,0,.06)",
+            display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
+          }}>
             {dark
               ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="5" fill="rgba(255,255,255,.55)" />
+                  <circle cx="12" cy="12" r="5" fill="rgba(255,255,255,.55)"/>
                   <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-                    stroke="rgba(255,255,255,.55)" strokeWidth="2" strokeLinecap="round" />
+                    stroke="rgba(255,255,255,.55)" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
               : <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="rgba(0,0,0,.45)" />
+                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="rgba(0,0,0,.45)"/>
                 </svg>
             }
           </button>
-
-          {!isLast && (
-            <button onClick={() => goTo(PAGES.length - 1)}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 15, fontWeight: 400, letterSpacing: -.15,
-                color: cSkip, padding: "8px 8px",
-              }}>Skip</button>
-          )}
+          {!isLast &&
+            <button onClick={() => goTo(PAGES.length-1)} style={{
+              background:"none", border:"none", cursor:"pointer",
+              fontSize:"clamp(14px,4vw,16px)", fontWeight:400, letterSpacing:-.15,
+              color:cSkip, padding:"8px 6px",
+            }}>Skip</button>
+          }
         </div>
 
-        {/* ── Illustration (flex: 1) ─────────────────────────── */}
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 20px" }}>
-          <div key={illusKey} className="illus-enter" style={{ width: "100%", maxWidth: 320 }}>
-            <page.Illus dark={dark} />
+        {/* ── Illustration — fills all remaining space above bottom ── */}
+        <div style={{
+          flex:1,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          padding:"clamp(8px,2vw,16px) 0",
+          minHeight:0,              /* crucial: lets flex child shrink */
+        }}>
+          <div key={ilKey} className="illus-enter">
+            <page.Illus dark={dark}/>
           </div>
         </div>
 
-        {/* ── Bottom content ─────────────────────────────────── */}
-        <div style={{ padding: "0 26px 42px", flexShrink: 0 }}>
-          <div key={textKey} className="text-enter">
-            {/* Headline */}
+        {/* ── Bottom content ── */}
+        <div style={{
+          padding:`0 clamp(20px,6vw,28px) clamp(28px,7vw,44px)`,
+          flexShrink:0,
+        }}>
+          <div key={txKey} className="text-enter">
             <h1 style={{
-              fontSize: 32, fontWeight: 800,
-              lineHeight: 1.13, letterSpacing: -.9,
-              color: cPri, whiteSpace: "pre-line",
-              marginBottom: 12,
+              fontSize:"clamp(26px,7.5vw,34px)",
+              fontWeight:800, lineHeight:1.13, letterSpacing:"-0.03em",
+              color:cPri, whiteSpace:"pre-line", marginBottom:"clamp(8px,2.5vw,14px)",
             }}>{page.headline}</h1>
-
-            {/* Description */}
             <p style={{
-              fontSize: 15.5, lineHeight: 1.58,
-              letterSpacing: -.1, color: cSec,
-              marginBottom: 28,
+              fontSize:"clamp(14px,4vw,16px)", lineHeight:1.58,
+              letterSpacing:"-.01em", color:cSec,
+              marginBottom:"clamp(20px,5.5vw,30px)",
             }}>{page.desc}</p>
           </div>
 
           {/* Dots */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 26 }}>
-            {PAGES.map((_, i) => (
-              <button key={i} onClick={() => goTo(i)}
-                style={{
-                  height: 6, borderRadius: 3, border: "none", cursor: "pointer",
-                  background: i === idx ? dotOn : dotOff,
-                  padding: 0,
-                  transition: "width .38s cubic-bezier(.22,1,.36,1), background .3s",
-                  width: i === idx ? 24 : 6,
-                }} />
+          <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:"clamp(18px,5vw,26px)"}}>
+            {PAGES.map((_,i) => (
+              <button key={i} onClick={() => goTo(i)} style={{
+                height:6, borderRadius:3, border:"none", cursor:"pointer", padding:0,
+                background: i===idx ? dotOn : dotOff,
+                width: i===idx ? 24 : 6,
+                transition:"width .38s cubic-bezier(.22,1,.36,1), background .28s",
+              }}/>
             ))}
           </div>
 
           {/* CTA */}
           <button
-            className={btnTap ? "btn-tap" : ""}
-            onMouseDown={() => setBtnTap(false)}
-            onPointerDown={() => setBtnTap(true)}
-            onPointerUp={() => { setBtnTap(false); !isLast ? goTo(idx + 1) : undefined; }}
-            onPointerLeave={() => setBtnTap(false)}
+            onPointerDown={e => (e.currentTarget.style.transform="scale(.965)")}
+            onPointerUp={e => { e.currentTarget.style.transform=""; !isLast && goTo(idx+1); }}
+            onPointerLeave={e => (e.currentTarget.style.transform="")}
             style={{
-              width: "100%", height: 56,
-              borderRadius: 18, border: "none", cursor: "pointer",
-              background: btnBg, color: btnTxt,
-              fontSize: 16, fontWeight: 650, letterSpacing: -.3,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width:"100%", height:"clamp(50px,13vw,58px)",
+              borderRadius:"clamp(14px,4vw,18px)",
+              border:"none", cursor:"pointer",
+              background:btnBg, color:btnTxt,
+              fontSize:"clamp(14px,4vw,16px)", fontWeight:700, letterSpacing:"-.02em",
+              display:"flex", alignItems:"center", justifyContent:"center", gap:8,
               boxShadow: dark
-                ? "0 2px 24px rgba(255,255,255,.06), 0 1px 2px rgba(0,0,0,.28)"
-                : "0 2px 24px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.06)",
-              transition: "transform .12s",
+                ?"0 2px 24px rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.3)"
+                :"0 2px 24px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.06)",
+              transition:"transform .12s",
             }}>
             {isLast ? "Get Started" : "Continue"}
-            {!isLast && (
+            {!isLast &&
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke={btnTxt} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M5 12h14M13 6l6 6-6 6" stroke={btnTxt} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            )}
+            }
           </button>
         </div>
+
       </div>
     </>
   );
