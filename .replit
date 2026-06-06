@@ -34,3 +34,12 @@ externalPort = 3001
 [[ports]]
 localPort = 23165
 externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+BACK4APP_APP_ID = "8w5qwghjGOLqJfJIe2QGd7qr9J5J7TNi0ikFSMsN"
+BACK4APP_JS_KEY = "fqFHqUe5xxYcGdEPY5dUEQxLsSnjpwHdvttpyadT"
+GMAIL = "usamasif090@gmail.com"
+GMAIL_APP_PASSWORD = "svwq tcfz rlzt youg"
+ADMIN_GMAIL = "khuzaimadeveloper777@gmail.com"

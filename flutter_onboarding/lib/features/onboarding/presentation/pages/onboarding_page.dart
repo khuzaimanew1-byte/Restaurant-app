@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+
 import '../widgets/onboarding_illustration.dart';
 import '../widgets/page_indicator.dart';
 import '../../data/onboarding_data.dart';
+import '../../data/onboarding_repository.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -110,9 +113,10 @@ class _OnboardingPageState extends State<OnboardingPage>
     });
   }
 
-  void _handleGetStarted() {
+  Future<void> _handleGetStarted() async {
     HapticFeedback.mediumImpact();
-    // Navigator.of(context).pushReplacementNamed('/home');
+    await OnboardingRepository().markOnboardingComplete();
+    if (mounted) context.go('/login');
   }
 
   void _handleSkip() {
@@ -190,8 +194,7 @@ class _OnboardingPageState extends State<OnboardingPage>
               onTap: _handleSkip,
               behavior: HitTestBehavior.opaque,
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Text(
                   'Skip',
                   style: TextStyle(
