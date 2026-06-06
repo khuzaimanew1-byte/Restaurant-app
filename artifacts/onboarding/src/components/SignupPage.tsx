@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 
-/* ── Design tokens ─────────────────────────────────────────────────── */
 const C = {
   indigo:      "#6366F1",
   indigoLight: "#818CF8",
@@ -21,15 +20,15 @@ function useDark() {
   return [dark, setDark] as const;
 }
 
-/* ── Input component ───────────────────────────────────────────────── */
 function Field({
   label, type = "text", value, onChange, placeholder, error,
-  dark, border, pri, sec,
+  hint, dark, border, pri, sec, muted,
   suffix,
 }: {
   label: string; type?: string; value: string;
   onChange: (v: string) => void; placeholder: string;
-  error?: string; dark: boolean; border: string; pri: string; sec: string;
+  error?: string; hint?: string;
+  dark: boolean; border: string; pri: string; sec: string; muted: string;
   suffix?: React.ReactNode;
 }) {
   const [focused, setFocused] = useState(false);
@@ -37,7 +36,7 @@ function Field({
   const bg = dark ? "#0F0F1E" : "#F8F8FC";
 
   return (
-    <div style={{ marginBottom: error ? 6 : 18 }}>
+    <div style={{ marginBottom: error ? 4 : 18 }}>
       <label style={{
         display: "block", fontSize: 12, fontWeight: 600, letterSpacing: .3,
         textTransform: "uppercase", color: sec, marginBottom: 8,
@@ -57,8 +56,7 @@ function Field({
             background: bg,
             border: `1.5px solid ${bColor}`,
             borderRadius: 12, fontSize: 15,
-            color: pri, outline: "none",
-            fontFamily: "inherit",
+            color: pri, outline: "none", fontFamily: "inherit",
             transition: "border-color .18s, box-shadow .18s",
             boxShadow: focused ? `0 0 0 3px ${C.indigo}22` : "none",
           }}
@@ -72,7 +70,7 @@ function Field({
       </div>
       {error && (
         <p style={{
-          margin: "6px 0 12px", fontSize: 12, color: C.error,
+          margin: "6px 0 10px", fontSize: 12, color: C.error,
           display: "flex", alignItems: "center", gap: 5,
         }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
@@ -82,11 +80,13 @@ function Field({
           {error}
         </p>
       )}
+      {!error && hint && (
+        <p style={{ margin: "5px 0 0", fontSize: 11, color: muted }}>{hint}</p>
+      )}
     </div>
   );
 }
 
-/* ── Eye toggle ────────────────────────────────────────────────────── */
 function EyeToggle({ show, onToggle, sec }: { show: boolean; onToggle: () => void; sec: string }) {
   return (
     <button type="button" onClick={onToggle} style={{
@@ -106,26 +106,56 @@ function EyeToggle({ show, onToggle, sec }: { show: boolean; onToggle: () => voi
   );
 }
 
+/* ── Password strength ─────────────────────────────────────────────── */
+function PasswordStrength({ password, muted }: { password: string; muted: string }) {
+  const checks = [
+    password.length >= 8,
+    /[A-Z]/.test(password),
+    /[0-9]/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ];
+  const strength = checks.filter(Boolean).length;
+  const colors   = ["#EF4444", "#F59E0B", "#F59E0B", "#10B981", "#10B981"];
+  const labels   = ["", "Weak", "Fair", "Fair", "Strong", "Very strong"];
+
+  if (!password) return null;
+
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 4, marginBottom: 5 }}>
+        {[1,2,3,4].map(i => (
+          <div key={i} style={{
+            flex: 1, height: 3, borderRadius: 2,
+            background: i <= strength ? colors[strength] : muted,
+            transition: "background .3s",
+          }} />
+        ))}
+      </div>
+      {strength > 0 && (
+        <p style={{ margin: 0, fontSize: 11, color: colors[strength], fontWeight: 500 }}>
+          {labels[strength]} password
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ── Main ──────────────────────────────────────────────────────────── */
-export function LoginPage({
-  onBack,
-  onSignup,
-}: {
-  onBack?: () => void;
-  onSignup?: () => void;
-}) {
-  const [dark, setDark] = useDark();
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [errors, setErrors]     = useState<Record<string, string>>({});
-  const [loading, setLoading]   = useState(false);
-  const [btnScale, setBtnScale] = useState(1);
-  const [entered, setEntered]   = useState(false);
+export function SignupPage({ onBack }: { onBack?: () => void }) {
+  const [dark, setDark]   = useDark();
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [confirm, setConfirm]     = useState("");
+  const [showPw, setShowPw]       = useState(false);
+  const [showCf, setShowCf]       = useState(false);
+  const [errors, setErrors]       = useState<Record<string, string>>({});
+  const [loading, setLoading]     = useState(false);
+  const [btnScale, setBtnScale]   = useState(1);
+  const [entered, setEntered]     = useState(false);
+  const [agreed, setAgreed]       = useState(false);
 
   useEffect(() => { requestAnimationFrame(() => setEntered(true)); }, []);
 
-  /* tokens */
   const bg      = dark ? "#080810" : "#F2F2F7";
   const surface = dark ? "#12121E" : "#FFFFFF";
   const border  = dark ? "#252538" : "#E2E2EC";
@@ -135,15 +165,18 @@ export function LoginPage({
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!email.trim()) e.email = "Email address is required.";
+    if (!email.trim()) e.email = "Work email is required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid email address.";
     if (!password) e.password = "Password is required.";
-    else if (password.length < 6) e.password = "Password must be at least 6 characters.";
+    else if (password.length < 8) e.password = "Must be at least 8 characters.";
+    if (!confirm) e.confirm = "Please confirm your password.";
+    else if (confirm !== password) e.confirm = "Passwords do not match.";
+    if (!agreed) e.agreed = "You must accept the terms to continue.";
     setErrors(e);
     return !Object.keys(e).length;
   }
 
-  async function handleLogin() {
+  async function handleSignup() {
     if (!validate()) return;
     setLoading(true);
     await new Promise(r => setTimeout(r, 1400));
@@ -160,7 +193,7 @@ export function LoginPage({
       transition: "opacity .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1)",
     }}>
 
-      {/* ── Nav bar ── */}
+      {/* ── Nav ── */}
       <nav style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
         padding: "20px clamp(20px,5vw,32px)",
@@ -169,7 +202,6 @@ export function LoginPage({
         background: dark ? "rgba(8,8,16,.7)" : "rgba(242,242,247,.7)",
         borderBottom: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}`,
       }}>
-        {/* Back */}
         <button onClick={onBack} style={{
           display: "flex", alignItems: "center", gap: 6,
           background: "none", border: "none", cursor: "pointer",
@@ -178,10 +210,9 @@ export function LoginPage({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Back
+          Back to Login
         </button>
 
-        {/* Logo mark */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{
             width: 28, height: 28, borderRadius: 8,
@@ -198,7 +229,6 @@ export function LoginPage({
           </span>
         </div>
 
-        {/* Theme toggle */}
         <button onClick={() => setDark(d => !d)} style={{
           width: 32, height: 32, borderRadius: "50%",
           background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
@@ -219,38 +249,51 @@ export function LoginPage({
 
       {/* ── Content ── */}
       <div style={{
-        flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "clamp(24px,5vw,48px) clamp(20px,5vw,24px)",
+        flex: 1, display: "flex", alignItems: "flex-start", justifyContent: "center",
+        padding: "clamp(24px,5vw,48px) clamp(20px,5vw,24px) 40px",
       }}>
         <div style={{ width: "100%", maxWidth: 420 }}>
 
-          {/* Header */}
-          <div style={{ marginBottom: 36 }}>
-            {/* Icon */}
+          {/* Notice banner */}
+          <div style={{
+            display: "flex", gap: 12, alignItems: "flex-start",
+            background: `${C.indigo}12`,
+            border: `1px solid ${C.indigo}25`,
+            borderRadius: 14, padding: "14px 16px", marginBottom: 28,
+          }}>
             <div style={{
-              width: 56, height: 56, borderRadius: 16, marginBottom: 24,
-              background: `linear-gradient(135deg, ${C.indigo}22, ${C.indigoLight}22)`,
-              border: `1px solid ${C.indigo}33`,
+              width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+              background: `${C.indigo}18`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: `0 8px 24px ${C.indigo}20`,
             }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="9" stroke={C.indigo} strokeWidth="1.8"/>
-                <path d="M12 7v5l3 2" stroke={C.indigo} strokeWidth="1.8" strokeLinecap="round"/>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke={C.indigo} strokeWidth="1.8"/>
+                <path d="M12 8v4M12 16h.01" stroke={C.indigo} strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </div>
+            <div>
+              <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 600, color: C.indigo }}>
+                Invite-only registration
+              </p>
+              <p style={{ margin: 0, fontSize: 12, color: sec, lineHeight: 1.5 }}>
+                Only emails pre-registered by your administrator can create an account.
+              </p>
+            </div>
+          </div>
 
+          {/* Header */}
+          <div style={{ marginBottom: 28 }}>
             <h1 style={{
-              fontSize: "clamp(26px,7vw,32px)", fontWeight: 800,
-              letterSpacing: "-.04em", lineHeight: 1.08,
-              color: pri, margin: "0 0 10px",
-            }}>Sign in to your<br/>account</h1>
+              fontSize: "clamp(24px,6.5vw,30px)", fontWeight: 800,
+              letterSpacing: "-.04em", lineHeight: 1.1,
+              color: pri, margin: "0 0 8px",
+            }}>Create your account</h1>
             <p style={{ fontSize: 15, color: sec, lineHeight: 1.6, margin: 0 }}>
-              Welcome back. Enter your credentials to continue.
+              Set up your employee profile to get started.
             </p>
           </div>
 
-          {/* ── Form card ── */}
+          {/* Form card */}
           <div style={{
             background: surface,
             border: `1px solid ${border}`,
@@ -259,16 +302,17 @@ export function LoginPage({
             boxShadow: dark
               ? "0 4px 48px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.04) inset"
               : "0 4px 32px rgba(0,0,0,.06), 0 1px 0 rgba(255,255,255,.8) inset",
-            marginBottom: 20,
+            marginBottom: 16,
           }}>
             <Field
-              label="Email address"
+              label="Work email"
               type="email"
               value={email}
               onChange={v => { setEmail(v); setErrors(e => ({ ...e, email: "" })); }}
-              placeholder="you@company.com"
+              placeholder="your.name@company.com"
               error={errors.email}
-              dark={dark} border={border} pri={pri} sec={sec}
+              hint="Must match the email your admin registered"
+              dark={dark} border={border} pri={pri} sec={sec} muted={muted}
             />
 
             <Field
@@ -276,27 +320,61 @@ export function LoginPage({
               type={showPw ? "text" : "password"}
               value={password}
               onChange={v => { setPassword(v); setErrors(e => ({ ...e, password: "" })); }}
-              placeholder="Enter your password"
+              placeholder="Min. 8 characters"
               error={errors.password}
-              dark={dark} border={border} pri={pri} sec={sec}
+              dark={dark} border={border} pri={pri} sec={sec} muted={muted}
               suffix={<EyeToggle show={showPw} onToggle={() => setShowPw(s => !s)} sec={sec} />}
             />
 
-            {/* Forgot password */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
-              <button style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 13, color: C.indigo, fontWeight: 500, padding: 0,
-                fontFamily: "inherit",
+            <PasswordStrength password={password} muted={muted} />
+
+            <Field
+              label="Confirm password"
+              type={showCf ? "text" : "password"}
+              value={confirm}
+              onChange={v => { setConfirm(v); setErrors(e => ({ ...e, confirm: "" })); }}
+              placeholder="Re-enter password"
+              error={errors.confirm}
+              dark={dark} border={border} pri={pri} sec={sec} muted={muted}
+              suffix={<EyeToggle show={showCf} onToggle={() => setShowCf(s => !s)} sec={sec} />}
+            />
+
+            {/* Terms checkbox */}
+            <div style={{ marginBottom: 24 }}>
+              <label style={{
+                display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer",
               }}>
-                Forgot password?
-              </button>
+                <div
+                  onClick={() => { setAgreed(a => !a); setErrors(e => ({ ...e, agreed: "" })); }}
+                  style={{
+                    width: 18, height: 18, borderRadius: 5, flexShrink: 0, marginTop: 1,
+                    background: agreed ? C.indigo : "transparent",
+                    border: `2px solid ${errors.agreed ? C.error : agreed ? C.indigo : border}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "all .15s", cursor: "pointer",
+                  }}>
+                  {agreed && (
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+                <span style={{ fontSize: 13, color: sec, lineHeight: 1.5 }}>
+                  I agree to the{" "}
+                  <span style={{ color: C.indigo, fontWeight: 600, cursor: "pointer" }}>Terms of Service</span>
+                  {" "}and{" "}
+                  <span style={{ color: C.indigo, fontWeight: 600, cursor: "pointer" }}>Privacy Policy</span>
+                </span>
+              </label>
+              {errors.agreed && (
+                <p style={{ margin: "6px 0 0", fontSize: 12, color: C.error }}>{errors.agreed}</p>
+              )}
             </div>
 
-            {/* Login button */}
+            {/* Submit */}
             <button
               onPointerDown={() => setBtnScale(.97)}
-              onPointerUp={() => { setBtnScale(1); handleLogin(); }}
+              onPointerUp={() => { setBtnScale(1); handleSignup(); }}
               onPointerLeave={() => setBtnScale(1)}
               disabled={loading}
               style={{
@@ -319,51 +397,18 @@ export function LoginPage({
                     display: "inline-block",
                     animation: "spin .7s linear infinite",
                   }} />
-                : <>
-                    Sign In
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginLeft: 6 }}>
-                      <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </>
+                : "Create Account"
               }
             </button>
           </div>
 
-          {/* Trust badges */}
-          <div style={{
-            display: "flex", justifyContent: "center", gap: 20, marginBottom: 28,
-          }}>
-            {[
-              { icon: "🔒", label: "256-bit encrypted" },
-              { icon: "✓",  label: "Verified access" },
-            ].map(b => (
-              <div key={b.label} style={{
-                display: "flex", alignItems: "center", gap: 5,
-              }}>
-                <span style={{ fontSize: 11 }}>{b.icon}</span>
-                <span style={{ fontSize: 11, color: muted, fontWeight: 500 }}>{b.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Sign up link */}
-          <div style={{
-            textAlign: "center",
-            padding: "18px 24px",
-            background: dark ? "rgba(99,102,241,.07)" : "rgba(99,102,241,.05)",
-            borderRadius: 14,
-            border: `1px solid ${dark ? "rgba(99,102,241,.15)" : "rgba(99,102,241,.12)"}`,
-          }}>
-            <span style={{ fontSize: 14, color: sec }}>New to Attendance App? </span>
-            <button
-              onClick={onSignup}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 14, color: C.indigo, fontWeight: 700,
-                letterSpacing: "-.01em", padding: 0, fontFamily: "inherit",
-              }}>
-              Create an account →
-            </button>
+          {/* Back to login */}
+          <div style={{ textAlign: "center" }}>
+            <span style={{ fontSize: 14, color: sec }}>Already have an account? </span>
+            <button onClick={onBack} style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 14, color: C.indigo, fontWeight: 700, padding: 0, fontFamily: "inherit",
+            }}>Sign in →</button>
           </div>
 
         </div>
@@ -371,8 +416,7 @@ export function LoginPage({
 
       {/* Footer */}
       <div style={{
-        padding: "16px 24px",
-        textAlign: "center",
+        padding: "16px 24px", textAlign: "center",
         borderTop: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}`,
       }}>
         <p style={{ fontSize: 12, color: muted, margin: 0 }}>
