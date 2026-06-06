@@ -250,7 +250,7 @@ const PAGES = [
 type Phase = "idle" | "exit" | "enter";
 
 /* ─── Main Component ─────────────────────────────────────────────── */
-export function OnboardingFlow() {
+export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) {
   const [idx, setIdx]     = useState(0);
   const [dir, setDir]     = useState<"fwd" | "bwd">("fwd");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -381,7 +381,11 @@ export function OnboardingFlow() {
         {/* CTA button */}
         <button
           onPointerDown={e => (e.currentTarget.style.transform = "scale(.965)")}
-          onPointerUp={e => { e.currentTarget.style.transform = ""; !isLast && goTo(idx + 1); }}
+          onPointerUp={e => {
+            e.currentTarget.style.transform = "";
+            if (isLast) onGetStarted?.();
+            else goTo(idx + 1);
+          }}
           onPointerLeave={e => (e.currentTarget.style.transform = "")}
           style={{
             width: "100%", height: "clamp(50px,13vw,58px)",
