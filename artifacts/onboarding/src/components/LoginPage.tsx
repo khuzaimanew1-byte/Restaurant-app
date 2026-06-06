@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface Props {
   onBack?: () => void;
@@ -13,14 +13,14 @@ export function LoginPage({ onBack }: Props) {
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
-  const [entered, setEntered] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "in">("idle");
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
-  const [btnPressed, setBtnPressed] = useState(false);
+  const [btnScale, setBtnScale] = useState(1);
 
   useEffect(() => {
-    const t = setTimeout(() => setEntered(true), 30);
-    return () => clearTimeout(t);
+    const t = requestAnimationFrame(() => setTimeout(() => setPhase("in"), 20));
+    return () => cancelAnimationFrame(t as unknown as number);
   }, []);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function LoginPage({ onBack }: Props) {
   function validate() {
     const e: typeof errors = {};
     if (!email.trim()) e.email = "Email is required";
-    else if (!email.includes("@")) e.email = "Enter a valid email";
+    else if (!email.includes("@")) e.email = "Enter a valid email address";
     if (!password) e.password = "Password is required";
     else if (password.length < 6) e.password = "At least 6 characters";
     setErrors(e);
@@ -43,311 +43,305 @@ export function LoginPage({ onBack }: Props) {
   async function handleLogin() {
     if (!validate()) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1400));
+    await new Promise(r => setTimeout(r, 1500));
     setLoading(false);
   }
 
-  const d = {
-    bg: dark
-      ? "radial-gradient(ellipse 80% 60% at 50% 0%, #1a1040 0%, #0a0a14 60%, #060610 100%)"
-      : "radial-gradient(ellipse 80% 60% at 50% 0%, #e8e0ff 0%, #f0f4ff 50%, #f5f5fa 100%)",
-    glass: dark
-      ? "rgba(255,255,255,0.04)"
-      : "rgba(255,255,255,0.72)",
-    glassBorder: dark
-      ? "rgba(255,255,255,0.09)"
-      : "rgba(255,255,255,0.9)",
-    inputBg: dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-    inputBgFocus: dark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.06)",
-    text: dark ? "#f5f5f7" : "#1d1d1f",
-    subtext: dark ? "rgba(245,245,247,0.5)" : "rgba(29,29,31,0.45)",
-    icon: dark ? "rgba(245,245,247,0.35)" : "rgba(29,29,31,0.3)",
-    border: dark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
-    borderFocus: "#5856D6",
-    error: "#FF3B30",
-    btnBg: dark
-      ? "linear-gradient(145deg, #7c7aff 0%, #5856D6 100%)"
-      : "linear-gradient(145deg, #7c7aff 0%, #5856D6 100%)",
-    btnSecBg: "transparent",
-    btnSecBorder: dark ? "rgba(255,255,255,0.13)" : "rgba(0,0,0,0.11)",
-    btnSecText: "#5856D6",
-    shadow: dark
-      ? "0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)"
-      : "0 24px 60px rgba(88,86,214,0.12), 0 0 0 1px rgba(255,255,255,0.9)",
-    glow: dark
-      ? "0 0 80px rgba(88,86,214,0.25)"
-      : "0 0 60px rgba(88,86,214,0.08)",
-    iconBg: dark
-      ? "linear-gradient(145deg, #2d2b5e, #1e1c40)"
-      : "linear-gradient(145deg, #7c7aff, #5856D6)",
+  // Apple design tokens
+  const t = {
+    bg:           dark ? "#000000"                    : "#f5f5f7",
+    text:         dark ? "#f5f5f7"                    : "#1d1d1f",
+    textSub:      dark ? "rgba(235,235,245,0.45)"     : "rgba(60,60,67,0.45)",
+    textTer:      dark ? "rgba(235,235,245,0.3)"      : "rgba(60,60,67,0.3)",
+    fieldBg:      dark ? "rgba(255,255,255,0.08)"     : "rgba(0,0,0,0.055)",
+    fieldBgFocus: dark ? "rgba(255,255,255,0.12)"     : "rgba(0,0,0,0.08)",
+    fieldText:    dark ? "#f5f5f7"                    : "#1d1d1f",
+    placeholder:  dark ? "rgba(235,235,245,0.28)"     : "rgba(60,60,67,0.3)",
+    separator:    dark ? "rgba(255,255,255,0.1)"      : "rgba(0,0,0,0.1)",
+    blue:         "#007AFF",
+    btnFg:        "#ffffff",
+    iconBg:       dark ? "#1c1c1e"                    : "#ffffff",
+    iconShadow:   dark ? "0 2px 16px rgba(0,0,0,.6)" : "0 2px 20px rgba(0,0,0,.12)",
+    errorFg:      dark ? "#FF453A"                    : "#FF3B30",
   };
+
+  const entered = phase === "in";
 
   return (
     <div style={{
       width: "100vw",
       height: "100dvh",
-      background: d.bg,
+      background: t.bg,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
       fontFamily: "-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif",
+      WebkitFontSmoothing: "antialiased",
+      MozOsxFontSmoothing: "grayscale",
       overflow: "hidden",
       position: "relative",
     }}>
 
-      {/* Ambient orbs */}
-      <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden",
-      }}>
-        <div style={{
-          position: "absolute", top: "-15%", left: "50%", transform: "translateX(-50%)",
-          width: 600, height: 400,
-          background: dark
-            ? "radial-gradient(ellipse, rgba(88,86,214,0.25) 0%, transparent 70%)"
-            : "radial-gradient(ellipse, rgba(88,86,214,0.12) 0%, transparent 70%)",
-          filter: "blur(1px)",
-        }} />
-        <div style={{
-          position: "absolute", bottom: "5%", right: "10%",
-          width: 300, height: 300,
-          background: dark
-            ? "radial-gradient(ellipse, rgba(124,122,255,0.12) 0%, transparent 70%)"
-            : "radial-gradient(ellipse, rgba(124,122,255,0.07) 0%, transparent 70%)",
-        }} />
-      </div>
-
-      {/* Top row — back + toggle */}
+      {/* Top controls */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0,
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "20px 24px",
+        padding: "18px 20px",
       }}>
-        <IconBtn onClick={onBack} dark={dark} icon={
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-            <path d="M19 12H5M12 5l-7 7 7 7" stroke={d.subtext} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+        <PillBtn onClick={onBack} color={t.fieldBg}>
+          <svg width="10" height="10" viewBox="0 0 20 20" fill="none">
+            <path d="M16 10H4M10 4l-6 6 6 6" stroke={t.textSub} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        } />
-        <IconBtn onClick={() => setDark(v => !v)} dark={dark} icon={
-          dark
+          <span style={{ fontSize: 13, color: t.textSub, fontWeight: 500, letterSpacing: "-.01em" }}>Back</span>
+        </PillBtn>
+        <button onClick={() => setDark(v => !v)} style={{
+          background: t.fieldBg, border: "none", cursor: "pointer",
+          width: 32, height: 32, borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "background 0.15s",
+        }}>
+          {dark
             ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="4.5" fill={d.subtext} />
+                <circle cx="12" cy="12" r="4.5" fill={t.textSub} />
                 <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-                  stroke={d.subtext} strokeWidth="2" strokeLinecap="round" />
+                  stroke={t.textSub} strokeWidth="2" strokeLinecap="round" />
               </svg>
-            : <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill={d.subtext} />
+            : <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill={t.textSub} />
               </svg>
-        } />
+          }
+        </button>
       </div>
 
-      {/* Card */}
+      {/* Main content — no card, just floating elements */}
       <div style={{
-        width: "min(420px, calc(100vw - 32px))",
-        background: d.glass,
-        backdropFilter: "blur(40px) saturate(180%)",
-        WebkitBackdropFilter: "blur(40px) saturate(180%)",
-        border: `1px solid ${d.glassBorder}`,
-        borderRadius: 28,
-        padding: "36px 32px 32px",
-        boxShadow: `${d.shadow}, ${d.glow}`,
+        width: "min(380px, calc(100vw - 48px))",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
         opacity: entered ? 1 : 0,
-        transform: entered ? "translateY(0) scale(1)" : "translateY(28px) scale(0.97)",
-        transition: "opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1)",
+        transform: entered ? "translateY(0)" : "translateY(24px)",
+        transition: "opacity 0.5s cubic-bezier(0.22,1,0.36,1), transform 0.5s cubic-bezier(0.22,1,0.36,1)",
       }}>
 
-        {/* Logo — centered */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
-          <div style={{
-            width: 60, height: 60, borderRadius: 18,
-            background: d.iconBg,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: dark
-              ? "0 8px 32px rgba(88,86,214,0.4), inset 0 1px 0 rgba(255,255,255,0.12)"
-              : "0 8px 24px rgba(88,86,214,0.35), inset 0 1px 0 rgba(255,255,255,0.4)",
-          }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.9)" strokeWidth="1.6" />
-              <path d="M12 6.5v5.5l3.5 2" stroke="rgba(255,255,255,0.9)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
+        {/* App icon */}
+        <div style={{
+          width: 72, height: 72, borderRadius: 20,
+          background: t.iconBg,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: t.iconShadow,
+          marginBottom: 22,
+          opacity: entered ? 1 : 0,
+          transform: entered ? "scale(1)" : "scale(0.82)",
+          transition: "opacity 0.5s cubic-bezier(0.22,1,0.36,1) 0.06s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.06s",
+        }}>
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9.5" stroke={t.blue} strokeWidth="1.5" />
+            <path d="M12 7v5.25l3.25 1.75" stroke={t.blue} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
 
         {/* Heading */}
         <h1 style={{
+          fontSize: 30, fontWeight: 700,
+          letterSpacing: "-0.04em", lineHeight: 1.08,
+          color: t.text, margin: "0 0 8px",
           textAlign: "center",
-          fontSize: 26, fontWeight: 700,
-          letterSpacing: "-0.035em", lineHeight: 1.1,
-          color: d.text, margin: "0 0 6px",
-        }}>Welcome back</h1>
+          opacity: entered ? 1 : 0,
+          transform: entered ? "translateY(0)" : "translateY(10px)",
+          transition: "opacity 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s",
+        }}>
+          Welcome Back
+        </h1>
         <p style={{
+          fontSize: 15, color: t.textSub,
+          lineHeight: 1.45, margin: "0 0 34px",
           textAlign: "center",
-          fontSize: 14, color: d.subtext,
-          lineHeight: 1.5, margin: "0 0 30px",
-          letterSpacing: "-0.01em",
-        }}>Sign in to your account to continue</p>
+          letterSpacing: "-0.015em",
+          opacity: entered ? 1 : 0,
+          transform: entered ? "translateY(0)" : "translateY(8px)",
+          transition: "opacity 0.5s cubic-bezier(0.22,1,0.36,1) 0.14s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.14s",
+        }}>
+          Sign in to your account to continue
+        </p>
 
-        {/* Email */}
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ position: "relative" }}>
-            <input
-              type="email"
-              value={email}
-              onChange={e => { setEmail(e.target.value); setErrors(v => ({ ...v, email: undefined })); }}
-              onFocus={() => setEmailFocused(true)}
-              onBlur={() => setEmailFocused(false)}
-              placeholder="Email"
-              autoComplete="email"
-              style={{
-                width: "100%", boxSizing: "border-box",
-                padding: "15px 16px 15px 46px",
-                background: emailFocused ? d.inputBgFocus : d.inputBg,
-                border: `1.5px solid ${errors.email ? d.error : emailFocused ? d.borderFocus : "transparent"}`,
-                borderRadius: 14, fontSize: 15,
-                color: d.text,
-                outline: "none",
-                fontFamily: "inherit",
-                letterSpacing: "-0.01em",
-                transition: "all 0.2s cubic-bezier(0.22,1,0.36,1)",
-                WebkitAppearance: "none",
-              }}
-            />
-            <svg style={{ position: "absolute", left: 15, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", transition: "opacity 0.2s" }}
-              width="17" height="17" viewBox="0 0 24 24" fill="none" opacity={emailFocused ? 0.7 : 0.35}>
-              <rect x="2" y="4" width="20" height="16" rx="3" stroke={d.text} strokeWidth="1.7" />
-              <path d="M2 8l10 7 10-7" stroke={d.text} strokeWidth="1.7" strokeLinecap="round" />
-            </svg>
+        {/* Fields */}
+        <div style={{
+          width: "100%",
+          opacity: entered ? 1 : 0,
+          transform: entered ? "translateY(0)" : "translateY(10px)",
+          transition: "opacity 0.5s cubic-bezier(0.22,1,0.36,1) 0.18s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.18s",
+        }}>
+
+          {/* Email field */}
+          <div style={{ marginBottom: errors.email ? 6 : 10 }}>
+            <div style={{ position: "relative" }}>
+              <input
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setErrors(v => ({ ...v, email: undefined })); }}
+                onFocus={() => setEmailFocused(true)}
+                onBlur={() => setEmailFocused(false)}
+                placeholder="Email"
+                autoComplete="email"
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  height: 52,
+                  padding: "0 16px 0 44px",
+                  background: emailFocused ? t.fieldBgFocus : t.fieldBg,
+                  border: `2px solid ${errors.email ? t.errorFg : emailFocused ? t.blue : "transparent"}`,
+                  borderRadius: 13,
+                  fontSize: 16, color: t.fieldText,
+                  outline: "none",
+                  fontFamily: "inherit",
+                  letterSpacing: "-0.015em",
+                  transition: "border-color 0.18s, background 0.18s",
+                  WebkitAppearance: "none",
+                }}
+              />
+              <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", transition: "opacity 0.18s" }}
+                width="17" height="17" viewBox="0 0 24 24" fill="none"
+                opacity={emailFocused ? 0.55 : 0.3}>
+                <rect x="2" y="4" width="20" height="16" rx="3" stroke={t.text} strokeWidth="1.7" />
+                <path d="M2 8l10 7 10-7" stroke={t.text} strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
+            </div>
+            {errors.email && (
+              <p style={{ margin: "5px 4px 0", fontSize: 12.5, color: t.errorFg, letterSpacing: "-0.01em" }}>
+                {errors.email}
+              </p>
+            )}
           </div>
-          {errors.email && (
-            <p style={{ margin: "6px 4px 0", fontSize: 12, color: d.error, letterSpacing: "-0.01em" }}>{errors.email}</p>
-          )}
-        </div>
 
-        {/* Password */}
-        <div style={{ marginBottom: 26 }}>
-          <div style={{ position: "relative" }}>
-            <input
-              type={showPw ? "text" : "password"}
-              value={password}
-              onChange={e => { setPassword(e.target.value); setErrors(v => ({ ...v, password: undefined })); }}
-              onFocus={() => setPasswordFocused(true)}
-              onBlur={() => setPasswordFocused(false)}
-              placeholder="Password"
-              autoComplete="current-password"
-              style={{
-                width: "100%", boxSizing: "border-box",
-                padding: "15px 48px 15px 46px",
-                background: passwordFocused ? d.inputBgFocus : d.inputBg,
-                border: `1.5px solid ${errors.password ? d.error : passwordFocused ? d.borderFocus : "transparent"}`,
-                borderRadius: 14, fontSize: 15,
-                color: d.text,
-                outline: "none",
-                fontFamily: "inherit",
-                letterSpacing: "-0.01em",
-                transition: "all 0.2s cubic-bezier(0.22,1,0.36,1)",
-                WebkitAppearance: "none",
+          {/* Password field */}
+          <div style={{ marginBottom: errors.password ? 6 : 0 }}>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPw ? "text" : "password"}
+                value={password}
+                onChange={e => { setPassword(e.target.value); setErrors(v => ({ ...v, password: undefined })); }}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
+                placeholder="Password"
+                autoComplete="current-password"
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  height: 52,
+                  padding: "0 48px 0 44px",
+                  background: passwordFocused ? t.fieldBgFocus : t.fieldBg,
+                  border: `2px solid ${errors.password ? t.errorFg : passwordFocused ? t.blue : "transparent"}`,
+                  borderRadius: 13,
+                  fontSize: 16, color: t.fieldText,
+                  outline: "none",
+                  fontFamily: "inherit",
+                  letterSpacing: "-0.015em",
+                  transition: "border-color 0.18s, background 0.18s",
+                  WebkitAppearance: "none",
+                }}
+              />
+              <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", transition: "opacity 0.18s" }}
+                width="16" height="16" viewBox="0 0 24 24" fill="none"
+                opacity={passwordFocused ? 0.55 : 0.3}>
+                <rect x="5" y="11" width="14" height="10" rx="2.5" stroke={t.text} strokeWidth="1.7" />
+                <path d="M8 11V7a4 4 0 018 0v4" stroke={t.text} strokeWidth="1.7" strokeLinecap="round" />
+              </svg>
+              <button type="button" onClick={() => setShowPw(s => !s)} style={{
+                position: "absolute", right: 0, top: 0, bottom: 0,
+                width: 46, background: "none", border: "none",
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                opacity: 0.32, transition: "opacity 0.15s",
               }}
-            />
-            <svg style={{ position: "absolute", left: 15, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", transition: "opacity 0.2s" }}
-              width="16" height="16" viewBox="0 0 24 24" fill="none" opacity={passwordFocused ? 0.7 : 0.35}>
-              <rect x="5" y="11" width="14" height="10" rx="2.5" stroke={d.text} strokeWidth="1.7" />
-              <path d="M8 11V7a4 4 0 018 0v4" stroke={d.text} strokeWidth="1.7" strokeLinecap="round" />
-            </svg>
-            <button
-              type="button"
-              onClick={() => setShowPw(s => !s)}
-              style={{
-                position: "absolute", right: 13, top: "50%", transform: "translateY(-50%)",
-                background: "none", border: "none", cursor: "pointer",
-                padding: 4, display: "flex", alignItems: "center", justifyContent: "center",
-                opacity: 0.35, transition: "opacity 0.15s",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = "0.65")}
-              onMouseLeave={e => (e.currentTarget.style.opacity = "0.35")}
-            >
-              {showPw
-                ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke={d.text} strokeWidth="1.7" strokeLinecap="round" />
-                  </svg>
-                : <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-                    <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke={d.text} strokeWidth="1.7" />
-                    <circle cx="12" cy="12" r="3" stroke={d.text} strokeWidth="1.7" />
-                  </svg>
-              }
+                onMouseEnter={e => (e.currentTarget.style.opacity = "0.6")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "0.32")}
+              >
+                {showPw
+                  ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke={t.text} strokeWidth="1.7" strokeLinecap="round" />
+                    </svg>
+                  : <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                      <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke={t.text} strokeWidth="1.7" />
+                      <circle cx="12" cy="12" r="3" stroke={t.text} strokeWidth="1.7" />
+                    </svg>
+                }
+              </button>
+            </div>
+            {errors.password && (
+              <p style={{ margin: "5px 4px 0", fontSize: 12.5, color: t.errorFg, letterSpacing: "-0.01em" }}>
+                {errors.password}
+              </p>
+            )}
+          </div>
+
+          {/* Forgot password */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8, marginBottom: 26 }}>
+            <button style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 13.5, color: t.blue, fontWeight: 500,
+              fontFamily: "inherit", letterSpacing: "-0.01em", padding: "2px 0",
+            }}>
+              Forgot Password?
             </button>
           </div>
-          {errors.password && (
-            <p style={{ margin: "6px 4px 0", fontSize: 12, color: d.error, letterSpacing: "-0.01em" }}>{errors.password}</p>
-          )}
+
+          {/* Sign In button */}
+          <button
+            type="button"
+            onPointerDown={() => setBtnScale(0.966)}
+            onPointerUp={() => { setBtnScale(1); handleLogin(); }}
+            onPointerLeave={() => setBtnScale(1)}
+            disabled={loading}
+            style={{
+              width: "100%", height: 54,
+              borderRadius: 14,
+              border: "none",
+              cursor: loading ? "default" : "pointer",
+              background: t.blue,
+              color: t.btnFg,
+              fontSize: 17, fontWeight: 600,
+              letterSpacing: "-0.025em",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transform: `scale(${btnScale})`,
+              transition: "transform 0.14s cubic-bezier(0.22,1,0.36,1), opacity 0.14s",
+              opacity: loading ? 0.72 : 1,
+              fontFamily: "inherit",
+              WebkitAppearance: "none",
+              marginBottom: 16,
+            }}>
+            {loading ? <Spinner /> : "Sign In"}
+          </button>
+
+          {/* Divider */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+            <div style={{ flex: 1, height: 1, background: t.separator }} />
+            <span style={{ fontSize: 12, color: t.textTer, letterSpacing: "0.02em", fontWeight: 500 }}>or</span>
+            <div style={{ flex: 1, height: 1, background: t.separator }} />
+          </div>
+
+          {/* Create account — text link only, Apple style */}
+          <div style={{ textAlign: "center" }}>
+            <span style={{ fontSize: 15, color: t.textSub, letterSpacing: "-0.015em" }}>
+              Don't have an account?{" "}
+            </span>
+            <button style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 15, color: t.blue, fontWeight: 600,
+              fontFamily: "inherit", letterSpacing: "-0.015em",
+              padding: 0, display: "inline",
+            }}>
+              Sign Up
+            </button>
+          </div>
         </div>
-
-        {/* Log In button */}
-        <button
-          type="button"
-          onPointerDown={() => setBtnPressed(true)}
-          onPointerUp={() => { setBtnPressed(false); handleLogin(); }}
-          onPointerLeave={() => setBtnPressed(false)}
-          disabled={loading}
-          style={{
-            width: "100%", height: 52,
-            borderRadius: 14, border: "none",
-            cursor: loading ? "default" : "pointer",
-            background: d.btnBg,
-            color: "#fff",
-            fontSize: 16, fontWeight: 600,
-            letterSpacing: "-0.02em",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            transform: btnPressed ? "scale(0.968)" : "scale(1)",
-            transition: "transform 0.15s cubic-bezier(0.22,1,0.36,1), opacity 0.15s",
-            opacity: loading ? 0.75 : 1,
-            boxShadow: "0 4px 24px rgba(88,86,214,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
-            fontFamily: "inherit",
-          }}>
-          {loading
-            ? <Spinner />
-            : "Sign In"
-          }
-        </button>
-
-        {/* Divider */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0" }}>
-          <div style={{ flex: 1, height: 1, background: d.border }} />
-          <span style={{ fontSize: 12, color: d.subtext, letterSpacing: "0.03em" }}>or</span>
-          <div style={{ flex: 1, height: 1, background: d.border }} />
-        </div>
-
-        {/* Create account button */}
-        <button
-          type="button"
-          style={{
-            width: "100%", height: 52,
-            borderRadius: 14,
-            border: `1.5px solid ${d.btnSecBorder}`,
-            background: dark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.7)",
-            cursor: "pointer",
-            color: d.btnSecText,
-            fontSize: 16, fontWeight: 600,
-            letterSpacing: "-0.02em",
-            fontFamily: "inherit",
-            transition: "all 0.18s cubic-bezier(0.22,1,0.36,1)",
-            backdropFilter: "blur(10px)",
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLButtonElement).style.background = dark ? "rgba(255,255,255,0.09)" : "rgba(255,255,255,0.95)";
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLButtonElement).style.background = dark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.7)";
-          }}
-        >
-          Create an Account
-        </button>
-
       </div>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        input::placeholder { color: ${dark ? "rgba(245,245,247,0.28)" : "rgba(29,29,31,0.28)"}; }
-        * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        input[type="email"]::placeholder,
+        input[type="password"]::placeholder,
+        input[type="text"]::placeholder {
+          color: ${t.placeholder};
+        }
       `}</style>
     </div>
   );
@@ -356,35 +350,24 @@ export function LoginPage({ onBack }: Props) {
 function Spinner() {
   return (
     <span style={{
-      width: 19, height: 19, borderRadius: "50%",
-      border: "2.2px solid rgba(255,255,255,0.3)",
+      width: 20, height: 20, borderRadius: "50%",
+      border: "2.5px solid rgba(255,255,255,0.35)",
       borderTopColor: "#fff",
       display: "inline-block",
-      animation: "spin 0.7s linear infinite",
+      animation: "spin 0.72s linear infinite",
     }} />
   );
 }
 
-function IconBtn({ onClick, dark, icon }: { onClick?: () => void; dark: boolean; icon: React.ReactNode }) {
+function PillBtn({ onClick, color, children }: { onClick?: () => void; color: string; children: React.ReactNode }) {
   return (
-    <button
-      onClick={onClick}
-      style={{
-        width: 36, height: 36, borderRadius: "50%", border: "none",
-        cursor: "pointer",
-        background: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
-        backdropFilter: "blur(10px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        transition: "background 0.15s",
-      }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLButtonElement).style.background = dark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.1)";
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLButtonElement).style.background = dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
-      }}
-    >
-      {icon}
+    <button onClick={onClick} style={{
+      display: "flex", alignItems: "center", gap: 5,
+      height: 32, padding: "0 12px 0 8px",
+      background: color, border: "none",
+      borderRadius: 999, cursor: "pointer",
+    }}>
+      {children}
     </button>
   );
 }
