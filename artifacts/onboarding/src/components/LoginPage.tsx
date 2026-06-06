@@ -1,12 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
-/* ── Design tokens ─────────────────────────────────────────────────── */
-const C = {
-  indigo:      "#6366F1",
-  indigoLight: "#818CF8",
-  error:       "#EF4444",
-  emerald:     "#10B981",
-};
+const indigo = "#6366F1";
+const error  = "#EF4444";
 
 function useDark() {
   const [dark, setDark] = useState(
@@ -21,373 +16,275 @@ function useDark() {
   return [dark, setDark] as const;
 }
 
-/* ── Input component ───────────────────────────────────────────────── */
-function Field({
-  label, type = "text", value, onChange, placeholder, error,
-  dark, border, pri, sec,
-  suffix,
-}: {
-  label: string; type?: string; value: string;
-  onChange: (v: string) => void; placeholder: string;
-  error?: string; dark: boolean; border: string; pri: string; sec: string;
-  suffix?: React.ReactNode;
-}) {
-  const [focused, setFocused] = useState(false);
-  const bColor = error ? C.error : focused ? C.indigo : border;
-  const bg = dark ? "#0F0F1E" : "#F8F8FC";
-
-  return (
-    <div style={{ marginBottom: error ? 6 : 18 }}>
-      <label style={{
-        display: "block", fontSize: 12, fontWeight: 600, letterSpacing: .3,
-        textTransform: "uppercase", color: sec, marginBottom: 8,
-      }}>{label}</label>
-      <div style={{ position: "relative" }}>
-        <input
-          type={type}
-          value={value}
-          placeholder={placeholder}
-          onChange={e => onChange(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          style={{
-            width: "100%", boxSizing: "border-box",
-            height: 52,
-            padding: suffix ? "0 48px 0 16px" : "0 16px",
-            background: bg,
-            border: `1.5px solid ${bColor}`,
-            borderRadius: 12, fontSize: 15,
-            color: pri, outline: "none",
-            fontFamily: "inherit",
-            transition: "border-color .18s, box-shadow .18s",
-            boxShadow: focused ? `0 0 0 3px ${C.indigo}22` : "none",
-          }}
-        />
-        {suffix && (
-          <div style={{
-            position: "absolute", right: 0, top: 0, height: "100%",
-            display: "flex", alignItems: "center", paddingRight: 14,
-          }}>{suffix}</div>
-        )}
-      </div>
-      {error && (
-        <p style={{
-          margin: "6px 0 12px", fontSize: 12, color: C.error,
-          display: "flex", alignItems: "center", gap: 5,
-        }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke={C.error} strokeWidth="2"/>
-            <path d="M12 8v4M12 16h.01" stroke={C.error} strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-/* ── Eye toggle ────────────────────────────────────────────────────── */
-function EyeToggle({ show, onToggle, sec }: { show: boolean; onToggle: () => void; sec: string }) {
-  return (
-    <button type="button" onClick={onToggle} style={{
-      background: "none", border: "none", cursor: "pointer",
-      padding: 4, color: sec, display: "flex", lineHeight: 1,
-    }}>
-      {show
-        ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke={sec} strokeWidth="1.8" strokeLinecap="round"/>
-          </svg>
-        : <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke={sec} strokeWidth="1.8"/>
-            <circle cx="12" cy="12" r="3" stroke={sec} strokeWidth="1.8"/>
-          </svg>
-      }
-    </button>
-  );
-}
-
-/* ── Main ──────────────────────────────────────────────────────────── */
-export function LoginPage({
-  onBack,
-  onSignup,
-}: {
+interface Props {
   onBack?: () => void;
-  onSignup?: () => void;
-}) {
+}
+
+export function LoginPage({ onBack }: Props) {
   const [dark, setDark] = useDark();
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw]     = useState(false);
-  const [errors, setErrors]     = useState<Record<string, string>>({});
+  const [errors, setErrors]     = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading]   = useState(false);
-  const [btnScale, setBtnScale] = useState(1);
-  const [entered, setEntered]   = useState(false);
+  const [scale, setScale]       = useState(1);
+  const mounted = useRef(false);
 
-  useEffect(() => { requestAnimationFrame(() => setEntered(true)); }, []);
+  // Entry animation
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    requestAnimationFrame(() => setEntered(true));
+  }, []);
 
-  /* tokens */
-  const bg      = dark ? "#080810" : "#F2F2F7";
-  const surface = dark ? "#12121E" : "#FFFFFF";
-  const border  = dark ? "#252538" : "#E2E2EC";
-  const pri     = dark ? "#EEEEF8" : "#0A0A18";
-  const sec     = dark ? "#7070A0" : "#6868A0";
-  const muted   = dark ? "#3A3A58" : "#C8C8DC";
+  const bg      = dark ? "#0C0C14" : "#F5F5F9";
+  const surface = dark ? "#14141F" : "#FFFFFF";
+  const border  = dark ? "#2A2A3D" : "#E8E8EF";
+  const pri     = dark ? "#F0F0F8" : "#0D0D1A";
+  const sec     = dark ? "#8888AA" : "#6B6B88";
+  const cardSh  = dark
+    ? "0 2px 40px rgba(0,0,0,.5)"
+    : "0 2px 32px rgba(0,0,0,.07)";
 
   function validate() {
-    const e: Record<string, string> = {};
-    if (!email.trim()) e.email = "Email address is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Enter a valid email address.";
+    const e: typeof errors = {};
+    if (!email.trim()) e.email = "Email is required.";
+    else if (!email.includes("@")) e.email = "Enter a valid email address.";
     if (!password) e.password = "Password is required.";
     else if (password.length < 6) e.password = "Password must be at least 6 characters.";
     setErrors(e);
-    return !Object.keys(e).length;
+    return Object.keys(e).length === 0;
   }
 
   async function handleLogin() {
     if (!validate()) return;
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1400));
+    // Placeholder — replace with real Back4App call
+    await new Promise(r => setTimeout(r, 1200));
     setLoading(false);
+    // TODO: navigate to dashboard / success
   }
 
   return (
     <div style={{
-      width: "100vw", minHeight: "100dvh", background: bg,
-      fontFamily: "'Inter',-apple-system,'Helvetica Neue',sans-serif",
+      width: "100vw", height: "100dvh", background: bg, overflow: "auto",
       display: "flex", flexDirection: "column",
+      fontFamily: "'Inter',-apple-system,'Helvetica Neue',sans-serif",
       opacity: entered ? 1 : 0,
-      transform: entered ? "none" : "translateY(20px)",
-      transition: "opacity .45s cubic-bezier(.22,1,.36,1), transform .45s cubic-bezier(.22,1,.36,1)",
+      transform: entered ? "translateY(0)" : "translateY(18px)",
+      transition: "opacity .42s cubic-bezier(.22,1,.36,1), transform .42s cubic-bezier(.22,1,.36,1)",
     }}>
 
-      {/* ── Nav bar ── */}
-      <nav style={{
+      {/* Top bar */}
+      <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "20px clamp(20px,5vw,32px)",
-        position: "sticky", top: 0, zIndex: 10,
-        backdropFilter: "blur(24px)",
-        background: dark ? "rgba(8,8,16,.7)" : "rgba(242,242,247,.7)",
-        borderBottom: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}`,
+        padding: "clamp(40px,10vw,56px) clamp(18px,5vw,24px) 0",
+        flexShrink: 0,
       }}>
         {/* Back */}
         <button onClick={onBack} style={{
-          display: "flex", alignItems: "center", gap: 6,
-          background: "none", border: "none", cursor: "pointer",
-          color: sec, fontSize: 14, fontWeight: 500, padding: 0,
+          width: 34, height: 34, borderRadius: "50%", border: "none", cursor: "pointer",
+          background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
+          display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M19 12H5M12 5l-7 7 7 7" stroke={sec} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Back
         </button>
 
-        {/* Logo mark */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: 8,
-            background: `linear-gradient(135deg, ${C.indigo}, #818CF8)`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="1.8"/>
-              <path d="M12 7v5l3 2" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-.02em", color: pri }}>
-            Attendance
-          </span>
-        </div>
-
-        {/* Theme toggle */}
+        {/* Dark/light toggle */}
         <button onClick={() => setDark(d => !d)} style={{
-          width: 32, height: 32, borderRadius: "50%",
+          width: 34, height: 34, borderRadius: "50%", border: "none", cursor: "pointer",
           background: dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.06)",
-          border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           {dark
-            ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="4" fill={sec}/>
-                <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke={sec} strokeWidth="2" strokeLinecap="round"/>
+            ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="5" fill="rgba(255,255,255,.55)" />
+                <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+                  stroke="rgba(255,255,255,.55)" strokeWidth="2" strokeLinecap="round" />
               </svg>
-            : <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill={sec}/>
+            : <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="rgba(0,0,0,.45)" />
               </svg>
           }
         </button>
-      </nav>
+      </div>
 
-      {/* ── Content ── */}
+      {/* Card */}
       <div style={{
         flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "clamp(24px,5vw,48px) clamp(20px,5vw,24px)",
+        padding: "clamp(20px,5vw,40px) clamp(18px,5vw,24px) clamp(28px,7vw,44px)",
       }}>
-        <div style={{ width: "100%", maxWidth: 420 }}>
+        <div style={{
+          width: "100%", maxWidth: 400,
+          background: surface,
+          border: `1px solid ${border}`,
+          borderRadius: "clamp(20px,5vw,28px)",
+          padding: "clamp(28px,7vw,40px) clamp(24px,6vw,36px)",
+          boxShadow: cardSh,
+        }}>
+          {/* App icon */}
+          <div style={{
+            width: 52, height: 52, borderRadius: 15,
+            background: dark ? "#1C1C2A" : "#F5F5F9",
+            border: `1px solid ${border}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            marginBottom: 28,
+            boxShadow: dark ? "0 4px 20px rgba(0,0,0,.3)" : "0 4px 16px rgba(0,0,0,.05)",
+          }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke={indigo} strokeWidth="1.5" />
+              <path d="M12 6v6l4 2" stroke={indigo} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
 
-          {/* Header */}
-          <div style={{ marginBottom: 36 }}>
-            {/* Icon */}
-            <div style={{
-              width: 56, height: 56, borderRadius: 16, marginBottom: 24,
-              background: `linear-gradient(135deg, ${C.indigo}22, ${C.indigoLight}22)`,
-              border: `1px solid ${C.indigo}33`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: `0 8px 24px ${C.indigo}20`,
-            }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="9" stroke={C.indigo} strokeWidth="1.8"/>
-                <path d="M12 7v5l3 2" stroke={C.indigo} strokeWidth="1.8" strokeLinecap="round"/>
+          {/* Heading */}
+          <h1 style={{
+            fontSize: "clamp(24px,6.5vw,30px)", fontWeight: 800,
+            letterSpacing: "-.03em", lineHeight: 1.1,
+            color: pri, margin: "0 0 8px",
+          }}>Welcome back</h1>
+          <p style={{
+            fontSize: "clamp(13px,3.5vw,15px)", color: sec,
+            lineHeight: 1.55, margin: "0 0 32px",
+          }}>Sign in to your account to continue.</p>
+
+          {/* Email field */}
+          <label style={{ display: "block", marginBottom: 20 }}>
+            <span style={{
+              display: "block", fontSize: 12, fontWeight: 600,
+              letterSpacing: .1, color: pri, marginBottom: 7,
+            }}>Email</span>
+            <div style={{ position: "relative" }}>
+              <input
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setErrors(v => ({ ...v, email: undefined })); }}
+                placeholder="you@company.com"
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  padding: "14px 16px 14px 42px",
+                  background: dark ? "#1C1C2A" : "#F5F5F9",
+                  border: `1.5px solid ${errors.email ? error : border}`,
+                  borderRadius: 14, fontSize: 15, color: pri,
+                  outline: "none", fontFamily: "inherit",
+                  transition: "border-color .15s",
+                }}
+                onFocus={e => { if (!errors.email) e.target.style.borderColor = indigo; }}
+                onBlur={e => { e.target.style.borderColor = errors.email ? error : border; }}
+              />
+              <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+                width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="4" width="20" height="16" rx="3" stroke={sec} strokeWidth="1.6" />
+                <path d="M2 8l10 7 10-7" stroke={sec} strokeWidth="1.6" strokeLinecap="round" />
               </svg>
             </div>
+            {errors.email && <p style={{ margin: "6px 0 0", fontSize: 12, color: error }}>{errors.email}</p>}
+          </label>
 
-            <h1 style={{
-              fontSize: "clamp(26px,7vw,32px)", fontWeight: 800,
-              letterSpacing: "-.04em", lineHeight: 1.08,
-              color: pri, margin: "0 0 10px",
-            }}>Sign in to your<br/>account</h1>
-            <p style={{ fontSize: 15, color: sec, lineHeight: 1.6, margin: 0 }}>
-              Welcome back. Enter your credentials to continue.
-            </p>
-          </div>
-
-          {/* ── Form card ── */}
-          <div style={{
-            background: surface,
-            border: `1px solid ${border}`,
-            borderRadius: 20,
-            padding: "clamp(24px,6vw,32px)",
-            boxShadow: dark
-              ? "0 4px 48px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.04) inset"
-              : "0 4px 32px rgba(0,0,0,.06), 0 1px 0 rgba(255,255,255,.8) inset",
-            marginBottom: 20,
-          }}>
-            <Field
-              label="Email address"
-              type="email"
-              value={email}
-              onChange={v => { setEmail(v); setErrors(e => ({ ...e, email: "" })); }}
-              placeholder="you@company.com"
-              error={errors.email}
-              dark={dark} border={border} pri={pri} sec={sec}
-            />
-
-            <Field
-              label="Password"
-              type={showPw ? "text" : "password"}
-              value={password}
-              onChange={v => { setPassword(v); setErrors(e => ({ ...e, password: "" })); }}
-              placeholder="Enter your password"
-              error={errors.password}
-              dark={dark} border={border} pri={pri} sec={sec}
-              suffix={<EyeToggle show={showPw} onToggle={() => setShowPw(s => !s)} sec={sec} />}
-            />
-
-            {/* Forgot password */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
-              <button style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 13, color: C.indigo, fontWeight: 500, padding: 0,
-                fontFamily: "inherit",
+          {/* Password field */}
+          <label style={{ display: "block", marginBottom: 28 }}>
+            <span style={{
+              display: "block", fontSize: 12, fontWeight: 600,
+              letterSpacing: .1, color: pri, marginBottom: 7,
+            }}>Password</span>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPw ? "text" : "password"}
+                value={password}
+                onChange={e => { setPassword(e.target.value); setErrors(v => ({ ...v, password: undefined })); }}
+                placeholder="••••••••"
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  padding: "14px 44px 14px 42px",
+                  background: dark ? "#1C1C2A" : "#F5F5F9",
+                  border: `1.5px solid ${errors.password ? error : border}`,
+                  borderRadius: 14, fontSize: 15, color: pri,
+                  outline: "none", fontFamily: "inherit",
+                  transition: "border-color .15s",
+                }}
+                onFocus={e => { if (!errors.password) e.target.style.borderColor = indigo; }}
+                onBlur={e => { e.target.style.borderColor = errors.password ? error : border; }}
+              />
+              {/* Lock icon */}
+              <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+                width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="11" width="14" height="10" rx="2" stroke={sec} strokeWidth="1.6" />
+                <path d="M8 11V7a4 4 0 018 0v4" stroke={sec} strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+              {/* Eye toggle */}
+              <button onClick={() => setShowPw(s => !s)} style={{
+                position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                background: "none", border: "none", cursor: "pointer", padding: 4,
+                color: sec, display: "flex",
               }}>
-                Forgot password?
+                {showPw
+                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke={sec} strokeWidth="1.6" strokeLinecap="round" />
+                    </svg>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke={sec} strokeWidth="1.6" />
+                      <circle cx="12" cy="12" r="3" stroke={sec} strokeWidth="1.6" />
+                    </svg>
+                }
               </button>
             </div>
+            {errors.password && <p style={{ margin: "6px 0 0", fontSize: 12, color: error }}>{errors.password}</p>}
+          </label>
 
-            {/* Login button */}
-            <button
-              onPointerDown={() => setBtnScale(.97)}
-              onPointerUp={() => { setBtnScale(1); handleLogin(); }}
-              onPointerLeave={() => setBtnScale(1)}
-              disabled={loading}
-              style={{
-                width: "100%", height: 52, borderRadius: 14,
-                border: "none", cursor: loading ? "not-allowed" : "pointer",
-                background: `linear-gradient(135deg, ${C.indigo}, #818CF8)`,
-                color: "#fff", fontSize: 15, fontWeight: 700,
-                letterSpacing: "-.02em", fontFamily: "inherit",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                transform: `scale(${btnScale})`,
-                transition: "transform .12s",
-                opacity: loading ? 0.8 : 1,
-                boxShadow: `0 4px 20px ${C.indigo}44, 0 1px 0 rgba(255,255,255,.15) inset`,
-              }}>
-              {loading
-                ? <span style={{
-                    width: 18, height: 18, borderRadius: "50%",
-                    border: "2.5px solid rgba(255,255,255,.4)",
-                    borderTopColor: "#fff",
-                    display: "inline-block",
-                    animation: "spin .7s linear infinite",
-                  }} />
-                : <>
-                    Sign In
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginLeft: 6 }}>
-                      <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </>
-              }
-            </button>
-          </div>
+          {/* Login button */}
+          <button
+            onPointerDown={() => setScale(.967)}
+            onPointerUp={() => { setScale(1); handleLogin(); }}
+            onPointerLeave={() => setScale(1)}
+            disabled={loading}
+            style={{
+              width: "100%", height: "clamp(50px,13vw,56px)",
+              borderRadius: 16, border: "none", cursor: loading ? "default" : "pointer",
+              background: dark ? "rgba(240,240,248,.93)" : "rgba(13,13,26,.88)",
+              color: dark ? "#0D0D1A" : "#fff",
+              fontSize: 15, fontWeight: 700, letterSpacing: "-.02em",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transform: `scale(${scale})`,
+              transition: "transform .12s",
+              opacity: loading ? 0.7 : 1,
+              boxShadow: dark ? "0 2px 20px rgba(255,255,255,.06)" : "0 2px 20px rgba(0,0,0,.08)",
+            }}>
+            {loading
+              ? <span style={{
+                  width: 18, height: 18, borderRadius: "50%",
+                  border: "2px solid currentColor",
+                  borderTopColor: "transparent",
+                  display: "inline-block",
+                  animation: "spin .7s linear infinite",
+                }} />
+              : "Log In"
+            }
+          </button>
 
-          {/* Trust badges */}
+          {/* Divider */}
           <div style={{
-            display: "flex", justifyContent: "center", gap: 20, marginBottom: 28,
+            display: "flex", alignItems: "center", gap: 12, margin: "20px 0",
           }}>
-            {[
-              { icon: "🔒", label: "256-bit encrypted" },
-              { icon: "✓",  label: "Verified access" },
-            ].map(b => (
-              <div key={b.label} style={{
-                display: "flex", alignItems: "center", gap: 5,
-              }}>
-                <span style={{ fontSize: 11 }}>{b.icon}</span>
-                <span style={{ fontSize: 11, color: muted, fontWeight: 500 }}>{b.label}</span>
-              </div>
-            ))}
+            <div style={{ flex: 1, height: 1, background: border }} />
+            <span style={{ fontSize: 12, color: sec }}>or</span>
+            <div style={{ flex: 1, height: 1, background: border }} />
           </div>
 
           {/* Sign up link */}
-          <div style={{
-            textAlign: "center",
-            padding: "18px 24px",
-            background: dark ? "rgba(99,102,241,.07)" : "rgba(99,102,241,.05)",
-            borderRadius: 14,
-            border: `1px solid ${dark ? "rgba(99,102,241,.15)" : "rgba(99,102,241,.12)"}`,
+          <button style={{
+            width: "100%", height: "clamp(48px,12vw,52px)",
+            borderRadius: 16, border: `1px solid ${border}`,
+            background: "transparent", cursor: "pointer",
+            color: indigo, fontSize: 15, fontWeight: 600, letterSpacing: "-.01em",
+            fontFamily: "inherit",
           }}>
-            <span style={{ fontSize: 14, color: sec }}>New to Attendance App? </span>
-            <button
-              onClick={onSignup}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 14, color: C.indigo, fontWeight: 700,
-                letterSpacing: "-.01em", padding: 0, fontFamily: "inherit",
-              }}>
-              Create an account →
-            </button>
-          </div>
-
+            Create an account
+          </button>
         </div>
       </div>
 
-      {/* Footer */}
-      <div style={{
-        padding: "16px 24px",
-        textAlign: "center",
-        borderTop: `1px solid ${dark ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.04)"}`,
-      }}>
-        <p style={{ fontSize: 12, color: muted, margin: 0 }}>
-          © 2025 Attendance App · Secure Employee Portal
-        </p>
-      </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        input::placeholder { color: ${muted}; }
-        input:-webkit-autofill {
-          -webkit-box-shadow: 0 0 0 100px ${dark ? "#0F0F1E" : "#F8F8FC"} inset !important;
-          -webkit-text-fill-color: ${pri} !important;
-        }
-      `}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
