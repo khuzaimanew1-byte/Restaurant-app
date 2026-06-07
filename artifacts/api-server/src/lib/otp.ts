@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 export const OTP_TTL_SECONDS = 300;
 
 export function generateOtp(): string {
-  return String(randomInt(100000, 999999));
+  return String(randomInt(100000, 1000000));
 }
 
 export async function hashOtp(otp: string): Promise<string> {

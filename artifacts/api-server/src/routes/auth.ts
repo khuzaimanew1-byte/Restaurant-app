@@ -247,13 +247,32 @@ router.post("/verify-otp", async (req, res) => {
 });
 
 /* ── POST /api/auth/resend-otp ───────────────────────────────────
-   Only generates a new OTP if no active session exists.
+   Only generates a new OTP if: user exists, has no password (OTP flow),
+   and no active session is present.
 */
 router.post("/resend-otp", async (req, res) => {
   try {
     const { email } = req.body as { email?: string };
     if (!email?.trim()) {
       res.status(400).json({ error: "VALIDATION", message: "Email is required." });
+      return;
+    }
+
+    /* Guard: user must exist and must be in OTP flow (no password set) */
+    const user = await findUserByEmail(email.trim());
+    if (!user) {
+      res.status(404).json({
+        error: "EMAIL_NOT_REGISTERED",
+        field: "email",
+        message: "This email is not registered.",
+      });
+      return;
+    }
+    if (user.passwordHash) {
+      res.status(400).json({
+        error: "NOT_OTP_USER",
+        message: "This account uses a password. Please sign in normally.",
+      });
       return;
     }
 
