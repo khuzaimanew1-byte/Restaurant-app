@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { getTokens } from "../lib/colors";
 
 interface Props {
   onBack?: () => void;
@@ -9,36 +8,30 @@ export function LoginPage({ onBack: _onBack }: Props) {
   const [dark, setDark] = useState(
     () => window.matchMedia("(prefers-color-scheme:dark)").matches
   );
-  const [email, setEmail]       = useState("");
-  const [password, setPassword] = useState("");
-  const [showPw, setShowPw]     = useState(false);
-  const [errors, setErrors]     = useState<{ email?: string; password?: string }>({});
-  const [loading, setLoading]   = useState(false);
-  const [emailFocused, setEmailFocused]       = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
-  const [btnScale, setBtnScale] = useState(1);
-  const [ready, setReady]       = useState(false);
-
-  useEffect(() => {
-    const id = setTimeout(() => setReady(true), 60);
-    return () => clearTimeout(id);
-  }, []);
+  const [email, setEmail]         = useState("");
+  const [password, setPassword]   = useState("");
+  const [showPw, setShowPw]       = useState(false);
+  const [emailFocused, setEF]     = useState(false);
+  const [passwordFocused, setPF]  = useState(false);
+  const [errors, setErrors]       = useState<{ email?: string; pw?: string }>({});
+  const [loading, setLoading]     = useState(false);
+  const [btnScale, setBtnScale]   = useState(1);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme:dark)");
-    const h = (e: MediaQueryListEvent) => setDark(e.matches);
+    const h  = (e: MediaQueryListEvent) => setDark(e.matches);
     mq.addEventListener("change", h);
     return () => mq.removeEventListener("change", h);
   }, []);
 
   function validate() {
     const e: typeof errors = {};
-    if (!email.trim()) e.email = "Email is required";
-    else if (!email.includes("@")) e.email = "Enter a valid email address";
-    if (!password) e.password = "Password is required";
-    else if (password.length < 6) e.password = "At least 6 characters";
+    if (!email.trim())       e.email = "Email is required";
+    else if (!email.includes("@")) e.email = "Enter a valid email";
+    if (!password)           e.pw = "Password is required";
+    else if (password.length < 6) e.pw = "At least 6 characters";
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return !e.email && !e.pw;
   }
 
   async function handleLogin() {
@@ -48,38 +41,80 @@ export function LoginPage({ onBack: _onBack }: Props) {
     setLoading(false);
   }
 
-  const c = getTokens(dark);
+  /* ── Tokens ── */
+  const emailActive    = emailFocused    || !!email;
+  const passwordActive = passwordFocused || !!password;
 
-  /* ── Derived auth-specific tokens ── */
-  const authBg       = dark ? "#06051A" : "#F6F5FF";
-  const orbColor1    = dark ? "rgba(79,70,229,0.32)"  : "rgba(79,70,229,0.13)";
-  const orbColor2    = dark ? "rgba(99,88,255,0.18)"  : "rgba(120,113,238,0.09)";
-  const orbColor3    = dark ? "rgba(55,48,163,0.22)"  : "rgba(79,70,229,0.07)";
-  const headingColor = dark ? "rgba(238,237,255,0.96)" : "#0D0B1E";
-  const subColor     = dark ? "rgba(200,197,245,0.5)"  : "rgba(13,11,30,0.44)";
-  const labelColor   = dark ? "rgba(200,197,245,0.38)" : "rgba(13,11,30,0.36)";
-  const inputTextCol = dark ? "rgba(238,237,255,0.92)" : "#0D0B1E";
-  const ulineDefault = dark ? "rgba(255,255,255,0.12)" : "rgba(13,11,30,0.14)";
-  const ulineAccent  = dark ? "#7872F0" : "#4F46E5";
-  const ulineError   = dark ? "#F87171" : "#DC2626";
-  const iconMuted    = dark ? "rgba(200,197,245,0.3)"  : "rgba(13,11,30,0.28)";
-  const iconActive   = dark ? "#7872F0" : "#4F46E5";
-  const placeholderCol = dark ? "rgba(200,197,245,0.28)" : "rgba(13,11,30,0.28)";
-  const forgotColor  = dark ? "#9D98F5" : "#4F46E5";
-  const dividerColor = dark ? "rgba(255,255,255,0.08)" : "rgba(13,11,30,0.1)";
-  const dividerText  = dark ? "rgba(200,197,245,0.28)" : "rgba(13,11,30,0.3)";
-  const signupText   = dark ? "rgba(200,197,245,0.45)" : "rgba(13,11,30,0.44)";
+  const bg = dark
+    ? "#06051C"
+    : "linear-gradient(145deg,#EBEBFF 0%,#F2F1FF 22%,#F8F8FF 52%,#FEFEFF 100%)";
 
-  const btnBg  = dark ? "linear-gradient(135deg,#5E57F0 0%,#4338CA 100%)"
-                      : "linear-gradient(135deg,#6560EE 0%,#4338CA 100%)";
-  const btnShadow = dark
-    ? "0 8px 32px rgba(79,70,229,0.55), 0 2px 8px rgba(79,70,229,0.3)"
-    : "0 6px 24px rgba(79,70,229,0.38), 0 2px 6px rgba(79,70,229,0.2)";
+  const orb1 = dark ? "rgba(79,70,229,0.38)"  : "rgba(79,70,229,0.15)";
+  const orb2 = dark ? "rgba(107,99,240,0.22)" : "rgba(107,99,240,0.11)";
+  const orb3 = dark ? "rgba(55,48,163,0.18)"  : "rgba(79,70,229,0.08)";
+
+  const headClr = dark ? "rgba(238,237,255,0.97)" : "#0C0A1E";
+  const subClr  = dark ? "rgba(200,197,245,0.48)" : "rgba(13,11,30,0.42)";
+
+  const accent      = dark ? "#8078F2" : "#4F46E5";
+  const accentBtn   = dark
+    ? "linear-gradient(135deg,#6A62EE 0%,#4C44C8 100%)"
+    : "linear-gradient(135deg,#5F58EE 0%,#3E37C0 100%)";
+  const accentShadow = dark
+    ? "0 10px 36px rgba(79,70,229,0.55), 0 3px 10px rgba(79,70,229,0.3)"
+    : "0 8px 28px rgba(79,70,229,0.38), 0 2px 8px rgba(79,70,229,0.18)";
+
+  const idleLabelClr = dark ? "rgba(200,197,245,0.38)" : "rgba(13,11,30,0.36)";
+  const inputTextClr = dark ? "rgba(238,237,255,0.92)" : "#0C0A1E";
+  const baseLine     = dark ? "rgba(255,255,255,0.1)"  : "rgba(13,11,30,0.12)";
+  const iconIdleClr  = dark ? "rgba(200,197,245,0.32)" : "rgba(13,11,30,0.28)";
+  const errorClr     = dark ? "#F87171" : "#DC2626";
+  const placeholderC = dark ? "rgba(200,197,245,0.2)"  : "rgba(13,11,30,0.22)";
+  const forgotClr    = dark ? "#9992F5" : "#4F46E5";
+  const divClr       = dark ? "rgba(255,255,255,0.08)" : "rgba(13,11,30,0.1)";
+  const divTxtClr    = dark ? "rgba(200,197,245,0.28)" : "rgba(13,11,30,0.3)";
+  const toggleBorder = dark ? "rgba(255,255,255,0.1)"  : "rgba(13,11,30,0.12)";
+  const toggleBg     = dark ? "rgba(255,255,255,0.05)" : "rgba(13,11,30,0.04)";
+  const signupLinkClr = dark ? "#9992F5" : "#4F46E5";
+
+  function labelStyle(active: boolean, focused: boolean, hasError: boolean): React.CSSProperties {
+    return {
+      position: "absolute",
+      left: 0,
+      top: active ? 0 : 24,
+      fontSize: active ? 10 : 15.5,
+      fontWeight: active ? 700 : 400,
+      letterSpacing: active ? "0.09em" : "-0.01em",
+      textTransform: active ? "uppercase" : "none",
+      color: hasError ? errorClr : focused ? accent : active ? (dark ? "rgba(200,197,245,0.55)" : "rgba(13,11,30,0.5)") : idleLabelClr,
+      transition: "top 0.24s cubic-bezier(0.22,1,0.36,1), font-size 0.24s cubic-bezier(0.22,1,0.36,1), color 0.2s, letter-spacing 0.24s, font-weight 0.2s",
+      pointerEvents: "none",
+      whiteSpace: "nowrap",
+    };
+  }
+
+  function sweepStyle(focused: boolean, hasError: boolean): React.CSSProperties {
+    return {
+      position: "absolute",
+      bottom: 0, left: 0,
+      height: 2, borderRadius: 2,
+      width: focused ? "100%" : "0%",
+      background: hasError ? errorClr : accent,
+      transition: "width 0.34s cubic-bezier(0.22,1,0.36,1)",
+    };
+  }
+
+  function iconColor(active: boolean, focused: boolean, hasError: boolean) {
+    if (hasError) return errorClr;
+    if (focused)  return accent;
+    if (active)   return dark ? "rgba(200,197,245,0.55)" : "rgba(13,11,30,0.5)";
+    return iconIdleClr;
+  }
 
   return (
     <div style={{
       width: "100vw", height: "100dvh", overflow: "hidden",
-      background: authBg, position: "relative",
+      background: bg, position: "relative",
       display: "flex", flexDirection: "column",
       fontFamily: "'Inter',-apple-system,'Helvetica Neue',sans-serif",
       WebkitFontSmoothing: "antialiased",
@@ -87,80 +122,60 @@ export function LoginPage({ onBack: _onBack }: Props) {
 
       {/* ── Atmospheric orbs ── */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
-        {/* Primary orb — top-center */}
+        {/* Top-right glow */}
         <div className="auth-orb-a" style={{
           position: "absolute",
-          width: "70vw", height: "70vw",
-          maxWidth: 520, maxHeight: 520,
-          top: "-18%", left: "50%",
-          transform: "translateX(-50%)",
+          width: "80vw", height: "80vw", maxWidth: 560, maxHeight: 560,
+          top: "-24%", right: "-18%",
           borderRadius: "50%",
-          background: `radial-gradient(circle,${orbColor1} 0%,transparent 68%)`,
-          filter: "blur(2px)",
+          background: `radial-gradient(circle,${orb1} 0%,transparent 66%)`,
+          filter: "blur(1px)",
         }} />
-        {/* Secondary orb — bottom-left */}
+        {/* Bottom-left glow */}
         <div className="auth-orb-b" style={{
           position: "absolute",
-          width: "55vw", height: "55vw",
-          maxWidth: 380, maxHeight: 380,
-          bottom: "-12%", left: "-15%",
+          width: "65vw", height: "65vw", maxWidth: 420, maxHeight: 420,
+          bottom: "-16%", left: "-18%",
           borderRadius: "50%",
-          background: `radial-gradient(circle,${orbColor2} 0%,transparent 65%)`,
-          filter: "blur(2px)",
+          background: `radial-gradient(circle,${orb2} 0%,transparent 65%)`,
+          filter: "blur(1px)",
         }} />
-        {/* Tertiary orb — bottom-right */}
+        {/* Center subtle glow */}
         <div className="auth-orb-c" style={{
           position: "absolute",
-          width: "40vw", height: "40vw",
-          maxWidth: 280, maxHeight: 280,
-          bottom: "5%", right: "-8%",
+          width: "50vw", height: "50vw", maxWidth: 340, maxHeight: 340,
+          top: "30%", left: "30%",
           borderRadius: "50%",
-          background: `radial-gradient(circle,${orbColor3} 0%,transparent 65%)`,
-          filter: "blur(2px)",
-        }} />
-        {/* Noise grain overlay */}
-        <div style={{
-          position: "absolute", inset: 0,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")`,
-          backgroundSize: "180px 180px",
-          opacity: dark ? 0.55 : 0.3,
-          mixBlendMode: "overlay",
+          background: `radial-gradient(circle,${orb3} 0%,transparent 65%)`,
         }} />
       </div>
 
       {/* ── Header ── */}
       <header style={{
         position: "relative", zIndex: 10,
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "clamp(16px,4vw,24px) clamp(20px,5vw,32px)",
+        display: "flex", justifyContent: "flex-end",
+        padding: "clamp(16px,4vw,22px) clamp(20px,5vw,28px)",
         flexShrink: 0,
       }}>
-        <span style={{
-          fontSize: 15, fontWeight: 600, letterSpacing: "0.02em",
-          color: dark ? "rgba(200,197,245,0.55)" : "rgba(13,11,30,0.4)",
-          textTransform: "uppercase",
-        }}>
-          Login
-        </span>
         <button
           onClick={() => setDark(v => !v)}
           style={{
-            width: 34, height: 34, borderRadius: "50%",
-            border: `1px solid ${dark ? "rgba(255,255,255,0.1)" : "rgba(13,11,30,0.1)"}`,
-            background: dark ? "rgba(255,255,255,0.05)" : "rgba(13,11,30,0.04)",
+            width: 36, height: 36, borderRadius: "50%",
+            border: `1px solid ${toggleBorder}`,
+            background: toggleBg,
             cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "border-color 0.2s, background 0.2s",
+            transition: "background 0.2s",
           }}
         >
           {dark
             ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="5" fill={iconMuted} />
+                <circle cx="12" cy="12" r="5" fill={iconIdleClr} />
                 <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-                  stroke={iconMuted} strokeWidth="2" strokeLinecap="round" />
+                  stroke={iconIdleClr} strokeWidth="2" strokeLinecap="round" />
               </svg>
             : <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill={iconMuted} />
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill={iconIdleClr} />
               </svg>
           }
         </button>
@@ -170,170 +185,167 @@ export function LoginPage({ onBack: _onBack }: Props) {
       <div style={{
         flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
         position: "relative", zIndex: 1,
-        padding: "0 clamp(28px,8vw,40px)",
+        padding: "0 clamp(28px,8vw,44px) clamp(20px,5vw,40px)",
       }}>
-        <div style={{
-          width: "100%", maxWidth: 360,
-          opacity: ready ? 1 : 0,
-          transform: ready ? "none" : "translateY(16px)",
-          transition: "opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1)",
-        }}>
+        <div style={{ width: "100%", maxWidth: 348 }}>
 
-          {/* Title block */}
-          <div className="auth-row" style={{ animationDelay: "0.05s", marginBottom: 8 }}>
+          {/* Heading */}
+          <div className="auth-item auth-d0">
             <h1 style={{
-              fontSize: "clamp(28px,7vw,34px)", fontWeight: 800,
-              letterSpacing: "-0.04em", lineHeight: 1.08,
-              color: headingColor, margin: 0,
-            }}>
-              Welcome back
-            </h1>
+              fontSize: "clamp(34px,8vw,42px)", fontWeight: 800,
+              letterSpacing: "-0.045em", lineHeight: 1.05,
+              color: headClr, margin: "0 0 10px",
+            }}>Login</h1>
           </div>
-          <div className="auth-row" style={{ animationDelay: "0.1s", marginBottom: "clamp(36px,8vw,48px)" }}>
+          <div className="auth-item auth-d1" style={{ marginBottom: "clamp(36px,9vw,52px)" }}>
             <p style={{
-              fontSize: 15, color: subColor,
+              fontSize: 15, color: subClr,
               lineHeight: 1.5, margin: 0,
               letterSpacing: "-0.01em",
-            }}>
-              Sign in to your account to continue
-            </p>
+            }}>Enter your credentials to continue</p>
           </div>
 
-          {/* Email */}
-          <div className="auth-row" style={{ animationDelay: "0.16s", marginBottom: "clamp(22px,5vw,30px)" }}>
-            <label style={{
-              display: "block", fontSize: 11, fontWeight: 600,
-              letterSpacing: "0.08em", textTransform: "uppercase",
-              color: emailFocused ? ulineAccent : labelColor,
-              marginBottom: 10,
-              transition: "color 0.2s",
-            }}>Email</label>
-            <div className="uline-wrap" style={{
-              position: "relative",
-              "--uline-accent": errors.email ? ulineError : ulineAccent,
-            } as React.CSSProperties}>
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <svg style={{ flexShrink: 0, marginRight: 12, transition: "opacity 0.2s" }}
-                  width="15" height="15" viewBox="0 0 24 24" fill="none"
-                  opacity={emailFocused ? 1 : 0.45}>
-                  <rect x="2" y="4" width="20" height="16" rx="3"
-                    stroke={emailFocused ? ulineAccent : iconMuted} strokeWidth="1.8" />
-                  <path d="M2 8l10 7 10-7"
-                    stroke={emailFocused ? ulineAccent : iconMuted} strokeWidth="1.8" strokeLinecap="round" />
+          {/* ── Email field ── */}
+          <div className="auth-item auth-d2" style={{ marginBottom: "clamp(28px,6vw,38px)" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 14 }}>
+              {/* Icon */}
+              <div style={{
+                paddingBottom: 12, flexShrink: 0,
+                transition: "color 0.22s",
+                color: iconColor(emailActive, emailFocused, !!errors.email),
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="4" width="20" height="16" rx="3" stroke="currentColor" strokeWidth="1.8" />
+                  <path d="M2 8l10 7 10-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
+              </div>
+              {/* Label + input + line */}
+              <div style={{ flex: 1, position: "relative", paddingTop: 22 }}>
+                <label style={labelStyle(emailActive, emailFocused, !!errors.email)}>
+                  Email address
+                </label>
                 <input
                   type="email"
                   value={email}
                   onChange={e => { setEmail(e.target.value); setErrors(v => ({ ...v, email: undefined })); }}
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
-                  placeholder="you@company.com"
+                  onFocus={() => setEF(true)}
+                  onBlur={() => setEF(false)}
                   autoComplete="email"
-                  className="uline-input"
                   style={{
-                    "--uline-color": errors.email ? ulineError : emailFocused ? ulineAccent : ulineDefault,
-                    "--uline-accent": errors.email ? ulineError : ulineAccent,
-                    height: 44, fontSize: 16,
+                    display: "block", width: "100%", boxSizing: "border-box",
+                    background: "none", border: "none",
+                    borderBottom: `1.5px solid ${errors.email ? errorClr : baseLine}`,
+                    outline: "none", borderRadius: 0,
+                    fontSize: 15.5, color: inputTextClr,
+                    paddingBottom: 10, fontFamily: "inherit",
                     letterSpacing: "-0.01em",
-                    color: inputTextCol,
-                    paddingBottom: 8,
-                  } as React.CSSProperties}
+                    WebkitAppearance: "none",
+                    transition: "border-color 0.22s",
+                  }}
                 />
+                <div style={sweepStyle(emailFocused, !!errors.email)} />
               </div>
             </div>
             {errors.email && (
-              <p style={{ marginTop: 6, fontSize: 12, color: ulineError, letterSpacing: "-0.01em" }}>
+              <p style={{ margin: "6px 0 0 30px", fontSize: 12, color: errorClr, letterSpacing: "-0.01em" }}>
                 {errors.email}
               </p>
             )}
           </div>
 
-          {/* Password */}
-          <div className="auth-row" style={{ animationDelay: "0.22s" }}>
-            <label style={{
-              display: "block", fontSize: 11, fontWeight: 600,
-              letterSpacing: "0.08em", textTransform: "uppercase",
-              color: passwordFocused ? ulineAccent : labelColor,
-              marginBottom: 10,
-              transition: "color 0.2s",
-            }}>Password</label>
-            <div className="uline-wrap" style={{
-              position: "relative",
-              "--uline-accent": errors.password ? ulineError : ulineAccent,
-            } as React.CSSProperties}>
-              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                <svg style={{ flexShrink: 0, marginRight: 12, transition: "opacity 0.2s" }}
-                  width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  opacity={passwordFocused ? 1 : 0.45}>
-                  <rect x="5" y="11" width="14" height="10" rx="2.5"
-                    stroke={passwordFocused ? ulineAccent : iconMuted} strokeWidth="1.8" />
-                  <path d="M8 11V7a4 4 0 018 0v4"
-                    stroke={passwordFocused ? ulineAccent : iconMuted} strokeWidth="1.8" strokeLinecap="round" />
+          {/* ── Password field ── */}
+          <div className="auth-item auth-d3">
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 14 }}>
+              {/* Icon */}
+              <div style={{
+                paddingBottom: 12, flexShrink: 0,
+                transition: "color 0.22s",
+                color: iconColor(passwordActive, passwordFocused, !!errors.pw),
+              }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                  <rect x="5" y="11" width="14" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
+                  <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
-                <input
-                  type={showPw ? "text" : "password"}
-                  value={password}
-                  onChange={e => { setPassword(e.target.value); setErrors(v => ({ ...v, password: undefined })); }}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  className="uline-input"
-                  style={{
-                    "--uline-color": errors.password ? ulineError : passwordFocused ? ulineAccent : ulineDefault,
-                    "--uline-accent": errors.password ? ulineError : ulineAccent,
-                    height: 44, fontSize: 16,
-                    letterSpacing: "-0.01em",
-                    color: inputTextCol,
-                    paddingBottom: 8, flex: 1,
-                  } as React.CSSProperties}
-                />
-                <button type="button" onClick={() => setShowPw(s => !s)} style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  padding: "0 0 8px 10px", display: "flex", alignItems: "center",
-                  opacity: 0.35, transition: "opacity 0.15s", flexShrink: 0,
-                }}
-                  onMouseEnter={e => (e.currentTarget.style.opacity = "0.7")}
-                  onMouseLeave={e => (e.currentTarget.style.opacity = "0.35")}
-                >
-                  {showPw
-                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22"
-                          stroke={inputTextCol} strokeWidth="1.7" strokeLinecap="round" />
-                      </svg>
-                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z"
-                          stroke={inputTextCol} strokeWidth="1.7" />
-                        <circle cx="12" cy="12" r="3" stroke={inputTextCol} strokeWidth="1.7" />
-                      </svg>
-                  }
-                </button>
+              </div>
+              {/* Label + input + line */}
+              <div style={{ flex: 1, position: "relative", paddingTop: 22 }}>
+                <label style={labelStyle(passwordActive, passwordFocused, !!errors.pw)}>
+                  Password
+                </label>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <input
+                    type={showPw ? "text" : "password"}
+                    value={password}
+                    onChange={e => { setPassword(e.target.value); setErrors(v => ({ ...v, pw: undefined })); }}
+                    onFocus={() => setPF(true)}
+                    onBlur={() => setPF(false)}
+                    autoComplete="current-password"
+                    style={{
+                      flex: 1, minWidth: 0,
+                      background: "none", border: "none",
+                      outline: "none", borderRadius: 0,
+                      fontSize: 15.5, color: inputTextClr,
+                      paddingBottom: 10, fontFamily: "inherit",
+                      letterSpacing: "-0.01em",
+                      WebkitAppearance: "none",
+                    }}
+                  />
+                  <button type="button" onClick={() => setShowPw(s => !s)} style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    paddingBottom: 10, paddingLeft: 8,
+                    display: "flex", alignItems: "center",
+                    color: iconIdleClr,
+                    opacity: 0.5, transition: "opacity 0.15s",
+                    flexShrink: 0,
+                  }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = "0.9")}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}
+                  >
+                    {showPw
+                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22"
+                            stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                        </svg>
+                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z"
+                            stroke="currentColor" strokeWidth="1.7" />
+                          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
+                        </svg>
+                    }
+                  </button>
+                </div>
+                <div style={{
+                  position: "absolute", bottom: 0, left: 0, right: 0,
+                  height: "1.5px",
+                  background: errors.pw ? errorClr : baseLine,
+                  transition: "background 0.22s",
+                }} />
+                <div style={sweepStyle(passwordFocused, !!errors.pw)} />
               </div>
             </div>
-            {errors.password && (
-              <p style={{ marginTop: 6, fontSize: 12, color: ulineError, letterSpacing: "-0.01em" }}>
-                {errors.password}
+            {errors.pw && (
+              <p style={{ margin: "6px 0 0 30px", fontSize: 12, color: errorClr, letterSpacing: "-0.01em" }}>
+                {errors.pw}
               </p>
             )}
           </div>
 
           {/* Forgot password */}
-          <div className="auth-row" style={{
-            animationDelay: "0.26s",
+          <div className="auth-item auth-d4" style={{
             display: "flex", justifyContent: "flex-end",
-            marginTop: 14, marginBottom: "clamp(28px,7vw,40px)",
+            margin: "16px 0 clamp(28px,7vw,40px)",
           }}>
             <button style={{
               background: "none", border: "none", cursor: "pointer",
-              fontSize: 13, color: forgotColor, fontWeight: 500,
+              fontSize: 13, color: forgotClr, fontWeight: 500,
               fontFamily: "inherit", letterSpacing: "-0.01em", padding: 0,
             }}>
               Forgot password?
             </button>
           </div>
 
-          {/* Sign In CTA */}
-          <div className="auth-row" style={{ animationDelay: "0.30s" }}>
+          {/* Sign In button */}
+          <div className="auth-item auth-d4">
             <button
               type="button"
               onPointerDown={() => setBtnScale(0.968)}
@@ -342,18 +354,17 @@ export function LoginPage({ onBack: _onBack }: Props) {
               disabled={loading}
               style={{
                 width: "100%", height: 52,
-                borderRadius: 14,
-                border: "none",
+                borderRadius: 14, border: "none",
                 cursor: loading ? "default" : "pointer",
-                background: btnBg,
+                background: accentBtn,
                 color: "#fff",
                 fontSize: 16, fontWeight: 700,
                 letterSpacing: "-0.02em",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transform: `scale(${btnScale})`,
-                transition: "transform 0.14s cubic-bezier(0.22,1,0.36,1), opacity 0.14s, box-shadow 0.2s",
-                opacity: loading ? 0.75 : 1,
-                boxShadow: loading ? "none" : btnShadow,
+                transition: "transform 0.14s cubic-bezier(0.22,1,0.36,1), opacity 0.14s, box-shadow 0.22s",
+                opacity: loading ? 0.72 : 1,
+                boxShadow: loading ? "none" : accentShadow,
                 fontFamily: "inherit",
                 WebkitAppearance: "none",
               }}>
@@ -362,24 +373,23 @@ export function LoginPage({ onBack: _onBack }: Props) {
           </div>
 
           {/* Divider */}
-          <div className="auth-row" style={{
-            animationDelay: "0.34s",
+          <div className="auth-item auth-d5" style={{
             display: "flex", alignItems: "center", gap: 12,
-            marginTop: 24, marginBottom: 20,
+            margin: "24px 0 20px",
           }}>
-            <div style={{ flex: 1, height: 1, background: dividerColor }} />
-            <span style={{ fontSize: 12, color: dividerText, fontWeight: 500, letterSpacing: "0.04em" }}>or</span>
-            <div style={{ flex: 1, height: 1, background: dividerColor }} />
+            <div style={{ flex: 1, height: 1, background: divClr }} />
+            <span style={{ fontSize: 12, color: divTxtClr, fontWeight: 500, letterSpacing: "0.04em" }}>or</span>
+            <div style={{ flex: 1, height: 1, background: divClr }} />
           </div>
 
           {/* Sign Up */}
-          <div className="auth-row" style={{ animationDelay: "0.38s", textAlign: "center" }}>
-            <span style={{ fontSize: 14.5, color: signupText, letterSpacing: "-0.01em" }}>
+          <div className="auth-item auth-d6" style={{ textAlign: "center" }}>
+            <span style={{ fontSize: 14.5, color: subClr, letterSpacing: "-0.01em" }}>
               Don't have an account?{" "}
             </span>
             <button style={{
               background: "none", border: "none", cursor: "pointer",
-              fontSize: 14.5, color: dark ? "#9D98F5" : "#4F46E5", fontWeight: 600,
+              fontSize: 14.5, color: signupLinkClr, fontWeight: 600,
               fontFamily: "inherit", letterSpacing: "-0.01em", padding: 0,
             }}>
               Sign Up
@@ -391,11 +401,7 @@ export function LoginPage({ onBack: _onBack }: Props) {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        input[type="email"]::placeholder,
-        input[type="password"]::placeholder,
-        input[type="text"]::placeholder {
-          color: ${placeholderCol};
-        }
+        input::placeholder { color: ${placeholderC}; }
       `}</style>
     </div>
   );

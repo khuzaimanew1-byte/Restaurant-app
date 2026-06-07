@@ -47,51 +47,35 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 /* ── Auth background orbs ── */
 @keyframes orb-a {
   0%,100% { transform:translate(0,0) scale(1); }
-  35%     { transform:translate(-4%,3%) scale(1.04); }
-  70%     { transform:translate(3%,-2%) scale(0.97); }
+  33%     { transform:translate(-3%,4%) scale(1.05); }
+  66%     { transform:translate(4%,-2%) scale(0.96); }
 }
 @keyframes orb-b {
   0%,100% { transform:translate(0,0) scale(1); }
-  40%     { transform:translate(3%,-4%) scale(1.06); }
-  75%     { transform:translate(-2%,2%) scale(0.96); }
+  40%     { transform:translate(4%,-5%) scale(1.07); }
+  72%     { transform:translate(-3%,3%) scale(0.95); }
 }
 @keyframes orb-c {
   0%,100% { transform:translate(0,0) scale(1); }
-  50%     { transform:translate(-2%,3%) scale(1.03); }
+  55%     { transform:translate(-3%,4%) scale(1.04); }
 }
-.auth-orb-a { animation:orb-a 22s ease-in-out infinite; }
-.auth-orb-b { animation:orb-b 28s ease-in-out infinite; }
-.auth-orb-c { animation:orb-c 18s ease-in-out infinite; }
+.auth-orb-a { animation:orb-a 24s ease-in-out infinite; }
+.auth-orb-b { animation:orb-b 30s ease-in-out infinite; }
+.auth-orb-c { animation:orb-c 20s ease-in-out infinite; }
 
-/* ── Underline input ── */
-.uline-input {
-  background: none;
-  border: none;
-  border-bottom: 1.5px solid var(--uline-color, rgba(120,113,238,0.22));
-  border-radius: 0;
-  outline: none;
-  width: 100%;
-  font-family: inherit;
-  transition: border-color 0.22s ease;
-  -webkit-appearance: none;
+/* ── Auth page stagger enter ── */
+@keyframes auth-rise {
+  from { opacity:0; transform:translateY(22px); }
+  to   { opacity:1; transform:translateY(0);    }
 }
-.uline-input:focus {
-  border-bottom-color: var(--uline-accent);
+.auth-item {
+  opacity: 0;
+  animation: auth-rise 0.6s cubic-bezier(0.22,1,0.36,1) forwards;
 }
-.uline-wrap::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0;
-  height: 2px;
-  width: 0;
-  background: var(--uline-accent);
-  border-radius: 2px;
-  transition: width 0.3s cubic-bezier(0.22,1,0.36,1);
-}
-.uline-wrap:focus-within::after {
-  width: 100%;
-}
-
-/* ── Auth page enter ── */
-@keyframes auth-up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-.auth-row { opacity:0; animation:auth-up .55s cubic-bezier(.22,1,.36,1) forwards; }
+.auth-d0  { animation-delay: 0.04s; }
+.auth-d1  { animation-delay: 0.12s; }
+.auth-d2  { animation-delay: 0.20s; }
+.auth-d3  { animation-delay: 0.28s; }
+.auth-d4  { animation-delay: 0.36s; }
+.auth-d5  { animation-delay: 0.44s; }
+.auth-d6  { animation-delay: 0.52s; }
