@@ -276,21 +276,34 @@ export function OtpModal({
 
         {/* Resend */}
         <div style={{ textAlign: "center" }}>
-          <button
-            onClick={handleResend}
-            disabled={resending || (!expired)}
-            style={{
-              background: "none", border: "none",
-              cursor: expired && !resending ? "pointer" : "default",
-              fontSize: 13.5, fontWeight: 600,
-              color: expired ? accent : dark ? "rgba(200,197,245,0.28)" : "rgba(13,11,30,0.25)",
-              fontFamily: "inherit", letterSpacing: "-0.01em", padding: "4px 0",
-              opacity: resending ? 0.6 : 1,
-              transition: "color 0.22s ease, opacity 0.18s ease",
-            }}
-          >
-            {resending ? "Sending…" : "Resend code"}
-          </button>
+          {expired ? (
+            <button
+              onClick={handleResend}
+              disabled={resending}
+              style={{
+                background: "none", border: "none",
+                cursor: resending ? "default" : "pointer",
+                fontSize: 13.5, fontWeight: 600,
+                color: accent,
+                fontFamily: "inherit", letterSpacing: "-0.01em", padding: "4px 0",
+                opacity: resending ? 0.6 : 1,
+                transition: "opacity 0.18s ease",
+              }}
+            >
+              {resending ? "Sending…" : "Resend OTP"}
+            </button>
+          ) : (
+            <span style={{
+              fontSize: 13, fontVariantNumeric: "tabular-nums",
+              color: dark ? "rgba(200,197,245,0.32)" : "rgba(13,11,30,0.28)",
+              letterSpacing: "-0.01em",
+            }}>
+              Resend in{" "}
+              <strong style={{ fontWeight: 600 }}>
+                {Math.ceil(remainingMs / 60000)} min
+              </strong>
+            </span>
+          )}
         </div>
       </div>
     </div>
