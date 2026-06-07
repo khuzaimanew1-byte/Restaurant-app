@@ -29,3 +29,9 @@ export function formatTimer(ms: number): string {
   const s = Math.ceil(ms / 1000);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
+
+export function formatCountdown(ms: number): string {
+  if (ms <= 0) return "0s";
+  if (ms < 60000) return `${Math.ceil(ms / 1000)}s`;
+  return `${Math.ceil(ms / 60000)} min`;
+}

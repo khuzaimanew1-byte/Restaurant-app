@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { verifyOtp, resendOtp, AppError } from "../lib/api";
-import { Spinner } from "../lib/shared";
+import { Spinner, formatCountdown } from "../lib/shared";
 
 interface Props {
   email: string;
@@ -300,7 +300,7 @@ export function OtpModal({
             }}>
               Resend in{" "}
               <strong style={{ fontWeight: 600 }}>
-                {Math.ceil(remainingMs / 60000)} min
+                {formatCountdown(remainingMs)}
               </strong>
             </span>
           )}

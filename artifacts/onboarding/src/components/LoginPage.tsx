@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { login, getOtpStatus, AppError } from "../lib/api";
 import { OtpModal } from "./OtpModal";
-import { useDarkMode, Spinner } from "../lib/shared";
+import { useDarkMode, Spinner, formatCountdown } from "../lib/shared";
 
 interface Props {
   onSuccess: (email: string, role: string) => void;
@@ -59,7 +59,6 @@ export function LoginPage({ onSuccess }: Props) {
   }
 
   const sessionActive = remainingMs > 0;
-  const sessionMins   = Math.max(1, Math.ceil(remainingMs / 60000));
   const formValid     = !!(email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 6 && agreed);
 
   async function handleSignIn() {
@@ -188,7 +187,7 @@ export function LoginPage({ onSuccess }: Props) {
             color: dark ? "rgba(200,197,245,0.88)" : "#4338CA",
             letterSpacing: "-0.01em",
           }}>
-            OTP session active · {sessionMins} min
+            OTP session active · {formatCountdown(remainingMs)}
           </span>
           <button onClick={() => setShowOtp(true)} style={{
             background: "none", border: "none", cursor: "pointer",
