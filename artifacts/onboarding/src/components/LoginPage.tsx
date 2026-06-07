@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 
 interface Props {
   onBack?: () => void;
+  onSignup?: () => void;
 }
 
-export function LoginPage({ onBack: _onBack }: Props) {
+export function LoginPage({ onBack: _onBack, onSignup }: Props) {
   const [dark, setDark]       = useState(() => window.matchMedia("(prefers-color-scheme:dark)").matches);
   const [mounted, setMounted] = useState(false);
   const [email, setEmail]     = useState("");
@@ -224,7 +225,7 @@ export function LoginPage({ onBack: _onBack }: Props) {
             <div style={{ position: "relative", height: FIELD_H }}>
 
               <label style={labelStyle(emailActive, emailF, !!errors.email)}>
-                Email address
+                Email
               </label>
 
               <input
@@ -380,7 +381,7 @@ export function LoginPage({ onBack: _onBack }: Props) {
             <span style={{ fontSize: 14.5, color: subClr, letterSpacing: "-0.01em" }}>
               Don't have an account?{" "}
             </span>
-            <button style={{
+            <button onClick={onSignup} style={{
               background: "none", border: "none", cursor: "pointer",
               fontSize: 14.5, color: linkClr, fontWeight: 600,
               fontFamily: "inherit", letterSpacing: "-0.01em", padding: 0,
