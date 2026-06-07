@@ -395,28 +395,14 @@ export function LoginPage({ onSuccess }: Props) {
           {/* Sign In button */}
           <div style={{ ...rise(6) }}>
             <button
+              className="auth-sign-btn"
               type="button"
-              onPointerDown={() => !sessionActive && !loading && setBS(0.967)}
-              onPointerUp={() => { setBS(1); if (!sessionActive && !loading) handleSignIn(); }}
+              data-off={loading || sessionActive ? "" : undefined}
+              onPointerDown={() => setBS(0.967)}
+              onPointerUp={() => { setBS(1); handleSignIn(); }}
               onPointerLeave={() => setBS(1)}
-              disabled={loading || sessionActive}
-              style={{
-                width: "100%", height: 54, borderRadius: 16, border: "none",
-                cursor: loading || sessionActive ? "not-allowed" : "pointer",
-                background: formValid && !sessionActive
-                  ? accentBtn
-                  : dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.16)",
-                color: formValid && !sessionActive
-                  ? "#fff"
-                  : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.42)",
-                fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                transform: `scale(${btnScale})`,
-                transition: "transform 0.15s cubic-bezier(0.22,1,0.36,1), background 0.28s ease, color 0.22s ease, box-shadow 0.22s ease",
-                boxShadow: formValid && !sessionActive && !loading ? btnShadow : "none",
-                fontFamily: "inherit",
-                opacity: sessionActive ? 0.7 : 1,
-              }}>
+              style={{ transform: `scale(${btnScale})` }}
+            >
               {loading ? <Spinner /> : "Sign In"}
             </button>
           </div>

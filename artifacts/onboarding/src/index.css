@@ -1,10 +1,57 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
 
+/* ── CSS Variables ── */
+html:not([data-dark="false"]) {
+  --accent:      #8078F2;
+  --accent-btn:  linear-gradient(135deg, #6E67F0 0%, #4B44C5 100%);
+  --btn-shadow:  0 12px 40px rgba(79,70,229,0.58), 0 4px 12px rgba(79,70,229,0.32);
+  --autofill-bg: #07051F;
+  --autofill-tx: rgba(238,237,255,0.93);
+}
+html[data-dark="false"] {
+  --accent:      #4F46E5;
+  --accent-btn:  linear-gradient(135deg, #635CEE 0%, #3E37BE 100%);
+  --btn-shadow:  0 8px 30px rgba(79,70,229,0.40), 0 2px 8px rgba(79,70,229,0.20);
+  --autofill-bg: #F4F3FF;
+  --autofill-tx: #09071E;
+}
+
+/* ── Global reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 * { -webkit-tap-highlight-color: transparent; }
 ::selection { background: rgba(127,120,242,0.28); color: inherit; }
-input::selection { background: rgba(127,120,242,0.28); }
+
+/* ── Sign-in button ── */
+.auth-sign-btn {
+  width: 100%; height: 54px; border-radius: 16px; border: none;
+  background: var(--accent-btn);
+  color: #fff;
+  font-size: 16px; font-weight: 700; letter-spacing: -0.02em;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--btn-shadow);
+  cursor: pointer; font-family: inherit;
+  transition: transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s ease;
+  user-select: none; -webkit-user-select: none;
+}
+.auth-sign-btn:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 3px;
+}
+.auth-sign-btn[data-off] {
+  pointer-events: none;
+  cursor: default;
+}
+
+/* ── Autofill override ── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--autofill-bg) inset !important;
+  -webkit-text-fill-color: var(--autofill-tx) !important;
+  caret-color: var(--autofill-tx) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
 
 /* ── Ambient floats ── */
 @keyframes float-a { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }

@@ -8,6 +8,9 @@ export function useDarkMode(): [boolean, React.Dispatch<React.SetStateAction<boo
     mq.addEventListener("change", h);
     return () => mq.removeEventListener("change", h);
   }, []);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-dark", dark ? "" : "false");
+  }, [dark]);
   return [dark, setDark];
 }
 
