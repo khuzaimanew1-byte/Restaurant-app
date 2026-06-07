@@ -17,31 +17,33 @@ export function LoginPage({ onBack: _onBack }: Props) {
   const [btnScale, setBS]     = useState(1);
 
   useEffect(() => {
-    const id = setTimeout(() => setMounted(true), 30);
+    /* tiny delay so initial render completes, then trigger entrance */
+    const id = setTimeout(() => setMounted(true), 40);
     return () => clearTimeout(id);
   }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme:dark)");
     const h  = (e: MediaQueryListEvent) => setDark(e.matches);
-    mq.addEventListener("change", h); return () => mq.removeEventListener("change", h);
+    mq.addEventListener("change", h);
+    return () => mq.removeEventListener("change", h);
   }, []);
 
-  /* ── Stagger helper ── */
+  /* ── Smooth staggered entrance ── */
   function rise(i: number): React.CSSProperties {
-    const delay = `${i * 0.09}s`;
+    const d = `${i * 0.08}s`;
     return {
-      opacity:   mounted ? 1 : 0,
-      transform: mounted ? "translateY(0px)" : "translateY(20px)",
-      transition: `opacity 0.65s cubic-bezier(0.22,1,0.36,1) ${delay}, transform 0.65s cubic-bezier(0.22,1,0.36,1) ${delay}`,
+      opacity:    mounted ? 1 : 0,
+      transform:  mounted ? "translateY(0px)" : "translateY(18px)",
+      transition: `opacity 0.7s cubic-bezier(0.22,1,0.36,1) ${d}, transform 0.7s cubic-bezier(0.22,1,0.36,1) ${d}`,
     };
   }
 
   function validate() {
     const e: typeof errors = {};
-    if (!email.trim())           e.email = "Email is required";
+    if (!email.trim())            e.email = "Email is required";
     else if (!email.includes("@")) e.email = "Enter a valid email";
-    if (!password)               e.pw = "Password is required";
+    if (!password)                e.pw = "Password is required";
     else if (password.length < 6) e.pw = "At least 6 characters";
     setErrors(e);
     return !e.email && !e.pw;
@@ -58,122 +60,131 @@ export function LoginPage({ onBack: _onBack }: Props) {
   const emailActive = emailF || !!email;
   const pwActive    = pwF    || !!password;
 
-  /* Light mode: rich indigo-bloom gradient */
   const lightBg  = "linear-gradient(145deg,#C8C3FF 0%,#D9D5FF 12%,#E5E2FF 28%,#EDEAFF 45%,#F4F3FF 62%,#F9F9FF 80%,#FFFFFF 100%)";
-  const darkBg   = "#06051C";
+  const o1 = dark ? "rgba(79,70,229,0.42)"  : "rgba(79,70,229,0.30)";
+  const o2 = dark ? "rgba(107,99,240,0.26)" : "rgba(107,99,240,0.22)";
+  const o3 = dark ? "rgba(55,48,163,0.20)"  : "rgba(55,48,163,0.14)";
 
-  const lightOrb1 = "rgba(79,70,229,0.30)";
-  const lightOrb2 = "rgba(107,99,240,0.22)";
-  const lightOrb3 = "rgba(55,48,163,0.14)";
-  const darkOrb1  = "rgba(79,70,229,0.42)";
-  const darkOrb2  = "rgba(107,99,240,0.26)";
-  const darkOrb3  = "rgba(55,48,163,0.20)";
+  const headClr   = dark ? "rgba(238,237,255,0.97)" : "#09071E";
+  const subClr    = dark ? "rgba(200,197,245,0.46)" : "rgba(13,11,30,0.46)";
+  const accent    = dark ? "#8078F2"                 : "#4F46E5";
+  const accentBtn = dark ? "linear-gradient(135deg,#6E67F0 0%,#4B44C5 100%)"
+                         : "linear-gradient(135deg,#635CEE 0%,#3E37BE 100%)";
+  const btnShadow = dark ? "0 12px 40px rgba(79,70,229,0.6),0 4px 12px rgba(79,70,229,0.35)"
+                         : "0 8px 30px rgba(79,70,229,0.42),0 2px 8px rgba(79,70,229,0.22)";
+  const baseLine  = dark ? "rgba(255,255,255,0.1)"   : "rgba(13,11,30,0.14)";
+  const idleLbl   = dark ? "rgba(200,197,245,0.38)"  : "rgba(13,11,30,0.38)";
+  const activeLbl = dark ? "rgba(200,197,245,0.62)"  : "rgba(13,11,30,0.55)";
+  const inputTxt  = dark ? "rgba(238,237,255,0.93)"  : "#09071E";
+  const phClr     = dark ? "rgba(200,197,245,0.18)"  : "rgba(13,11,30,0.2)";
+  const errClr    = dark ? "#F87171"                  : "#DC2626";
+  const forgotClr = dark ? "#9992F5"                  : "#4F46E5";
+  const divClr    = dark ? "rgba(255,255,255,0.08)"  : "rgba(13,11,30,0.1)";
+  const divTxt    = dark ? "rgba(200,197,245,0.28)"  : "rgba(13,11,30,0.32)";
+  const tglBorder = dark ? "rgba(255,255,255,0.1)"   : "rgba(13,11,30,0.14)";
+  const tglBg     = dark ? "rgba(255,255,255,0.05)"  : "rgba(255,255,255,0.6)";
+  const linkClr   = dark ? "#9992F5"                  : "#4F46E5";
 
-  const o1 = dark ? darkOrb1 : lightOrb1;
-  const o2 = dark ? darkOrb2 : lightOrb2;
-  const o3 = dark ? darkOrb3 : lightOrb3;
+  /*
+   * Field layout (68px tall):
+   *   ┌──────────────────────────────────────┐ ← 0px
+   *   │  [LABEL FLOATED — 10.5px uppercase]  │ ← 2px   (active)
+   *   │                                      │
+   *   │  [LABEL PLACEHOLDER — 15.5px]        │ ← 38px  (idle, ~center of input)
+   *   │  [icon]  [input text              ]  │ ← 34px tall, at bottom
+   *   │          [──────────────────────]    │ ← 0px (underline)
+   *   └──────────────────────────────────────┘ ← 68px
+   *
+   * Icon stays fixed at bottom-left, aligned with input text center.
+   * Label alone floats; icon does NOT move.
+   */
+  const FIELD_H   = 68;   // container height
+  const ICON_SIZE = 16;
+  const ICON_W    = 22;   // icon area width (icon + gap column)
+  const INPUT_H   = 34;   // input box height
+  const INPUT_PB  = 10;   // padding-bottom inside input
+  // Input text vertical center from container bottom:
+  //   input sits at bottom (0), text center = INPUT_H/2 - INPUT_PB/2 = 12px from bottom
+  // From top: FIELD_H - 12 = 56 — label center when idle:
+  const LABEL_IDLE_TOP  = FIELD_H - (INPUT_H / 2 + INPUT_PB / 2) - 8;  // ≈ 37
 
-  const headClr     = dark ? "rgba(238,237,255,0.97)" : "#09071E";
-  const subClr      = dark ? "rgba(200,197,245,0.46)" : "rgba(13,11,30,0.46)";
-  const accent      = dark ? "#8078F2" : "#4F46E5";
-  const accentBtn   = dark ? "linear-gradient(135deg,#6E67F0 0%,#4B44C5 100%)"
-                           : "linear-gradient(135deg,#635CEE 0%,#3E37BE 100%)";
-  const btnShadow   = dark ? "0 12px 40px rgba(79,70,229,0.6), 0 4px 12px rgba(79,70,229,0.35)"
-                           : "0 8px 30px rgba(79,70,229,0.42), 0 2px 8px rgba(79,70,229,0.22)";
-  const baseLine    = dark ? "rgba(255,255,255,0.1)"   : "rgba(13,11,30,0.14)";
-  const idleLbl     = dark ? "rgba(200,197,245,0.38)"  : "rgba(13,11,30,0.38)";
-  const activeLbl   = dark ? "rgba(200,197,245,0.6)"   : "rgba(13,11,30,0.55)";
-  const inputTxt    = dark ? "rgba(238,237,255,0.93)"  : "#09071E";
-  const phClr       = dark ? "rgba(200,197,245,0.2)"   : "rgba(13,11,30,0.22)";
-  const errClr      = dark ? "#F87171"                  : "#DC2626";
-  const forgotClr   = dark ? "#9992F5"                  : "#4F46E5";
-  const divClr      = dark ? "rgba(255,255,255,0.08)"  : "rgba(13,11,30,0.1)";
-  const divTxtClr   = dark ? "rgba(200,197,245,0.28)"  : "rgba(13,11,30,0.32)";
-  const tglBorder   = dark ? "rgba(255,255,255,0.1)"   : "rgba(13,11,30,0.14)";
-  const tglBg       = dark ? "rgba(255,255,255,0.05)"  : "rgba(255,255,255,0.6)";
-  const linkClr     = dark ? "#9992F5"                  : "#4F46E5";
-
-  /* ── Floating label style ── */
-  function floatLabel(active: boolean, focused: boolean, err: boolean): React.CSSProperties {
+  function labelPos(active: boolean): React.CSSProperties {
     return {
-      position: "absolute",
-      left: 0,
-      top: active ? 0 : "50%",
-      transform: active ? "none" : "translateY(-50%)",
-      fontSize: active ? 10 : 15.5,
-      fontWeight: active ? 700 : 400,
-      letterSpacing: active ? "0.09em" : "-0.01em",
+      position:      "absolute",
+      left:          ICON_W,
+      top:           active ? 2 : LABEL_IDLE_TOP,
+      fontSize:      active ? 10.5 : 15.5,
+      fontWeight:    active ? 700 : 400,
+      letterSpacing: active ? "0.09em" : "-0.015em",
       textTransform: active ? "uppercase" : "none",
-      color: err ? errClr : focused ? accent : active ? activeLbl : idleLbl,
-      transition: [
-        "top 0.26s cubic-bezier(0.22,1,0.36,1)",
-        "transform 0.26s cubic-bezier(0.22,1,0.36,1)",
-        "font-size 0.26s cubic-bezier(0.22,1,0.36,1)",
-        "font-weight 0.2s",
-        "letter-spacing 0.26s cubic-bezier(0.22,1,0.36,1)",
-        "color 0.2s",
-      ].join(","),
+      lineHeight:    1,
+      whiteSpace:    "nowrap",
       pointerEvents: "none",
-      whiteSpace: "nowrap",
-      lineHeight: 1,
+      /* ← smooth, single-property transitions prevent snapping */
+      transition: [
+        "top 0.28s cubic-bezier(0.22,1,0.36,1)",
+        "font-size 0.28s cubic-bezier(0.22,1,0.36,1)",
+        "font-weight 0.24s ease",
+        "letter-spacing 0.28s cubic-bezier(0.22,1,0.36,1)",
+        "color 0.22s ease",
+      ].join(", "),
     };
   }
 
-  /* ── Sweep line ── */
-  function sweep(focused: boolean, err: boolean): React.CSSProperties {
+  function labelClr(active: boolean, focused: boolean, err: boolean) {
+    if (err)     return errClr;
+    if (focused) return accent;
+    if (active)  return activeLbl;
+    return idleLbl;
+  }
+
+  function iconClr(active: boolean, focused: boolean, err: boolean) {
+    if (err)     return errClr;
+    if (focused) return accent;
+    if (active)  return activeLbl;
+    return idleLbl;
+  }
+
+  function sweepLine(focused: boolean, err: boolean): React.CSSProperties {
     return {
-      position: "absolute",
-      bottom: 0, left: 0,
-      height: 2, borderRadius: 2,
-      width: focused ? "100%" : "0%",
+      position:   "absolute",
+      bottom:     0, left: 0,
+      height:     2,  borderRadius: 2,
+      width:      focused ? "100%" : "0%",
       background: err ? errClr : accent,
-      transition: "width 0.36s cubic-bezier(0.22,1,0.36,1)",
+      transition: "width 0.38s cubic-bezier(0.22,1,0.36,1)",
     };
   }
 
   return (
     <div style={{
       width: "100vw", height: "100dvh", overflow: "hidden",
-      background: dark ? darkBg : lightBg,
+      background: dark ? "#06051C" : lightBg,
       position: "relative",
       display: "flex", flexDirection: "column",
       fontFamily: "'Inter',-apple-system,'Helvetica Neue',sans-serif",
       WebkitFontSmoothing: "antialiased",
     }}>
 
-      {/* ── Background orbs ── */}
+      {/* ── Atmospheric orbs ── */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
-        {/* Top-right bloom */}
         <div className="auth-orb-a" style={{
           position: "absolute",
           width: "85vw", height: "85vw", maxWidth: 580, maxHeight: 580,
-          top: "-22%", right: "-20%",
-          borderRadius: "50%",
+          top: "-22%", right: "-20%", borderRadius: "50%",
           background: `radial-gradient(circle,${o1} 0%,transparent 65%)`,
         }} />
-        {/* Bottom-left bloom */}
         <div className="auth-orb-b" style={{
           position: "absolute",
           width: "70vw", height: "70vw", maxWidth: 440, maxHeight: 440,
-          bottom: "-18%", left: "-20%",
-          borderRadius: "50%",
+          bottom: "-18%", left: "-20%", borderRadius: "50%",
           background: `radial-gradient(circle,${o2} 0%,transparent 65%)`,
         }} />
-        {/* Subtle center depth */}
         <div className="auth-orb-c" style={{
           position: "absolute",
           width: "55vw", height: "55vw", maxWidth: 360, maxHeight: 360,
-          top: "35%", left: "25%",
-          borderRadius: "50%",
+          top: "35%", left: "22%", borderRadius: "50%",
           background: `radial-gradient(circle,${o3} 0%,transparent 65%)`,
-        }} />
-        {/* Grain texture */}
-        <div style={{
-          position: "absolute", inset: 0,
-          opacity: dark ? 0.4 : 0.25,
-          mixBlendMode: dark ? "screen" : "multiply",
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.08'/%3E%3C/svg%3E")`,
-          backgroundSize: "200px 200px",
         }} />
       </div>
 
@@ -193,12 +204,12 @@ export function LoginPage({ onBack: _onBack }: Props) {
         }}>
           {dark
             ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="5" fill={idleLbl} />
+                <circle cx="12" cy="12" r="5" fill={idleLbl}/>
                 <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-                  stroke={idleLbl} strokeWidth="2" strokeLinecap="round" />
+                  stroke={idleLbl} strokeWidth="2" strokeLinecap="round"/>
               </svg>
             : <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill={idleLbl} />
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill={idleLbl}/>
               </svg>
           }
         </button>
@@ -220,20 +231,40 @@ export function LoginPage({ onBack: _onBack }: Props) {
               color: headClr, margin: 0,
             }}>Login</h1>
           </div>
-          <div style={{ marginBottom: "clamp(40px,10vw,56px)", ...rise(2) }}>
+          <div style={{ marginBottom: "clamp(40px,10vw,54px)", ...rise(2) }}>
             <p style={{
-              fontSize: 15, color: subClr, lineHeight: 1.5, margin: 0,
-              letterSpacing: "-0.01em",
+              fontSize: 15, color: subClr, lineHeight: 1.5,
+              margin: 0, letterSpacing: "-0.01em",
             }}>Enter your credentials to continue</p>
           </div>
 
-          {/* ── Email field ── */}
-          <div style={{ marginBottom: "clamp(24px,6vw,34px)", ...rise(3) }}>
-            {/* Fixed-height container so label has precise room to float */}
-            <div style={{ position: "relative", height: 60 }}>
-              <label style={floatLabel(emailActive, emailF, !!errors.email)}>
-                Email address
+          {/* ══ Email field ══ */}
+          <div style={{ marginBottom: "clamp(20px,5vw,28px)", ...rise(3) }}>
+            <div style={{ position: "relative", height: FIELD_H }}>
+
+              {/* Icon — fixed at bottom-left, aligned with input text */}
+              <div style={{
+                position: "absolute", left: 0,
+                bottom: INPUT_PB + (INPUT_H - INPUT_PB) / 2 - ICON_SIZE / 2,
+                color: iconClr(emailActive, emailF, !!errors.email),
+                transition: "color 0.22s ease",
+                lineHeight: 0,
+              }}>
+                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="4" width="20" height="16" rx="3" stroke="currentColor" strokeWidth="1.8"/>
+                  <path d="M2 8l10 7 10-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+              </div>
+
+              {/* Floating label */}
+              <label style={{
+                ...labelPos(emailActive),
+                color: labelClr(emailActive, emailF, !!errors.email),
+              }}>
+                Email
               </label>
+
+              {/* Input */}
               <input
                 type="email"
                 value={email}
@@ -242,35 +273,60 @@ export function LoginPage({ onBack: _onBack }: Props) {
                 onBlur={() => setEF(false)}
                 autoComplete="email"
                 style={{
-                  position: "absolute", bottom: 0, left: 0, right: 0,
-                  height: 34, background: "none", border: "none", outline: "none",
-                  fontSize: 15.5, color: inputTxt, paddingBottom: 10,
-                  fontFamily: "inherit", letterSpacing: "-0.01em",
+                  position: "absolute", bottom: 0,
+                  left: ICON_W, right: 0,
+                  height: INPUT_H,
+                  background: "none", border: "none", outline: "none", borderRadius: 0,
+                  fontSize: 15.5, color: inputTxt,
+                  paddingBottom: INPUT_PB,
+                  fontFamily: "inherit", letterSpacing: "-0.015em",
                   WebkitAppearance: "none", boxSizing: "border-box",
                 }}
               />
+
               {/* Base underline */}
               <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0,
-                height: 1.5, background: errors.email ? errClr : baseLine,
-                transition: "background 0.22s",
-              }} />
-              {/* Focus sweep */}
-              <div style={sweep(emailF, !!errors.email)} />
+                position: "absolute", bottom: 0, left: 0, right: 0, height: 1.5,
+                background: errors.email ? errClr : baseLine,
+                transition: "background 0.22s ease",
+              }}/>
+              {/* Sweep line */}
+              <div style={sweepLine(emailF, !!errors.email)}/>
             </div>
             {errors.email && (
-              <p style={{ margin: "6px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>
+              <p style={{ margin: "5px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>
                 {errors.email}
               </p>
             )}
           </div>
 
-          {/* ── Password field ── */}
+          {/* ══ Password field ══ */}
           <div style={{ ...rise(4) }}>
-            <div style={{ position: "relative", height: 60 }}>
-              <label style={floatLabel(pwActive, pwF, !!errors.pw)}>
+            <div style={{ position: "relative", height: FIELD_H }}>
+
+              {/* Icon */}
+              <div style={{
+                position: "absolute", left: 0,
+                bottom: INPUT_PB + (INPUT_H - INPUT_PB) / 2 - ICON_SIZE / 2,
+                color: iconClr(pwActive, pwF, !!errors.pw),
+                transition: "color 0.22s ease",
+                lineHeight: 0,
+              }}>
+                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none">
+                  <rect x="5" y="11" width="14" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.8"/>
+                  <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+              </div>
+
+              {/* Floating label */}
+              <label style={{
+                ...labelPos(pwActive),
+                color: labelClr(pwActive, pwF, !!errors.pw),
+              }}>
                 Password
               </label>
+
+              {/* Input */}
               <input
                 type={showPw ? "text" : "password"}
                 value={password}
@@ -279,47 +335,54 @@ export function LoginPage({ onBack: _onBack }: Props) {
                 onBlur={() => setPwF(false)}
                 autoComplete="current-password"
                 style={{
-                  position: "absolute", bottom: 0, left: 0, right: 0,
-                  height: 34, background: "none", border: "none", outline: "none",
-                  fontSize: 15.5, color: inputTxt, paddingBottom: 10,
-                  paddingRight: 36,
-                  fontFamily: "inherit", letterSpacing: "-0.01em",
+                  position: "absolute", bottom: 0,
+                  left: ICON_W, right: 34,
+                  height: INPUT_H,
+                  background: "none", border: "none", outline: "none", borderRadius: 0,
+                  fontSize: 15.5, color: inputTxt,
+                  paddingBottom: INPUT_PB,
+                  fontFamily: "inherit", letterSpacing: "-0.015em",
                   WebkitAppearance: "none", boxSizing: "border-box",
                 }}
               />
-              {/* Show/hide toggle */}
+
+              {/* Show/hide */}
               <button type="button" onClick={() => setShowPw(s => !s)} style={{
-                position: "absolute", right: 0, bottom: 8,
+                position: "absolute", right: 0,
+                bottom: INPUT_PB + (INPUT_H - INPUT_PB) / 2 - 9,
+                width: 18, height: 18,
                 background: "none", border: "none", cursor: "pointer",
-                padding: 0, display: "flex", alignItems: "center",
-                color: idleLbl, opacity: 0.55,
-                transition: "opacity 0.15s",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: idleLbl,
+                opacity: 0.5, transition: "opacity 0.18s ease",
+                padding: 0,
               }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                onMouseLeave={e => (e.currentTarget.style.opacity = "0.55")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}
               >
                 {showPw
                   ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                       <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22"
-                        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
                     </svg>
                   : <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="1.7" />
-                      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
+                      <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="1.7"/>
+                      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7"/>
                     </svg>
                 }
               </button>
+
               {/* Base underline */}
               <div style={{
-                position: "absolute", bottom: 0, left: 0, right: 0,
-                height: 1.5, background: errors.pw ? errClr : baseLine,
-                transition: "background 0.22s",
-              }} />
-              {/* Focus sweep */}
-              <div style={sweep(pwF, !!errors.pw)} />
+                position: "absolute", bottom: 0, left: 0, right: 0, height: 1.5,
+                background: errors.pw ? errClr : baseLine,
+                transition: "background 0.22s ease",
+              }}/>
+              {/* Sweep line */}
+              <div style={sweepLine(pwF, !!errors.pw)}/>
             </div>
             {errors.pw && (
-              <p style={{ margin: "6px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>
+              <p style={{ margin: "5px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>
                 {errors.pw}
               </p>
             )}
@@ -328,7 +391,7 @@ export function LoginPage({ onBack: _onBack }: Props) {
           {/* Forgot password */}
           <div style={{
             display: "flex", justifyContent: "flex-end",
-            margin: "14px 0 clamp(28px,7vw,40px)",
+            margin: "14px 0 clamp(28px,7vw,38px)",
             ...rise(5),
           }}>
             <button style={{
@@ -353,7 +416,7 @@ export function LoginPage({ onBack: _onBack }: Props) {
                 fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transform: `scale(${btnScale})`,
-                transition: "transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s, opacity 0.15s",
+                transition: "transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s ease, opacity 0.15s",
                 opacity: loading ? 0.72 : 1,
                 boxShadow: loading ? "none" : btnShadow,
                 fontFamily: "inherit",
@@ -368,9 +431,9 @@ export function LoginPage({ onBack: _onBack }: Props) {
             margin: "22px 0 18px",
             ...rise(6),
           }}>
-            <div style={{ flex: 1, height: 1, background: divClr }} />
-            <span style={{ fontSize: 12, color: divTxtClr, fontWeight: 500, letterSpacing: "0.04em" }}>or</span>
-            <div style={{ flex: 1, height: 1, background: divClr }} />
+            <div style={{ flex: 1, height: 1, background: divClr }}/>
+            <span style={{ fontSize: 12, color: divTxt, fontWeight: 500, letterSpacing: "0.04em" }}>or</span>
+            <div style={{ flex: 1, height: 1, background: divClr }}/>
           </div>
 
           {/* Sign Up */}
@@ -391,7 +454,6 @@ export function LoginPage({ onBack: _onBack }: Props) {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         input::placeholder { color: ${phClr}; }
-        input[type="password"]::placeholder { letter-spacing: 0; }
       `}</style>
     </div>
   );
@@ -404,6 +466,6 @@ function Spinner() {
       border: "2.5px solid rgba(255,255,255,0.3)",
       borderTopColor: "#fff", display: "inline-block",
       animation: "spin 0.72s linear infinite",
-    }} />
+    }}/>
   );
 }
