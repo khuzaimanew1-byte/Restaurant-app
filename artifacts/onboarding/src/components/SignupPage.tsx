@@ -240,7 +240,8 @@ export function SignupPage({ onBack }: Props) {
   const [nameF, setNF]      = useState(false);
   const [emailF, setEF]     = useState(false);
   const [pwF, setPF]        = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; email?: string; pw?: string }>({});
+  const [agreed, setAgreed] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string; email?: string; pw?: string; agreed?: string }>({});
   const [showOtp, setShowOtp] = useState(false);
 
   useEffect(() => { const id = setTimeout(() => setMnt(true), 40); return () => clearTimeout(id); }, []);
@@ -263,13 +264,14 @@ export function SignupPage({ onBack }: Props) {
 
   function validate() {
     const e: typeof errors = {};
-    if (!name.trim())              e.name  = "Name is required";
+    if (!name.trim())              e.name  = "Nickname is required";
     if (!email.trim())             e.email = "Email is required";
     else if (!email.includes("@")) e.email = "Enter a valid email";
     if (!pw)                       e.pw    = "Password is required";
     else if (pw.length < 6)        e.pw    = "At least 6 characters";
+    if (!agreed)                   e.agreed = "Please agree to continue";
     setErrors(e);
-    return !e.name && !e.email && !e.pw;
+    return !e.name && !e.email && !e.pw && !e.agreed;
   }
 
   function handleCreate() { if (validate()) setShowOtp(true); }
@@ -387,24 +389,13 @@ export function SignupPage({ onBack }: Props) {
         }}/>
       </div>
 
-      {/* Header */}
+      {/* Header — dark mode toggle only */}
       <header style={{
         position: "relative", zIndex: 10, flexShrink: 0,
-        display: "flex", justifyContent: "space-between", alignItems: "center",
+        display: "flex", justifyContent: "flex-end",
         padding: "clamp(16px,4vw,22px) clamp(20px,5vw,28px)",
         ...rise(0),
       }}>
-        <button onClick={onBack} style={{
-          width: 36, height: 36, borderRadius: "50%",
-          border: `1px solid ${tglBorder}`, background: tglBg,
-          backdropFilter: "blur(8px)",
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M19 12H5M5 12l7-7M5 12l7 7" stroke={idleLbl} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-
         <button onClick={() => setDark(v => !v)} style={{
           width: 36, height: 36, borderRadius: "50%",
           border: `1px solid ${tglBorder}`, background: tglBg,
@@ -432,41 +423,24 @@ export function SignupPage({ onBack }: Props) {
       }}>
         <div style={{ width: "100%", maxWidth: 340 }}>
 
-          {/* Badge */}
-          <div style={{ marginBottom: 14, ...rise(1) }}>
-            <span style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "5px 12px 5px 8px", borderRadius: 20,
-              background: dark ? "rgba(139,92,246,0.14)" : "rgba(109,40,217,0.1)",
-              border: `1px solid ${dark ? "rgba(139,92,246,0.22)" : "rgba(109,40,217,0.18)"}`,
-              fontSize: 12, fontWeight: 600, color: accent, letterSpacing: "0.01em",
-            }}>
-              <span style={{
-                width: 6, height: 6, borderRadius: "50%", background: accent,
-                boxShadow: `0 0 6px ${accent}`,
-              }}/>
-              New account
-            </span>
-          </div>
-
           {/* Heading */}
-          <div style={{ marginBottom: 8, ...rise(2) }}>
+          <div style={{ marginBottom: 8, ...rise(1) }}>
             <h1 style={{
               fontSize: "clamp(33px,8.5vw,42px)", fontWeight: 800,
               letterSpacing: "-0.05em", lineHeight: 1.04,
               color: headClr, margin: 0,
             }}>Create account</h1>
           </div>
-          <div style={{ marginBottom: "clamp(32px,8vw,46px)", ...rise(3) }}>
+          <div style={{ marginBottom: "clamp(32px,8vw,46px)", ...rise(2) }}>
             <p style={{ fontSize: 15, color: subClr, lineHeight: 1.5, margin: 0, letterSpacing: "-0.01em" }}>
               Start tracking attendance in minutes
             </p>
           </div>
 
-          {/* Name */}
-          <div style={{ marginBottom: "clamp(16px,4vw,22px)", ...rise(4) }}>
+          {/* Nickname */}
+          <div style={{ marginBottom: "clamp(16px,4vw,22px)", ...rise(3) }}>
             <div style={{ position: "relative", height: FIELD_H }}>
-              <label style={labelStyle(nameActive, nameF, !!errors.name)}>Full name</label>
+              <label style={labelStyle(nameActive, nameF, !!errors.name)}>Nickname</label>
               <input
                 type="text" value={name} autoComplete="name"
                 onChange={e => { setName(e.target.value); setErrors(v => ({ ...v, name: undefined })); }}
@@ -480,7 +454,7 @@ export function SignupPage({ onBack }: Props) {
           </div>
 
           {/* Email */}
-          <div style={{ marginBottom: "clamp(16px,4vw,22px)", ...rise(5) }}>
+          <div style={{ marginBottom: "clamp(16px,4vw,22px)", ...rise(4) }}>
             <div style={{ position: "relative", height: FIELD_H }}>
               <label style={labelStyle(emailActive, emailF, !!errors.email)}>Email</label>
               <input
@@ -496,7 +470,7 @@ export function SignupPage({ onBack }: Props) {
           </div>
 
           {/* Password */}
-          <div style={{ ...rise(6) }}>
+          <div style={{ ...rise(5) }}>
             <div style={{ position: "relative", height: FIELD_H }}>
               <label style={labelStyle(pwActive, pwF, !!errors.pw)}>Password</label>
               <input
@@ -534,18 +508,50 @@ export function SignupPage({ onBack }: Props) {
             {errors.pw && <p style={{ margin: "5px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.pw}</p>}
           </div>
 
-          {/* Terms */}
-          <p style={{ fontSize: 12.5, color: dark ? "rgba(200,197,245,0.32)" : "rgba(13,11,30,0.32)",
-            margin: "18px 0 clamp(24px,6vw,32px)", lineHeight: 1.5, letterSpacing: "-0.01em",
-            ...rise(7),
-          }}>
-            By creating an account you agree to our{" "}
-            <span style={{ color: accent, cursor: "pointer", fontWeight: 500 }}>Terms</span>{" "}and{" "}
-            <span style={{ color: accent, cursor: "pointer", fontWeight: 500 }}>Privacy Policy</span>
-          </p>
+          {/* Terms checkbox */}
+          <div style={{ margin: "20px 0 clamp(22px,5vw,28px)", ...rise(6) }}>
+            <label style={{
+              display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer",
+            }}>
+              {/* Custom checkbox */}
+              <div
+                onClick={() => { setAgreed(v => !v); setErrors(e => ({ ...e, agreed: undefined })); }}
+                style={{
+                  flexShrink: 0,
+                  width: 20, height: 20, borderRadius: 6, marginTop: 1,
+                  border: `2px solid ${errors.agreed ? errClr : agreed ? accent : dark ? "rgba(255,255,255,0.22)" : "rgba(13,11,30,0.22)"}`,
+                  background: agreed ? accent : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transition: "background 0.18s ease, border-color 0.18s ease",
+                  boxShadow: agreed ? `0 0 0 3px ${dark ? "rgba(167,139,250,0.18)" : "rgba(124,58,237,0.12)"}` : "none",
+                }}>
+                {agreed && (
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 6.5l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <span style={{
+                fontSize: 13, lineHeight: 1.55, letterSpacing: "-0.01em",
+                color: errors.agreed ? errClr : dark ? "rgba(200,197,245,0.5)" : "rgba(13,11,30,0.5)",
+                transition: "color 0.18s ease",
+                userSelect: "none",
+              }}>
+                I agree to the{" "}
+                <span style={{ color: accent, fontWeight: 600, cursor: "pointer" }}>Terms of Service</span>
+                {" "}and{" "}
+                <span style={{ color: accent, fontWeight: 600, cursor: "pointer" }}>Privacy Policy</span>
+              </span>
+            </label>
+            {errors.agreed && (
+              <p style={{ margin: "6px 0 0 32px", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>
+                {errors.agreed}
+              </p>
+            )}
+          </div>
 
           {/* Create button */}
-          <div style={{ ...rise(7) }}>
+          <div style={{ ...rise(6) }}>
             <button
               type="button"
               onClick={handleCreate}
@@ -568,14 +574,14 @@ export function SignupPage({ onBack }: Props) {
           </div>
 
           {/* Divider */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 18px", ...rise(8) }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 18px", ...rise(7) }}>
             <div style={{ flex: 1, height: 1, background: divClr }}/>
             <span style={{ fontSize: 12, color: divTxt, fontWeight: 500, letterSpacing: "0.04em" }}>or</span>
             <div style={{ flex: 1, height: 1, background: divClr }}/>
           </div>
 
           {/* Sign in */}
-          <div style={{ textAlign: "center", ...rise(8) }}>
+          <div style={{ textAlign: "center", ...rise(7) }}>
             <span style={{ fontSize: 14.5, color: subClr, letterSpacing: "-0.01em" }}>Already have an account?{" "}</span>
             <button onClick={onBack} style={{
               background: "none", border: "none", cursor: "pointer",
