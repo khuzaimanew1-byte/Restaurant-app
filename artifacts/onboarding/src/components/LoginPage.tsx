@@ -17,7 +17,6 @@ export function LoginPage({ onBack: _onBack }: Props) {
   const [btnScale, setBS]     = useState(1);
 
   useEffect(() => {
-    /* tiny delay so initial render completes, then trigger entrance */
     const id = setTimeout(() => setMounted(true), 40);
     return () => clearTimeout(id);
   }, []);
@@ -29,7 +28,7 @@ export function LoginPage({ onBack: _onBack }: Props) {
     return () => mq.removeEventListener("change", h);
   }, []);
 
-  /* ── Smooth staggered entrance ── */
+  /* ── Staggered entrance ── */
   function rise(i: number): React.CSSProperties {
     const d = `${i * 0.08}s`;
     return {
@@ -41,10 +40,10 @@ export function LoginPage({ onBack: _onBack }: Props) {
 
   function validate() {
     const e: typeof errors = {};
-    if (!email.trim())            e.email = "Email is required";
+    if (!email.trim())             e.email = "Email is required";
     else if (!email.includes("@")) e.email = "Enter a valid email";
-    if (!password)                e.pw = "Password is required";
-    else if (password.length < 6) e.pw = "At least 6 characters";
+    if (!password)                 e.pw    = "Password is required";
+    else if (password.length < 6)  e.pw    = "At least 6 characters";
     setErrors(e);
     return !e.email && !e.pw;
   }
@@ -56,15 +55,14 @@ export function LoginPage({ onBack: _onBack }: Props) {
     setLoading(false);
   }
 
-  /* ── Design tokens ── */
+  /* ── Tokens ── */
   const emailActive = emailF || !!email;
   const pwActive    = pwF    || !!password;
 
-  const lightBg  = "linear-gradient(145deg,#C8C3FF 0%,#D9D5FF 12%,#E5E2FF 28%,#EDEAFF 45%,#F4F3FF 62%,#F9F9FF 80%,#FFFFFF 100%)";
-  const o1 = dark ? "rgba(79,70,229,0.42)"  : "rgba(79,70,229,0.30)";
-  const o2 = dark ? "rgba(107,99,240,0.26)" : "rgba(107,99,240,0.22)";
-  const o3 = dark ? "rgba(55,48,163,0.20)"  : "rgba(55,48,163,0.14)";
-
+  const lightBg   = "linear-gradient(145deg,#C8C3FF 0%,#D9D5FF 12%,#E5E2FF 28%,#EDEAFF 45%,#F4F3FF 62%,#F9F9FF 80%,#FFFFFF 100%)";
+  const o1        = dark ? "rgba(79,70,229,0.42)"  : "rgba(79,70,229,0.30)";
+  const o2        = dark ? "rgba(107,99,240,0.26)" : "rgba(107,99,240,0.22)";
+  const o3        = dark ? "rgba(55,48,163,0.20)"  : "rgba(55,48,163,0.14)";
   const headClr   = dark ? "rgba(238,237,255,0.97)" : "#09071E";
   const subClr    = dark ? "rgba(200,197,245,0.46)" : "rgba(13,11,30,0.46)";
   const accent    = dark ? "#8078F2"                 : "#4F46E5";
@@ -86,70 +84,53 @@ export function LoginPage({ onBack: _onBack }: Props) {
   const linkClr   = dark ? "#9992F5"                  : "#4F46E5";
 
   /*
-   * Field layout (68px tall):
-   *   ┌──────────────────────────────────────┐ ← 0px
-   *   │  [LABEL FLOATED — 10.5px uppercase]  │ ← 2px   (active)
-   *   │                                      │
-   *   │  [LABEL PLACEHOLDER — 15.5px]        │ ← 38px  (idle, ~center of input)
-   *   │  [icon]  [input text              ]  │ ← 34px tall, at bottom
-   *   │          [──────────────────────]    │ ← 0px (underline)
-   *   └──────────────────────────────────────┘ ← 68px
+   * Field layout (64px tall, no icon):
    *
-   * Icon stays fixed at bottom-left, aligned with input text center.
-   * Label alone floats; icon does NOT move.
+   *  ┌──────────────────────────────────┐  0px
+   *  │  EMAIL ADDRESS  ← 10px, top: 2  │  (active)
+   *  │                                  │
+   *  │  Email address  ← 15.5px        │  (idle, top: 32 = center of input)
+   *  │  [input text                 ]  │  input: bottom 0, h=34, pb=10
+   *  │  ──────────────────────────────  │  underline
+   *  └──────────────────────────────────┘  64px
+   *
+   *  Idle label center = 64 - 34/2 - 10/2 = 64 - 22 = 42px from top
+   *  → top = 42 - fontSize/2 = 42 - 7.75 ≈ 34
    */
-  const FIELD_H   = 68;   // container height
-  const ICON_SIZE = 16;
-  const ICON_W    = 22;   // icon area width (icon + gap column)
-  const INPUT_H   = 34;   // input box height
-  const INPUT_PB  = 10;   // padding-bottom inside input
-  // Input text vertical center from container bottom:
-  //   input sits at bottom (0), text center = INPUT_H/2 - INPUT_PB/2 = 12px from bottom
-  // From top: FIELD_H - 12 = 56 — label center when idle:
-  const LABEL_IDLE_TOP  = FIELD_H - (INPUT_H / 2 + INPUT_PB / 2) - 8;  // ≈ 37
+  const FIELD_H     = 64;
+  const INPUT_H     = 34;
+  const INPUT_PB    = 10;
+  const IDLE_TOP    = FIELD_H - (INPUT_H / 2) - (INPUT_PB / 2) - 8; // ≈ 33
 
-  function labelPos(active: boolean): React.CSSProperties {
+  function labelStyle(active: boolean, focused: boolean, err: boolean): React.CSSProperties {
     return {
       position:      "absolute",
-      left:          ICON_W,
-      top:           active ? 2 : LABEL_IDLE_TOP,
+      left:          0,
+      top:           active ? 2 : IDLE_TOP,
       fontSize:      active ? 10.5 : 15.5,
       fontWeight:    active ? 700 : 400,
       letterSpacing: active ? "0.09em" : "-0.015em",
-      textTransform: active ? "uppercase" : "none",
+      textTransform: active ? "uppercase" : "none" as const,
       lineHeight:    1,
-      whiteSpace:    "nowrap",
-      pointerEvents: "none",
-      /* ← smooth, single-property transitions prevent snapping */
+      whiteSpace:    "nowrap" as const,
+      pointerEvents: "none" as const,
+      color:         err ? errClr : focused ? accent : active ? activeLbl : idleLbl,
+      /* each property transitions independently → no snapping */
       transition: [
         "top 0.28s cubic-bezier(0.22,1,0.36,1)",
         "font-size 0.28s cubic-bezier(0.22,1,0.36,1)",
-        "font-weight 0.24s ease",
+        "font-weight 0.22s ease",
         "letter-spacing 0.28s cubic-bezier(0.22,1,0.36,1)",
         "color 0.22s ease",
       ].join(", "),
     };
   }
 
-  function labelClr(active: boolean, focused: boolean, err: boolean) {
-    if (err)     return errClr;
-    if (focused) return accent;
-    if (active)  return activeLbl;
-    return idleLbl;
-  }
-
-  function iconClr(active: boolean, focused: boolean, err: boolean) {
-    if (err)     return errClr;
-    if (focused) return accent;
-    if (active)  return activeLbl;
-    return idleLbl;
-  }
-
   function sweepLine(focused: boolean, err: boolean): React.CSSProperties {
     return {
       position:   "absolute",
       bottom:     0, left: 0,
-      height:     2,  borderRadius: 2,
+      height:     2, borderRadius: 2,
       width:      focused ? "100%" : "0%",
       background: err ? errClr : accent,
       transition: "width 0.38s cubic-bezier(0.22,1,0.36,1)",
@@ -166,29 +147,29 @@ export function LoginPage({ onBack: _onBack }: Props) {
       WebkitFontSmoothing: "antialiased",
     }}>
 
-      {/* ── Atmospheric orbs ── */}
+      {/* Orbs */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
         <div className="auth-orb-a" style={{
           position: "absolute",
           width: "85vw", height: "85vw", maxWidth: 580, maxHeight: 580,
           top: "-22%", right: "-20%", borderRadius: "50%",
           background: `radial-gradient(circle,${o1} 0%,transparent 65%)`,
-        }} />
+        }}/>
         <div className="auth-orb-b" style={{
           position: "absolute",
           width: "70vw", height: "70vw", maxWidth: 440, maxHeight: 440,
           bottom: "-18%", left: "-20%", borderRadius: "50%",
           background: `radial-gradient(circle,${o2} 0%,transparent 65%)`,
-        }} />
+        }}/>
         <div className="auth-orb-c" style={{
           position: "absolute",
           width: "55vw", height: "55vw", maxWidth: 360, maxHeight: 360,
           top: "35%", left: "22%", borderRadius: "50%",
           background: `radial-gradient(circle,${o3} 0%,transparent 65%)`,
-        }} />
+        }}/>
       </div>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <header style={{
         position: "relative", zIndex: 10, flexShrink: 0,
         display: "flex", justifyContent: "flex-end",
@@ -215,7 +196,7 @@ export function LoginPage({ onBack: _onBack }: Props) {
         </button>
       </header>
 
-      {/* ── Centered form ── */}
+      {/* Form */}
       <div style={{
         flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
         position: "relative", zIndex: 1,
@@ -238,59 +219,36 @@ export function LoginPage({ onBack: _onBack }: Props) {
             }}>Enter your credentials to continue</p>
           </div>
 
-          {/* ══ Email field ══ */}
+          {/* ── Email ── */}
           <div style={{ marginBottom: "clamp(20px,5vw,28px)", ...rise(3) }}>
             <div style={{ position: "relative", height: FIELD_H }}>
 
-              {/* Icon — fixed at bottom-left, aligned with input text */}
-              <div style={{
-                position: "absolute", left: 0,
-                bottom: INPUT_PB + (INPUT_H - INPUT_PB) / 2 - ICON_SIZE / 2,
-                color: iconClr(emailActive, emailF, !!errors.email),
-                transition: "color 0.22s ease",
-                lineHeight: 0,
-              }}>
-                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none">
-                  <rect x="2" y="4" width="20" height="16" rx="3" stroke="currentColor" strokeWidth="1.8"/>
-                  <path d="M2 8l10 7 10-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                </svg>
-              </div>
-
-              {/* Floating label */}
-              <label style={{
-                ...labelPos(emailActive),
-                color: labelClr(emailActive, emailF, !!errors.email),
-              }}>
-                Email
+              <label style={labelStyle(emailActive, emailF, !!errors.email)}>
+                Email address
               </label>
 
-              {/* Input */}
               <input
                 type="email"
                 value={email}
                 onChange={e => { setEmail(e.target.value); setErrors(v => ({ ...v, email: undefined })); }}
                 onFocus={() => setEF(true)}
-                onBlur={() => setEF(false)}
+                onBlur={()  => setEF(false)}
                 autoComplete="email"
                 style={{
-                  position: "absolute", bottom: 0,
-                  left: ICON_W, right: 0,
+                  position: "absolute", bottom: 0, left: 0, right: 0,
                   height: INPUT_H,
                   background: "none", border: "none", outline: "none", borderRadius: 0,
-                  fontSize: 15.5, color: inputTxt,
-                  paddingBottom: INPUT_PB,
+                  fontSize: 15.5, color: inputTxt, paddingBottom: INPUT_PB,
                   fontFamily: "inherit", letterSpacing: "-0.015em",
                   WebkitAppearance: "none", boxSizing: "border-box",
                 }}
               />
 
-              {/* Base underline */}
               <div style={{
                 position: "absolute", bottom: 0, left: 0, right: 0, height: 1.5,
                 background: errors.email ? errClr : baseLine,
                 transition: "background 0.22s ease",
               }}/>
-              {/* Sweep line */}
               <div style={sweepLine(emailF, !!errors.email)}/>
             </div>
             {errors.email && (
@@ -300,65 +258,48 @@ export function LoginPage({ onBack: _onBack }: Props) {
             )}
           </div>
 
-          {/* ══ Password field ══ */}
+          {/* ── Password ── */}
           <div style={{ ...rise(4) }}>
             <div style={{ position: "relative", height: FIELD_H }}>
 
-              {/* Icon */}
-              <div style={{
-                position: "absolute", left: 0,
-                bottom: INPUT_PB + (INPUT_H - INPUT_PB) / 2 - ICON_SIZE / 2,
-                color: iconClr(pwActive, pwF, !!errors.pw),
-                transition: "color 0.22s ease",
-                lineHeight: 0,
-              }}>
-                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none">
-                  <rect x="5" y="11" width="14" height="10" rx="2.5" stroke="currentColor" strokeWidth="1.8"/>
-                  <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                </svg>
-              </div>
-
-              {/* Floating label */}
-              <label style={{
-                ...labelPos(pwActive),
-                color: labelClr(pwActive, pwF, !!errors.pw),
-              }}>
+              <label style={labelStyle(pwActive, pwF, !!errors.pw)}>
                 Password
               </label>
 
-              {/* Input */}
               <input
                 type={showPw ? "text" : "password"}
                 value={password}
                 onChange={e => { setPw(e.target.value); setErrors(v => ({ ...v, pw: undefined })); }}
                 onFocus={() => setPwF(true)}
-                onBlur={() => setPwF(false)}
+                onBlur={()  => setPwF(false)}
                 autoComplete="current-password"
                 style={{
-                  position: "absolute", bottom: 0,
-                  left: ICON_W, right: 34,
+                  position: "absolute", bottom: 0, left: 0, right: 34,
                   height: INPUT_H,
                   background: "none", border: "none", outline: "none", borderRadius: 0,
-                  fontSize: 15.5, color: inputTxt,
-                  paddingBottom: INPUT_PB,
+                  fontSize: 15.5, color: inputTxt, paddingBottom: INPUT_PB,
                   fontFamily: "inherit", letterSpacing: "-0.015em",
                   WebkitAppearance: "none", boxSizing: "border-box",
                 }}
               />
 
-              {/* Show/hide */}
-              <button type="button" onClick={() => setShowPw(s => !s)} style={{
-                position: "absolute", right: 0,
-                bottom: INPUT_PB + (INPUT_H - INPUT_PB) / 2 - 9,
-                width: 18, height: 18,
-                background: "none", border: "none", cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: idleLbl,
-                opacity: 0.5, transition: "opacity 0.18s ease",
-                padding: 0,
-              }}
+              {/* Show / Hide toggle */}
+              <button
+                type="button"
+                onClick={() => setShowPw(s => !s)}
+                style={{
+                  position: "absolute", right: 0,
+                  bottom: INPUT_PB + (INPUT_H - INPUT_PB) / 2 - 9,
+                  width: 18, height: 18,
+                  background: "none", border: "none", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: pwF ? accent : idleLbl,
+                  opacity: 0.55,
+                  transition: "color 0.22s ease, opacity 0.18s ease",
+                  padding: 0,
+                }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "0.55")}
               >
                 {showPw
                   ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -372,13 +313,11 @@ export function LoginPage({ onBack: _onBack }: Props) {
                 }
               </button>
 
-              {/* Base underline */}
               <div style={{
                 position: "absolute", bottom: 0, left: 0, right: 0, height: 1.5,
                 background: errors.pw ? errClr : baseLine,
                 transition: "background 0.22s ease",
               }}/>
-              {/* Sweep line */}
               <div style={sweepLine(pwF, !!errors.pw)}/>
             </div>
             {errors.pw && (
@@ -388,7 +327,7 @@ export function LoginPage({ onBack: _onBack }: Props) {
             )}
           </div>
 
-          {/* Forgot password */}
+          {/* Forgot */}
           <div style={{
             display: "flex", justifyContent: "flex-end",
             margin: "14px 0 clamp(28px,7vw,38px)",
