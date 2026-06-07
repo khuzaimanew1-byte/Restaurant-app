@@ -403,12 +403,12 @@ export function LoginPage({ onSuccess }: Props) {
               style={{
                 width: "100%", height: 54, borderRadius: 16, border: "none",
                 cursor: loading || sessionActive ? "not-allowed" : "pointer",
-                background: sessionActive
-                  ? dark ? "rgba(99,92,238,0.28)" : "rgba(79,70,229,0.22)"
-                  : formValid ? accentBtn : dark ? "rgba(255,255,255,0.07)" : "rgba(13,11,30,0.07)",
-                color: sessionActive
-                  ? dark ? "rgba(200,197,245,0.45)" : "rgba(79,70,229,0.45)"
-                  : formValid ? "#fff" : dark ? "rgba(200,197,245,0.28)" : "rgba(13,11,30,0.25)",
+                background: formValid && !sessionActive
+                  ? accentBtn
+                  : dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.16)",
+                color: formValid && !sessionActive
+                  ? "#fff"
+                  : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.42)",
                 fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transform: `scale(${btnScale})`,
