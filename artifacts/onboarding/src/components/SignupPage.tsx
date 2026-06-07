@@ -6,37 +6,52 @@ interface Props {
 
 /* ── OTP Modal ───────────────────────────────────────────────────────── */
 function OtpModal({
-  email, dark, onClose, accent, accentBtn, btnShadow,
+  email, dark, onClose, accent, accentBtn, btnShadow, resend, setResend,
 }: {
   email: string; dark: boolean; onClose: () => void;
   accent: string; accentBtn: string; btnShadow: string;
+  resend: number; setResend: React.Dispatch<React.SetStateAction<number>>;
 }) {
-  const [otp, setOtp]         = useState(["","","","","",""]);
-  const [visible, setVisible] = useState(false);
-  const [resend, setResend]   = useState(59);
-  const [loading, setLoading] = useState(false);
+  const [otp, setOtp]           = useState(["","","","","",""]);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [loading, setLoading]   = useState(false);
   const [verified, setVerified] = useState(false);
-  const inputRefs             = useRef<(HTMLInputElement | null)[]>([]);
+  const [dragY, setDragY]       = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startY                  = useRef(0);
+  const inputRefs               = useRef<(HTMLInputElement | null)[]>([]);
+  const sheetRef                = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setTimeout(() => setVisible(true), 20); }, []);
-
-  /* countdown */
   useEffect(() => {
-    if (resend === 0) return;
-    const id = setInterval(() => setResend(s => s - 1), 1000);
-    return () => clearInterval(id);
-  }, [resend]);
+    const id = setTimeout(() => setSheetVisible(true), 20);
+    return () => clearTimeout(id);
+  }, []);
 
-  const cardBg    = dark ? "rgba(14,12,38,0.96)"  : "rgba(255,255,255,0.96)";
-  const headClr   = dark ? "rgba(238,237,255,0.97)" : "#09071E";
-  const subClr    = dark ? "rgba(200,197,245,0.5)"  : "rgba(13,11,30,0.46)";
-  const boxBorder = dark ? "rgba(255,255,255,0.13)" : "rgba(13,11,30,0.14)";
-  const boxBg     = dark ? "rgba(255,255,255,0.05)" : "rgba(249,248,255,0.8)";
-  const boxFocBg  = dark ? "rgba(127,120,242,0.12)" : "rgba(79,70,229,0.07)";
-  const boxTxt    = dark ? "rgba(238,237,255,0.95)" : "#09071E";
-  const resendClr = dark ? "#9992F5"                 : "#4F46E5";
-  const mutedClr  = dark ? "rgba(200,197,245,0.38)"  : "rgba(13,11,30,0.32)";
+  /* ── Touch drag to close ── */
+  function onTouchStart(e: React.TouchEvent) {
+    startY.current = e.touches[0].clientY;
+    setDragging(true);
+  }
+  function onTouchMove(e: React.TouchEvent) {
+    const dy = Math.max(0, e.touches[0].clientY - startY.current);
+    setDragY(dy);
+  }
+  function onTouchEnd() {
+    setDragging(false);
+    if (dragY > 90) {
+      dismiss();
+    } else {
+      setDragY(0);
+    }
+  }
 
+  function dismiss() {
+    setSheetVisible(false);
+    setDragY(0);
+    setTimeout(() => onClose(), 380);
+  }
+
+  /* ── OTP input helpers ── */
   function handleKey(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Backspace") {
       if (otp[i]) {
@@ -46,13 +61,11 @@ function OtpModal({
       }
     }
   }
-
   function handleChange(i: number, val: string) {
     const digit = val.replace(/\D/g, "").slice(-1);
     const next  = [...otp]; next[i] = digit; setOtp(next);
     if (digit && i < 5) setTimeout(() => inputRefs.current[i + 1]?.focus(), 0);
   }
-
   function handlePaste(e: React.ClipboardEvent) {
     e.preventDefault();
     const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6).split("");
@@ -62,88 +75,157 @@ function OtpModal({
     const lastFilled = Math.min(digits.length, 5);
     setTimeout(() => inputRefs.current[lastFilled]?.focus(), 0);
   }
-
   async function handleVerify() {
     if (otp.join("").length < 6) return;
     setLoading(true);
     await new Promise(r => setTimeout(r, 1200));
     setVerified(true);
-    setTimeout(() => onClose(), 1200);
+    setTimeout(() => dismiss(), 1400);
   }
 
   const filled = otp.join("").length === 6;
+  const mins   = Math.floor(resend / 60);
+  const secs   = resend % 60;
+
+  /* Colors */
+  const cardBg    = dark ? "rgba(12,10,35,0.97)"  : "rgba(255,255,255,0.98)";
+  const headClr   = dark ? "rgba(242,241,255,0.97)" : "#09071E";
+  const subClr    = dark ? "rgba(200,197,245,0.52)"  : "rgba(13,11,30,0.46)";
+  const boxBorder = dark ? "rgba(255,255,255,0.11)" : "rgba(13,11,30,0.12)";
+  const boxBg     = dark ? "rgba(255,255,255,0.04)" : "rgba(249,248,255,0.7)";
+  const boxFocBg  = dark ? "rgba(127,120,242,0.14)" : "rgba(79,70,229,0.06)";
+  const boxTxt    = dark ? "rgba(242,241,255,0.96)" : "#09071E";
+  const resendClr = dark ? "#A78BFA"                 : "#7C3AED";
+  const mutedClr  = dark ? "rgba(200,197,245,0.36)"  : "rgba(13,11,30,0.30)";
+  const handleClr = dark ? "rgba(255,255,255,0.14)"  : "rgba(13,11,30,0.12)";
+
+  const translateY = sheetVisible ? dragY : (sheetVisible === false ? "100%" : "100%");
 
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 100,
-      display: "flex", alignItems: "flex-end", justifyContent: "center",
-      padding: "0 0 env(safe-area-inset-bottom,0)",
-      background: dark ? "rgba(0,0,0,0.7)" : "rgba(13,11,30,0.5)",
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)",
-      opacity: visible ? 1 : 0,
-      transition: "opacity 0.3s ease",
-    }} onClick={e => e.target === e.currentTarget && onClose()}>
-
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 100,
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        padding: "0 0 env(safe-area-inset-bottom,0)",
+        background: dark ? "rgba(0,0,0,0)" : "rgba(0,0,0,0)",
+        opacity: sheetVisible ? 1 : 0,
+        transition: "opacity 0.35s ease",
+      }}
+      onClick={e => e.target === e.currentTarget && dismiss()}
+    >
+      {/* Backdrop blur layer */}
       <div style={{
-        width: "100%", maxWidth: 420,
-        background: cardBg,
-        borderRadius: "28px 28px 0 0",
-        padding: "clamp(28px,6vw,36px) clamp(24px,6vw,36px) clamp(32px,8vw,44px)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        border: `1px solid ${boxBorder}`,
-        borderBottom: "none",
-        transform: visible ? "translateY(0)" : "translateY(100%)",
-        transition: "transform 0.42s cubic-bezier(0.22,1,0.36,1)",
-        boxSizing: "border-box",
-      }}>
+        position: "absolute", inset: 0,
+        background: dark ? "rgba(4,3,20,0.72)" : "rgba(13,11,30,0.46)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        opacity: sheetVisible ? 1 : 0,
+        transition: "opacity 0.35s ease",
+      }} onClick={dismiss}/>
 
-        {/* Drag handle */}
-        <div style={{
-          width: 40, height: 4, borderRadius: 2,
-          background: dark ? "rgba(255,255,255,0.18)" : "rgba(13,11,30,0.14)",
-          margin: "0 auto 28px",
-        }}/>
+      {/* Sheet */}
+      <div
+        ref={sheetRef}
+        style={{
+          position: "relative", zIndex: 1,
+          width: "100%", maxWidth: 440,
+          background: cardBg,
+          borderRadius: "26px 26px 0 0",
+          padding: "0 clamp(24px,6vw,36px) clamp(36px,9vw,52px)",
+          backdropFilter: "blur(40px)",
+          WebkitBackdropFilter: "blur(40px)",
+          border: `1px solid ${dark ? "rgba(255,255,255,0.08)" : "rgba(13,11,30,0.07)"}`,
+          borderBottom: "none",
+          boxShadow: dark
+            ? "0 -20px 80px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.06)"
+            : "0 -20px 80px rgba(13,11,30,0.14), 0 -1px 0 rgba(255,255,255,0.9)",
+          transform: `translateY(${typeof translateY === "number" ? translateY + "px" : translateY})`,
+          transition: dragging
+            ? "none"
+            : `transform 0.46s cubic-bezier(0.22,1,0.36,1), opacity 0.35s ease`,
+          boxSizing: "border-box",
+          willChange: "transform",
+        }}
+      >
+        {/* Drag handle area — touchable */}
+        <div
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          style={{
+            padding: "14px 0 22px",
+            display: "flex", justifyContent: "center",
+            cursor: "grab", userSelect: "none",
+            margin: "0 -36px",
+            touchAction: "none",
+          }}
+        >
+          <div style={{
+            width: 36, height: 4.5, borderRadius: 100,
+            background: handleClr,
+            transition: "background 0.2s",
+          }}/>
+        </div>
 
         {verified ? (
-          /* ── Success state ── */
-          <div style={{ textAlign: "center", padding: "12px 0 8px" }}>
+          /* ── Success ── */
+          <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
             <div style={{
-              width: 56, height: 56, borderRadius: "50%",
+              width: 64, height: 64, borderRadius: "50%",
               background: `linear-gradient(135deg,${accent},#6366F1)`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 16px",
+              margin: "0 auto 20px",
               boxShadow: btnShadow,
+              animation: "scaleIn 0.5s cubic-bezier(0.22,1,0.36,1)",
             }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
                 <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <h3 style={{ fontSize: 22, fontWeight: 800, color: headClr, margin: "0 0 8px", letterSpacing: "-0.04em" }}>
-              Verified!
-            </h3>
-            <p style={{ fontSize: 14, color: subClr, margin: 0, letterSpacing: "-0.01em" }}>
+            <h3 style={{
+              fontSize: 24, fontWeight: 800, color: headClr, margin: "0 0 8px",
+              letterSpacing: "-0.04em",
+            }}>Verified!</h3>
+            <p style={{ fontSize: 14.5, color: subClr, margin: 0, letterSpacing: "-0.01em" }}>
               Account created successfully
             </p>
           </div>
         ) : (
           <>
-            {/* Heading */}
+            {/* Email icon */}
+            <div style={{
+              width: 52, height: 52, borderRadius: 16,
+              background: dark ? "rgba(167,139,250,0.12)" : "rgba(124,58,237,0.08)",
+              border: `1px solid ${dark ? "rgba(167,139,250,0.2)" : "rgba(124,58,237,0.14)"}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 20,
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="4" width="20" height="16" rx="3" stroke={accent} strokeWidth="1.7"/>
+                <path d="M2 8l8.586 5.707a2 2 0 002.828 0L22 8" stroke={accent} strokeWidth="1.7" strokeLinecap="round"/>
+              </svg>
+            </div>
+
             <h3 style={{
-              fontSize: "clamp(22px,5vw,26px)", fontWeight: 800, color: headClr,
-              margin: "0 0 8px", letterSpacing: "-0.04em",
+              fontSize: "clamp(22px,5.5vw,27px)", fontWeight: 800, color: headClr,
+              margin: "0 0 6px", letterSpacing: "-0.04em",
             }}>Check your email</h3>
-            <p style={{ fontSize: 14, color: subClr, margin: "0 0 32px", letterSpacing: "-0.01em", lineHeight: 1.5 }}>
+            <p style={{
+              fontSize: 14.5, color: subClr, margin: "0 0 30px",
+              letterSpacing: "-0.01em", lineHeight: 1.55,
+            }}>
               We sent a 6-digit code to{" "}
               <span style={{ color: headClr, fontWeight: 600 }}>{email || "your email"}</span>
             </p>
 
             {/* OTP boxes */}
-            <div style={{
-              display: "flex", gap: "clamp(8px,2.5vw,12px)",
-              marginBottom: 28, justifyContent: "center",
-            }} onPaste={handlePaste}>
+            <div
+              style={{
+                display: "flex", gap: "clamp(7px,2.2vw,10px)",
+                marginBottom: 26, justifyContent: "center",
+              }}
+              onPaste={handlePaste}
+            >
               {otp.map((val, i) => (
                 <input
                   key={i}
@@ -152,22 +234,26 @@ function OtpModal({
                   inputMode="numeric"
                   maxLength={1}
                   value={val}
-                  onFocus={e => { e.target.select(); }}
+                  onFocus={e => e.target.select()}
                   onChange={e => handleChange(i, e.target.value)}
                   onKeyDown={e => handleKey(i, e)}
                   style={{
                     width: "clamp(44px,13vw,52px)",
-                    height: "clamp(52px,15vw,62px)",
-                    borderRadius: 12,
+                    height: "clamp(54px,15vw,62px)",
+                    borderRadius: 14,
                     border: `1.5px solid ${val ? accent : boxBorder}`,
                     background: val ? boxFocBg : boxBg,
                     fontSize: 22, fontWeight: 700, textAlign: "center",
                     color: boxTxt,
                     fontFamily: "inherit",
                     outline: "none",
-                    transition: "border-color 0.18s ease, background 0.18s ease",
+                    transition: "border-color 0.2s cubic-bezier(0.22,1,0.36,1), background 0.2s ease, transform 0.15s cubic-bezier(0.22,1,0.36,1)",
                     boxSizing: "border-box",
-                    caretColor: accent,
+                    caretColor: "transparent",
+                    transform: val ? "scale(1.04)" : "scale(1)",
+                    boxShadow: val
+                      ? dark ? `0 0 0 3px rgba(167,139,250,0.15)` : `0 0 0 3px rgba(124,58,237,0.1)`
+                      : "none",
                   }}
                 />
               ))}
@@ -179,17 +265,22 @@ function OtpModal({
               onClick={handleVerify}
               disabled={!filled || loading}
               style={{
-                width: "100%", height: 52, borderRadius: 14, border: "none",
+                width: "100%", height: 54, borderRadius: 16, border: "none",
                 cursor: filled && !loading ? "pointer" : "default",
-                background: filled ? accentBtn : dark ? "rgba(255,255,255,0.07)" : "rgba(13,11,30,0.07)",
+                background: filled ? accentBtn : dark ? "rgba(255,255,255,0.06)" : "rgba(13,11,30,0.06)",
                 color: filled ? "#fff" : mutedClr,
                 fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 boxShadow: filled && !loading ? btnShadow : "none",
-                transition: "background 0.25s ease, box-shadow 0.22s ease, color 0.2s ease",
+                transition: "background 0.28s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease, color 0.22s ease, transform 0.15s cubic-bezier(0.22,1,0.36,1)",
                 fontFamily: "inherit",
                 marginBottom: 18,
-              }}>
+                transform: "scale(1)",
+              }}
+              onPointerDown={e => { if (filled) (e.currentTarget as HTMLElement).style.transform = "scale(0.97)"; }}
+              onPointerUp={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+              onPointerLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
+            >
               {loading ? <OtpSpinner /> : "Verify & Continue"}
             </button>
 
@@ -197,15 +288,22 @@ function OtpModal({
             <div style={{ textAlign: "center" }}>
               {resend > 0 ? (
                 <span style={{ fontSize: 13, color: mutedClr, letterSpacing: "-0.01em" }}>
-                  Resend code in <strong style={{ color: subClr }}>0:{String(resend).padStart(2,"0")}</strong>
+                  Resend code in{" "}
+                  <strong style={{
+                    color: subClr,
+                    fontVariantNumeric: "tabular-nums",
+                  }}>
+                    {mins}:{String(secs).padStart(2, "0")}
+                  </strong>
                 </span>
               ) : (
                 <button
-                  onClick={() => setResend(59)}
+                  onClick={() => setResend(300)}
                   style={{
                     background: "none", border: "none", cursor: "pointer",
                     fontSize: 13, color: resendClr, fontWeight: 600,
                     fontFamily: "inherit", letterSpacing: "-0.01em",
+                    padding: "4px 0",
                   }}>
                   Resend code
                 </button>
@@ -222,7 +320,7 @@ function OtpSpinner() {
   return (
     <span style={{
       width: 18, height: 18, borderRadius: "50%",
-      border: "2.5px solid rgba(255,255,255,0.3)",
+      border: "2.5px solid rgba(255,255,255,0.28)",
       borderTopColor: "#fff", display: "inline-block",
       animation: "spin 0.72s linear infinite",
     }}/>
@@ -243,6 +341,12 @@ export function SignupPage({ onBack }: Props) {
   const [agreed, setAgreed] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; email?: string; pw?: string; agreed?: string }>({});
   const [showOtp, setShowOtp] = useState(false);
+  const [btnScale, setBS]   = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  /* OTP resend timer — lives HERE so it survives modal open/close */
+  const [resend, setResend]     = useState(0);
+  const [otpSentAt, setOtpSentAt] = useState<number | null>(null);
 
   useEffect(() => { const id = setTimeout(() => setMnt(true), 40); return () => clearTimeout(id); }, []);
 
@@ -252,13 +356,20 @@ export function SignupPage({ onBack }: Props) {
     mq.addEventListener("change", h); return () => mq.removeEventListener("change", h);
   }, []);
 
+  /* Countdown tick */
+  useEffect(() => {
+    if (resend <= 0) return;
+    const id = setInterval(() => setResend(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [resend]);
+
   /* Stagger */
   function rise(i: number): React.CSSProperties {
-    const d = `${i * 0.08}s`;
+    const d = `${i * 0.075}s`;
     return {
       opacity:    mounted ? 1 : 0,
-      transform:  mounted ? "translateY(0px)" : "translateY(18px)",
-      transition: `opacity 0.7s cubic-bezier(0.22,1,0.36,1) ${d}, transform 0.7s cubic-bezier(0.22,1,0.36,1) ${d}`,
+      transform:  mounted ? "translateY(0px)" : "translateY(20px)",
+      transition: `opacity 0.72s cubic-bezier(0.22,1,0.36,1) ${d}, transform 0.72s cubic-bezier(0.22,1,0.36,1) ${d}`,
     };
   }
 
@@ -274,39 +385,62 @@ export function SignupPage({ onBack }: Props) {
     return !e.name && !e.email && !e.pw && !e.agreed;
   }
 
-  function handleCreate() { if (validate()) setShowOtp(true); }
+  async function handleCreate() {
+    if (!validate()) return;
+    setLoading(true);
+
+    /* Only start the 5-min cooldown if not already running */
+    if (resend === 0) {
+      setResend(300);
+      setOtpSentAt(Date.now());
+    }
+
+    await new Promise(r => setTimeout(r, 800));
+    setLoading(false);
+    setShowOtp(true);
+  }
+
+  /* When user closes modal and clicks "Create account" again,
+     just reopen the sheet — do NOT send a new OTP */
+  function handleReopenOtp() {
+    if (otpSentAt !== null) {
+      /* OTP was already sent — just reopen modal, timer continues */
+      setShowOtp(true);
+      return;
+    }
+    handleCreate();
+  }
 
   /* Tokens */
   const nameActive  = nameF  || !!name;
   const emailActive = emailF || !!email;
   const pwActive    = pwF    || !!pw;
 
-  /* Signup-specific gradient: fresh, expansive — light travels bottom-left → top-right */
   const lightBg   = "linear-gradient(155deg,#FFFFFF 0%,#F5F3FF 20%,#EDE9FE 40%,#DDD6FE 62%,#C4B5FD 82%,#A78BFA 100%)";
-  const darkBg    = "linear-gradient(155deg,#04031A 0%,#07062A 45%,#0C0942 100%)";
+  const darkBg    = "linear-gradient(155deg,#03021A 0%,#060424 50%,#0B083E 100%)";
 
-  const o1 = dark ? "rgba(139,92,246,0.38)"  : "rgba(167,139,250,0.45)";
-  const o2 = dark ? "rgba(79,70,229,0.28)"   : "rgba(109,40,217,0.22)";
-  const o3 = dark ? "rgba(124,58,237,0.18)"  : "rgba(196,181,253,0.6)";
+  const o1 = dark ? "rgba(139,92,246,0.35)"  : "rgba(167,139,250,0.42)";
+  const o2 = dark ? "rgba(79,70,229,0.25)"   : "rgba(109,40,217,0.20)";
+  const o3 = dark ? "rgba(124,58,237,0.16)"  : "rgba(196,181,253,0.55)";
 
-  const headClr   = dark ? "rgba(238,237,255,0.97)" : "#09071E";
-  const subClr    = dark ? "rgba(200,197,245,0.46)"  : "rgba(13,11,30,0.5)";
+  const headClr   = dark ? "rgba(242,241,255,0.97)" : "#09071E";
+  const subClr    = dark ? "rgba(200,197,245,0.48)"  : "rgba(13,11,30,0.48)";
   const accent    = dark ? "#A78BFA"                  : "#7C3AED";
   const accentBtn = dark ? "linear-gradient(135deg,#8B5CF6 0%,#6D28D9 100%)"
                          : "linear-gradient(135deg,#8B5CF6 0%,#6D28D9 100%)";
-  const btnShadow = dark ? "0 12px 40px rgba(139,92,246,0.55),0 4px 12px rgba(139,92,246,0.3)"
-                         : "0 8px 30px rgba(109,40,217,0.38),0 2px 8px rgba(109,40,217,0.2)";
-  const baseLine  = dark ? "rgba(255,255,255,0.1)"   : "rgba(13,11,30,0.14)";
-  const idleLbl   = dark ? "rgba(200,197,245,0.38)"  : "rgba(13,11,30,0.38)";
-  const activeLbl = dark ? "rgba(200,197,245,0.62)"  : "rgba(13,11,30,0.55)";
-  const inputTxt  = dark ? "rgba(238,237,255,0.93)"  : "#09071E";
-  const phClr     = dark ? "rgba(200,197,245,0.18)"  : "rgba(13,11,30,0.2)";
+  const btnShadow = dark ? "0 12px 40px rgba(139,92,246,0.52),0 4px 12px rgba(139,92,246,0.28)"
+                         : "0 8px 30px rgba(109,40,217,0.36),0 2px 8px rgba(109,40,217,0.18)";
+  const baseLine  = dark ? "rgba(255,255,255,0.09)"   : "rgba(13,11,30,0.13)";
+  const idleLbl   = dark ? "rgba(200,197,245,0.36)"  : "rgba(13,11,30,0.36)";
+  const activeLbl = dark ? "rgba(200,197,245,0.60)"  : "rgba(13,11,30,0.52)";
+  const inputTxt  = dark ? "rgba(242,241,255,0.94)"  : "#09071E";
+  const phClr     = dark ? "rgba(200,197,245,0.16)"  : "rgba(13,11,30,0.18)";
   const errClr    = dark ? "#F87171"                   : "#DC2626";
-  const tglBorder = dark ? "rgba(255,255,255,0.1)"   : "rgba(13,11,30,0.14)";
+  const tglBorder = dark ? "rgba(255,255,255,0.1)"   : "rgba(13,11,30,0.13)";
   const tglBg     = dark ? "rgba(255,255,255,0.05)"  : "rgba(255,255,255,0.55)";
   const linkClr   = dark ? "#A78BFA"                  : "#7C3AED";
-  const divClr    = dark ? "rgba(255,255,255,0.08)"  : "rgba(13,11,30,0.1)";
-  const divTxt    = dark ? "rgba(200,197,245,0.28)"  : "rgba(13,11,30,0.32)";
+  const divClr    = dark ? "rgba(255,255,255,0.07)"  : "rgba(13,11,30,0.09)";
+  const divTxt    = dark ? "rgba(200,197,245,0.26)"  : "rgba(13,11,30,0.30)";
 
   const FIELD_H  = 64;
   const INPUT_H  = 34;
@@ -367,7 +501,7 @@ export function SignupPage({ onBack }: Props) {
       WebkitFontSmoothing: "antialiased",
     }}>
 
-      {/* Orbs — placed at top-right and bottom-left to mirror login but feel "opening" */}
+      {/* Orbs */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
         <div className="auth-orb-a" style={{
           position: "absolute",
@@ -389,7 +523,7 @@ export function SignupPage({ onBack }: Props) {
         }}/>
       </div>
 
-      {/* Header — dark mode toggle only */}
+      {/* Header */}
       <header style={{
         position: "relative", zIndex: 10, flexShrink: 0,
         display: "flex", justifyContent: "flex-end",
@@ -399,8 +533,9 @@ export function SignupPage({ onBack }: Props) {
         <button onClick={() => setDark(v => !v)} style={{
           width: 36, height: 36, borderRadius: "50%",
           border: `1px solid ${tglBorder}`, background: tglBg,
-          backdropFilter: "blur(8px)",
+          backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "background 0.22s",
         }}>
           {dark
             ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -423,7 +558,6 @@ export function SignupPage({ onBack }: Props) {
       }}>
         <div style={{ width: "100%", maxWidth: 340 }}>
 
-          {/* Heading */}
           <div style={{ marginBottom: 8, ...rise(1) }}>
             <h1 style={{
               fontSize: "clamp(33px,8.5vw,42px)", fontWeight: 800,
@@ -510,79 +644,73 @@ export function SignupPage({ onBack }: Props) {
 
           {/* Terms checkbox */}
           <div style={{ margin: "20px 0 clamp(22px,5vw,28px)", ...rise(6) }}>
-            <label style={{
-              display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer",
-            }}>
-              {/* Custom checkbox */}
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}>
               <div
                 onClick={() => { setAgreed(v => !v); setErrors(e => ({ ...e, agreed: undefined })); }}
                 style={{
                   flexShrink: 0,
                   width: 20, height: 20, borderRadius: 6, marginTop: 1,
-                  border: `2px solid ${errors.agreed ? errClr : agreed ? accent : dark ? "rgba(255,255,255,0.22)" : "rgba(13,11,30,0.22)"}`,
+                  border: `2px solid ${errors.agreed ? errClr : agreed ? accent : dark ? "rgba(255,255,255,0.2)" : "rgba(13,11,30,0.2)"}`,
                   background: agreed ? accent : "transparent",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  transition: "background 0.18s ease, border-color 0.18s ease",
-                  boxShadow: agreed ? `0 0 0 3px ${dark ? "rgba(167,139,250,0.18)" : "rgba(124,58,237,0.12)"}` : "none",
+                  transition: "background 0.22s cubic-bezier(0.22,1,0.36,1), border-color 0.22s ease, transform 0.15s cubic-bezier(0.22,1,0.36,1)",
+                  transform: agreed ? "scale(1.06)" : "scale(1)",
                 }}>
                 {agreed && (
                   <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6.5l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 )}
               </div>
-              <span style={{
-                fontSize: 13, lineHeight: 1.55, letterSpacing: "-0.01em",
-                color: errors.agreed ? errClr : dark ? "rgba(200,197,245,0.5)" : "rgba(13,11,30,0.5)",
-                transition: "color 0.18s ease",
-                userSelect: "none",
-              }}>
+              <span style={{ fontSize: 13.5, color: subClr, lineHeight: 1.5, letterSpacing: "-0.01em" }}>
                 I agree to the{" "}
-                <span style={{ color: accent, fontWeight: 600, cursor: "pointer" }}>Terms of Service</span>
+                <span style={{ color: linkClr, fontWeight: 600, cursor: "pointer" }}>Terms of Service</span>
                 {" "}and{" "}
-                <span style={{ color: accent, fontWeight: 600, cursor: "pointer" }}>Privacy Policy</span>
+                <span style={{ color: linkClr, fontWeight: 600, cursor: "pointer" }}>Privacy Policy</span>
               </span>
             </label>
-            {errors.agreed && (
-              <p style={{ margin: "6px 0 0 32px", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>
-                {errors.agreed}
-              </p>
-            )}
+            {errors.agreed && <p style={{ margin: "6px 0 0 32px", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.agreed}</p>}
           </div>
 
-          {/* Create button */}
-          <div style={{ ...rise(6) }}>
+          {/* Create Account */}
+          <div style={{ ...rise(7) }}>
             <button
               type="button"
-              onClick={handleCreate}
+              onPointerDown={() => setBS(0.967)}
+              onPointerUp={() => { setBS(1); handleReopenOtp(); }}
+              onPointerLeave={() => setBS(1)}
+              disabled={loading}
               style={{
-                width: "100%", height: 52, borderRadius: 14, border: "none",
-                cursor: "pointer",
+                width: "100%", height: 54, borderRadius: 16, border: "none",
+                cursor: loading ? "default" : "pointer",
                 background: accentBtn, color: "#fff",
                 fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: btnShadow,
+                transform: `scale(${btnScale})`,
+                transition: "transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s ease, opacity 0.15s",
+                opacity: loading ? 0.72 : 1,
+                boxShadow: loading ? "none" : btnShadow,
                 fontFamily: "inherit",
-                transition: "transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s ease",
-              }}
-              onPointerDown={e => { (e.currentTarget as HTMLElement).style.transform = "scale(0.967)"; }}
-              onPointerUp={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
-              onPointerLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; }}
-            >
-              Create account
+              }}>
+              {loading ? <CreateSpinner /> : "Create Account"}
             </button>
           </div>
 
           {/* Divider */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 18px", ...rise(7) }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 12,
+            margin: "22px 0 18px", ...rise(8),
+          }}>
             <div style={{ flex: 1, height: 1, background: divClr }}/>
             <span style={{ fontSize: 12, color: divTxt, fontWeight: 500, letterSpacing: "0.04em" }}>or</span>
             <div style={{ flex: 1, height: 1, background: divClr }}/>
           </div>
 
-          {/* Sign in */}
-          <div style={{ textAlign: "center", ...rise(7) }}>
-            <span style={{ fontSize: 14.5, color: subClr, letterSpacing: "-0.01em" }}>Already have an account?{" "}</span>
+          {/* Login */}
+          <div style={{ textAlign: "center", ...rise(8) }}>
+            <span style={{ fontSize: 14.5, color: subClr, letterSpacing: "-0.01em" }}>
+              Already have an account?{" "}
+            </span>
             <button onClick={onBack} style={{
               background: "none", border: "none", cursor: "pointer",
               fontSize: 14.5, color: linkClr, fontWeight: 600,
@@ -602,13 +730,31 @@ export function SignupPage({ onBack }: Props) {
           accent={accent}
           accentBtn={accentBtn}
           btnShadow={btnShadow}
+          resend={resend}
+          setResend={setResend}
         />
       )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes scaleIn {
+          from { transform: scale(0.5); opacity: 0; }
+          to   { transform: scale(1);   opacity: 1; }
+        }
         input::placeholder { color: ${phClr}; }
+        * { -webkit-tap-highlight-color: transparent; }
       `}</style>
     </div>
+  );
+}
+
+function CreateSpinner() {
+  return (
+    <span style={{
+      width: 19, height: 19, borderRadius: "50%",
+      border: "2.5px solid rgba(255,255,255,0.28)",
+      borderTopColor: "#fff", display: "inline-block",
+      animation: "spin 0.72s linear infinite",
+    }}/>
   );
 }
