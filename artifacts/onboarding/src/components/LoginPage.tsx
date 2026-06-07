@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { getTokens } from "../lib/colors";
 
 interface Props {
   onBack?: () => void;
@@ -47,24 +48,7 @@ export function LoginPage({ onBack }: Props) {
     setLoading(false);
   }
 
-  // Apple design tokens
-  const t = {
-    bg:           dark ? "#000000"                    : "#f5f5f7",
-    text:         dark ? "#f5f5f7"                    : "#1d1d1f",
-    textSub:      dark ? "rgba(235,235,245,0.45)"     : "rgba(60,60,67,0.45)",
-    textTer:      dark ? "rgba(235,235,245,0.3)"      : "rgba(60,60,67,0.3)",
-    fieldBg:      dark ? "rgba(255,255,255,0.08)"     : "rgba(0,0,0,0.055)",
-    fieldBgFocus: dark ? "rgba(255,255,255,0.12)"     : "rgba(0,0,0,0.08)",
-    fieldText:    dark ? "#f5f5f7"                    : "#1d1d1f",
-    placeholder:  dark ? "rgba(235,235,245,0.28)"     : "rgba(60,60,67,0.3)",
-    separator:    dark ? "rgba(255,255,255,0.1)"      : "rgba(0,0,0,0.1)",
-    blue:         "#007AFF",
-    btnFg:        "#ffffff",
-    iconBg:       dark ? "#1c1c1e"                    : "#ffffff",
-    iconShadow:   dark ? "0 2px 16px rgba(0,0,0,.6)" : "0 2px 20px rgba(0,0,0,.12)",
-    errorFg:      dark ? "#FF453A"                    : "#FF3B30",
-  };
-
+  const t = getTokens(dark);
   const entered = phase === "in";
 
   return (
@@ -76,20 +60,27 @@ export function LoginPage({ onBack }: Props) {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      fontFamily: "-apple-system,'SF Pro Display','SF Pro Text','Helvetica Neue',Arial,sans-serif",
+      fontFamily: "'Inter',-apple-system,'Helvetica Neue',Arial,sans-serif",
       WebkitFontSmoothing: "antialiased",
       MozOsxFontSmoothing: "grayscale",
       overflow: "hidden",
       position: "relative",
     }}>
 
+      {/* Ambient glow */}
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none",
+        background: `radial-gradient(ellipse 60% 50% at 50% 0%, ${dark ? "rgba(79,70,229,0.18)" : "rgba(79,70,229,0.07)"} 0%, transparent 70%)`,
+      }} />
+
       {/* Top controls */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0,
         display: "flex", justifyContent: "space-between", alignItems: "center",
         padding: "18px 20px",
+        zIndex: 10,
       }}>
-        <PillBtn onClick={onBack} color={t.fieldBg}>
+        <PillBtn onClick={onBack} bg={t.fieldBg}>
           <svg width="10" height="10" viewBox="0 0 20 20" fill="none">
             <path d="M16 10H4M10 4l-6 6 6 6" stroke={t.textSub} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -114,7 +105,7 @@ export function LoginPage({ onBack }: Props) {
         </button>
       </div>
 
-      {/* Main content — no card, just floating elements */}
+      {/* Main content */}
       <div style={{
         width: "min(380px, calc(100vw - 48px))",
         display: "flex",
@@ -123,6 +114,7 @@ export function LoginPage({ onBack }: Props) {
         opacity: entered ? 1 : 0,
         transform: entered ? "translateY(0)" : "translateY(24px)",
         transition: "opacity 0.5s cubic-bezier(0.22,1,0.36,1), transform 0.5s cubic-bezier(0.22,1,0.36,1)",
+        position: "relative", zIndex: 1,
       }}>
 
         {/* App icon */}
@@ -137,8 +129,8 @@ export function LoginPage({ onBack }: Props) {
           transition: "opacity 0.5s cubic-bezier(0.22,1,0.36,1) 0.06s, transform 0.5s cubic-bezier(0.22,1,0.36,1) 0.06s",
         }}>
           <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9.5" stroke={t.blue} strokeWidth="1.5" />
-            <path d="M12 7v5.25l3.25 1.75" stroke={t.blue} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="12" cy="12" r="9.5" stroke={t.accent} strokeWidth="1.5" />
+            <path d="M12 7v5.25l3.25 1.75" stroke={t.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
 
@@ -190,9 +182,9 @@ export function LoginPage({ onBack }: Props) {
                   height: 52,
                   padding: "0 16px 0 44px",
                   background: emailFocused ? t.fieldBgFocus : t.fieldBg,
-                  border: `2px solid ${errors.email ? t.errorFg : emailFocused ? t.blue : "transparent"}`,
+                  border: `2px solid ${errors.email ? t.errorBorder : emailFocused ? t.accentBorder : "transparent"}`,
                   borderRadius: 13,
-                  fontSize: 16, color: t.fieldText,
+                  fontSize: 16, color: t.text,
                   outline: "none",
                   fontFamily: "inherit",
                   letterSpacing: "-0.015em",
@@ -202,9 +194,9 @@ export function LoginPage({ onBack }: Props) {
               />
               <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", transition: "opacity 0.18s" }}
                 width="17" height="17" viewBox="0 0 24 24" fill="none"
-                opacity={emailFocused ? 0.55 : 0.3}>
-                <rect x="2" y="4" width="20" height="16" rx="3" stroke={t.text} strokeWidth="1.7" />
-                <path d="M2 8l10 7 10-7" stroke={t.text} strokeWidth="1.7" strokeLinecap="round" />
+                opacity={emailFocused ? 0.6 : 0.32}>
+                <rect x="2" y="4" width="20" height="16" rx="3" stroke={t.accent} strokeWidth="1.7" />
+                <path d="M2 8l10 7 10-7" stroke={t.accent} strokeWidth="1.7" strokeLinecap="round" />
               </svg>
             </div>
             {errors.email && (
@@ -230,9 +222,9 @@ export function LoginPage({ onBack }: Props) {
                   height: 52,
                   padding: "0 48px 0 44px",
                   background: passwordFocused ? t.fieldBgFocus : t.fieldBg,
-                  border: `2px solid ${errors.password ? t.errorFg : passwordFocused ? t.blue : "transparent"}`,
+                  border: `2px solid ${errors.password ? t.errorBorder : passwordFocused ? t.accentBorder : "transparent"}`,
                   borderRadius: 13,
-                  fontSize: 16, color: t.fieldText,
+                  fontSize: 16, color: t.text,
                   outline: "none",
                   fontFamily: "inherit",
                   letterSpacing: "-0.015em",
@@ -242,9 +234,9 @@ export function LoginPage({ onBack }: Props) {
               />
               <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", transition: "opacity 0.18s" }}
                 width="16" height="16" viewBox="0 0 24 24" fill="none"
-                opacity={passwordFocused ? 0.55 : 0.3}>
-                <rect x="5" y="11" width="14" height="10" rx="2.5" stroke={t.text} strokeWidth="1.7" />
-                <path d="M8 11V7a4 4 0 018 0v4" stroke={t.text} strokeWidth="1.7" strokeLinecap="round" />
+                opacity={passwordFocused ? 0.6 : 0.32}>
+                <rect x="5" y="11" width="14" height="10" rx="2.5" stroke={t.accent} strokeWidth="1.7" />
+                <path d="M8 11V7a4 4 0 018 0v4" stroke={t.accent} strokeWidth="1.7" strokeLinecap="round" />
               </svg>
               <button type="button" onClick={() => setShowPw(s => !s)} style={{
                 position: "absolute", right: 0, top: 0, bottom: 0,
@@ -277,7 +269,7 @@ export function LoginPage({ onBack }: Props) {
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8, marginBottom: 26 }}>
             <button style={{
               background: "none", border: "none", cursor: "pointer",
-              fontSize: 13.5, color: t.blue, fontWeight: 500,
+              fontSize: 13.5, color: t.accent, fontWeight: 500,
               fontFamily: "inherit", letterSpacing: "-0.01em", padding: "2px 0",
             }}>
               Forgot Password?
@@ -296,8 +288,8 @@ export function LoginPage({ onBack }: Props) {
               borderRadius: 14,
               border: "none",
               cursor: loading ? "default" : "pointer",
-              background: t.blue,
-              color: t.btnFg,
+              background: t.accent,
+              color: t.accentText,
               fontSize: 17, fontWeight: 600,
               letterSpacing: "-0.025em",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -307,6 +299,7 @@ export function LoginPage({ onBack }: Props) {
               fontFamily: "inherit",
               WebkitAppearance: "none",
               marginBottom: 16,
+              boxShadow: `0 4px 20px ${dark ? "rgba(79,70,229,0.45)" : "rgba(79,70,229,0.3)"}`,
             }}>
             {loading ? <Spinner /> : "Sign In"}
           </button>
@@ -318,14 +311,14 @@ export function LoginPage({ onBack }: Props) {
             <div style={{ flex: 1, height: 1, background: t.separator }} />
           </div>
 
-          {/* Create account — text link only, Apple style */}
+          {/* Create account */}
           <div style={{ textAlign: "center" }}>
             <span style={{ fontSize: 15, color: t.textSub, letterSpacing: "-0.015em" }}>
               Don't have an account?{" "}
             </span>
             <button style={{
               background: "none", border: "none", cursor: "pointer",
-              fontSize: 15, color: t.blue, fontWeight: 600,
+              fontSize: 15, color: t.accent, fontWeight: 600,
               fontFamily: "inherit", letterSpacing: "-0.015em",
               padding: 0, display: "inline",
             }}>
@@ -359,12 +352,12 @@ function Spinner() {
   );
 }
 
-function PillBtn({ onClick, color, children }: { onClick?: () => void; color: string; children: React.ReactNode }) {
+function PillBtn({ onClick, bg, children }: { onClick?: () => void; bg: string; children: React.ReactNode }) {
   return (
     <button onClick={onClick} style={{
       display: "flex", alignItems: "center", gap: 5,
       height: 32, padding: "0 12px 0 8px",
-      background: color, border: "none",
+      background: bg, border: "none",
       borderRadius: 999, cursor: "pointer",
     }}>
       {children}
