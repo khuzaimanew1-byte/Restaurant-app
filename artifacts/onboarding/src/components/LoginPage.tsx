@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { login, getOtpStatus, AppError } from "../lib/api";
 import { OtpModal } from "./OtpModal";
-import { useDarkMode, Spinner, formatTimer } from "../lib/shared";
+import { useDarkMode, Spinner } from "../lib/shared";
 
 interface Props {
   onSuccess: (email: string, role: string) => void;
@@ -33,7 +33,7 @@ export function LoginPage({ onSuccess }: Props) {
     if (!otpExpiresAt) { setRemMs(0); return; }
     const tick = () => setRemMs(Math.max(0, otpExpiresAt - Date.now()));
     tick();
-    timerRef.current = setInterval(tick, 500);
+    timerRef.current = setInterval(tick, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [otpExpiresAt]);
 
@@ -58,13 +58,13 @@ export function LoginPage({ onSuccess }: Props) {
     return !e.email && !e.password && !e.agreed;
   }
 
-  const sessionActive   = remainingMs > 0;
-  const sessionTimerStr = formatTimer(remainingMs);
-  const formValid       = !!(email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 6 && agreed);
+  const sessionActive = remainingMs > 0;
+  const sessionMins   = Math.max(1, Math.ceil(remainingMs / 60000));
+  const formValid     = !!(email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 6 && agreed);
 
   async function handleSignIn() {
-    if (!validateFields(true)) return;
     if (sessionActive) { setShowOtp(true); return; }
+    if (!validateFields(true)) return;
     setErrors({});
     setLoad(true);
     try {
@@ -88,7 +88,6 @@ export function LoginPage({ onSuccess }: Props) {
   const pwRef    = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
 
-  /* ── Tokens ── */
   const lightBg   = "linear-gradient(145deg,#C8C3FF 0%,#D9D5FF 12%,#E5E2FF 28%,#EDEAFF 45%,#F4F3FF 62%,#F9F9FF 80%,#FFFFFF 100%)";
   const darkBg    = "linear-gradient(155deg,#03021A 0%,#060424 50%,#0B083E 100%)";
   const o1        = dark ? "rgba(79,70,229,0.38)"  : "rgba(79,70,229,0.28)";
@@ -162,20 +161,6 @@ export function LoginPage({ onSuccess }: Props) {
     transition: "background 0.22s ease",
   };
 
-  function btnLabel() {
-    if (loading) return <Spinner />;
-    if (sessionActive) return (
-      <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/>
-          <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-        OTP Active · {sessionTimerStr}
-      </span>
-    );
-    return "Sign In";
-  }
-
   return (
     <div style={{
       width: "100vw", height: "100dvh", overflow: "hidden",
@@ -184,6 +169,35 @@ export function LoginPage({ onSuccess }: Props) {
       fontFamily: "'Inter',-apple-system,'Helvetica Neue',sans-serif",
       WebkitFontSmoothing: "antialiased",
     }}>
+
+      {/* ── Sticky OTP Session Banner ── */}
+      {sessionActive && !showOtp && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 300,
+          background: dark
+            ? "rgba(22,18,68,0.92)"
+            : "rgba(240,238,255,0.94)",
+          backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+          borderBottom: `1px solid ${dark ? "rgba(127,120,242,0.22)" : "rgba(79,70,229,0.16)"}`,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "9px 20px",
+          fontFamily: "inherit",
+        }}>
+          <span style={{
+            fontSize: 12.5, fontWeight: 600,
+            color: dark ? "rgba(200,197,245,0.88)" : "#4338CA",
+            letterSpacing: "-0.01em",
+          }}>
+            OTP session active · {sessionMins} min
+          </span>
+          <button onClick={() => setShowOtp(true)} style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: accent, fontWeight: 700, fontFamily: "inherit",
+            fontSize: 12.5, padding: "2px 0", letterSpacing: "-0.01em",
+          }}>Enter OTP →</button>
+        </div>
+      )}
+
       {/* Orbs */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
         {[
@@ -206,6 +220,8 @@ export function LoginPage({ onSuccess }: Props) {
         position: "relative", zIndex: 10, flexShrink: 0,
         display: "flex", justifyContent: "flex-end",
         padding: "clamp(16px,4vw,22px) clamp(20px,5vw,28px)",
+        marginTop: sessionActive && !showOtp ? 38 : 0,
+        transition: "margin-top 0.3s ease",
         ...rise(0),
       }}>
         <button onClick={() => setDark(v => !v)} style={{
@@ -252,40 +268,18 @@ export function LoginPage({ onSuccess }: Props) {
           {errors.general && (
             <div style={{
               ...rise(2),
-              background: dark ? "rgba(248,113,113,0.1)" : "rgba(220,38,38,0.07)",
-              border: `1px solid ${dark ? "rgba(248,113,113,0.22)" : "rgba(220,38,38,0.18)"}`,
-              borderRadius: 14, padding: "12px 16px", marginBottom: 24,
-              fontSize: 13.5, color: errClr, lineHeight: 1.55, whiteSpace: "pre-line",
-            }}>
-              {errors.general}
-            </div>
-          )}
-
-          {sessionActive && !showOtp && (
-            <div style={{
-              ...rise(2),
-              background: dark ? "rgba(127,120,242,0.12)" : "rgba(79,70,229,0.07)",
-              border: `1px solid ${dark ? "rgba(127,120,242,0.24)" : "rgba(79,70,229,0.16)"}`,
-              borderRadius: 14, padding: "12px 16px", marginBottom: 24,
               display: "flex", alignItems: "flex-start", gap: 10,
+              background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
+              border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.15)"}`,
+              borderRadius: 12, padding: "11px 14px", marginBottom: 22,
             }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
-                <circle cx="12" cy="12" r="9" stroke={accent} strokeWidth="2"/>
-                <path d="M12 7v5l3 3" stroke={accent} strokeWidth="2" strokeLinecap="round"/>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+                <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+                <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
               </svg>
-              <div>
-                <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 600, color: dark ? "rgba(200,197,245,0.86)" : "#4F46E5" }}>
-                  OTP session active
-                </p>
-                <p style={{ margin: 0, fontSize: 12.5, color: dark ? "rgba(200,197,245,0.5)" : "rgba(13,11,30,0.46)", letterSpacing: "-0.01em" }}>
-                  A code was sent to <strong>{email}</strong>. Expires in {sessionTimerStr}.{" "}
-                  <button onClick={() => setShowOtp(true)} style={{
-                    background: "none", border: "none", cursor: "pointer",
-                    color: accent, fontWeight: 600, fontFamily: "inherit",
-                    fontSize: "inherit", padding: 0, letterSpacing: "-0.01em",
-                  }}>Enter code →</button>
-                </p>
-              </div>
+              <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5, letterSpacing: "-0.01em" }}>
+                {errors.general}
+              </span>
             </div>
           )}
 
@@ -304,7 +298,15 @@ export function LoginPage({ onSuccess }: Props) {
               <div style={{ ...underlineBase, background: errors.email ? errClr : baseLine }}/>
               <div style={sweepLine(emailF, !!errors.email)}/>
             </div>
-            {errors.email && <p style={{ margin: "5px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.email}</p>}
+            {errors.email && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+                  <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
+                </svg>
+                <p style={{ margin: 0, fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.email}</p>
+              </div>
+            )}
           </div>
 
           {/* Password */}
@@ -344,7 +346,15 @@ export function LoginPage({ onSuccess }: Props) {
               <div style={{ ...underlineBase, background: errors.password ? errClr : baseLine }}/>
               <div style={sweepLine(pwF, !!errors.password)}/>
             </div>
-            {errors.password && <p style={{ margin: "5px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.password}</p>}
+            {errors.password && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+                  <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
+                </svg>
+                <p style={{ margin: 0, fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.password}</p>
+              </div>
+            )}
           </div>
 
           {/* Terms */}
@@ -371,33 +381,43 @@ export function LoginPage({ onSuccess }: Props) {
                 <span style={{ color: linkClr, fontWeight: 600, cursor: "pointer" }}>Terms of Service</span>
               </span>
             </label>
-            {errors.agreed && <p style={{ margin: "6px 0 0 32px", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.agreed}</p>}
+            {errors.agreed && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "6px 0 0 32px" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+                  <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
+                </svg>
+                <p style={{ margin: 0, fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.agreed}</p>
+              </div>
+            )}
           </div>
 
           {/* Sign In button */}
           <div style={{ ...rise(6) }}>
             <button
               type="button"
-              onPointerDown={() => setBS(0.967)}
+              onPointerDown={() => !sessionActive && setBS(0.967)}
               onPointerUp={() => { setBS(1); handleSignIn(); }}
               onPointerLeave={() => setBS(1)}
               disabled={loading}
-              title={sessionActive ? `An OTP session is active. Expires in ${sessionTimerStr}` : ""}
               style={{
                 width: "100%", height: 54, borderRadius: 16, border: "none",
-                cursor: loading ? "default" : "pointer",
+                cursor: loading ? "default" : sessionActive ? "not-allowed" : "pointer",
                 background: sessionActive
-                  ? dark ? "rgba(127,120,242,0.18)" : "rgba(79,70,229,0.12)"
+                  ? dark ? "rgba(99,92,238,0.28)" : "rgba(79,70,229,0.22)"
                   : formValid ? accentBtn : dark ? "rgba(255,255,255,0.07)" : "rgba(13,11,30,0.07)",
-                color: sessionActive ? (dark ? "rgba(200,197,245,0.8)" : "#4F46E5") : formValid ? "#fff" : dark ? "rgba(200,197,245,0.36)" : "rgba(13,11,30,0.30)",
+                color: sessionActive
+                  ? dark ? "rgba(200,197,245,0.45)" : "rgba(79,70,229,0.45)"
+                  : formValid ? "#fff" : dark ? "rgba(200,197,245,0.28)" : "rgba(13,11,30,0.25)",
                 fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 transform: `scale(${btnScale})`,
                 transition: "transform 0.15s cubic-bezier(0.22,1,0.36,1), background 0.28s ease, color 0.22s ease, box-shadow 0.22s ease",
                 boxShadow: formValid && !sessionActive && !loading ? btnShadow : "none",
                 fontFamily: "inherit",
+                opacity: sessionActive ? 0.7 : 1,
               }}>
-              {btnLabel()}
+              {loading ? <Spinner /> : "Sign In"}
             </button>
           </div>
 

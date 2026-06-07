@@ -196,8 +196,11 @@ router.post("/resend-otp", async (req, res) => {
     }
 
     const active = await findActiveOtpSession(email.trim());
-    if (active) {
+    if (active && active.attempts < 5) {
       res.status(400).json({ error: "SESSION_ACTIVE", message: "An OTP session is still active. Please wait for it to expire.", expiresAt: active.expiresAt.getTime() }); return;
+    }
+    if (active && active.attempts >= 5) {
+      await invalidateOtpSessions(email.trim());
     }
 
     const otpLimit = checkRateLimit(`otp:${email.trim().toLowerCase()}`, 5, 15 * 60 * 1000);

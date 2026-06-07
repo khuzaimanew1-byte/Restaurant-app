@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { verifyOtp, resendOtp, AppError } from "../lib/api";
-import { Spinner, formatTimer } from "../lib/shared";
+import { Spinner } from "../lib/shared";
 
 interface Props {
   email: string;
@@ -36,7 +36,7 @@ export function OtpModal({
 
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => setMs(Math.max(0, expiresAt - Date.now())), 500);
+    intervalRef.current = setInterval(() => setMs(Math.max(0, expiresAt - Date.now())), 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [expiresAt]);
 
@@ -76,7 +76,7 @@ export function OtpModal({
   async function handleVerify() {
     const code = otp.join("");
     if (code.length < 6) { setError("Please enter the full 6-digit code."); return; }
-    if (remainingMs <= 0) { setError("OTP expired. Request a new OTP to continue."); return; }
+    if (remainingMs <= 0) { setError("OTP expired. Request a new code to continue."); return; }
     setError("");
     setLoading(true);
     try {
@@ -105,10 +105,8 @@ export function OtpModal({
     }
   }
 
-  const filled      = otp.join("").length === 6;
-  const expired     = remainingMs <= 0;
-  const timerStr    = formatTimer(remainingMs);
-  const urgentTimer = remainingMs <= 60000 && !expired;
+  const filled   = otp.join("").length === 6;
+  const expired  = remainingMs <= 0;
 
   const cardBg    = dark ? "rgba(12,10,35,0.97)"   : "rgba(255,255,255,0.98)";
   const headClr   = dark ? "rgba(242,241,255,0.97)" : "#09071E";
@@ -117,11 +115,21 @@ export function OtpModal({
   const boxBg     = dark ? "rgba(255,255,255,0.04)" : "rgba(249,248,255,0.7)";
   const boxFocBg  = dark ? "rgba(127,120,242,0.14)" : "rgba(79,70,229,0.06)";
   const boxTxt    = dark ? "rgba(242,241,255,0.96)" : "#09071E";
-  const mutedClr  = dark ? "rgba(200,197,245,0.36)" : "rgba(13,11,30,0.30)";
   const handleClr = dark ? "rgba(255,255,255,0.14)" : "rgba(13,11,30,0.12)";
-  const timerClr  = urgentTimer ? (dark ? "#F87171" : "#DC2626") : (dark ? "#A78BFA" : "#7C3AED");
   const errClr    = dark ? "#F87171" : "#DC2626";
   const translateY = sheetVisible ? `${dragY}px` : "100%";
+
+  const canVerify  = filled && !loading && !expired;
+  const verifyBg   = canVerify
+    ? accentBtn
+    : filled && expired
+      ? dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.12)"
+      : dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.14)";
+  const verifyClr  = canVerify
+    ? "#fff"
+    : filled && expired
+      ? errClr
+      : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.38)";
 
   return (
     <div
@@ -154,43 +162,40 @@ export function OtpModal({
         transform: `translateY(${translateY})`,
         transition: dragging ? "none" : "transform 0.46s cubic-bezier(0.22,1,0.36,1)",
         boxSizing: "border-box", willChange: "transform",
-        padding: "0 clamp(24px,6vw,36px) clamp(36px,9vw,52px)",
+        padding: "0 clamp(24px,6vw,36px) clamp(32px,8vw,48px)",
       }}>
+
         {/* Drag handle */}
         <div
           onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
           style={{
-            padding: "16px 0 20px", display: "flex", justifyContent: "center",
+            padding: "16px 0 24px", display: "flex", justifyContent: "center",
             cursor: "grab", userSelect: "none", margin: "0 -36px", touchAction: "none",
           }}
         >
           <div style={{ width: 38, height: 5, borderRadius: 100, background: handleClr }}/>
         </div>
 
-        {/* Email icon */}
-        <div style={{
-          width: 52, height: 52, borderRadius: 16,
-          background: dark ? "rgba(167,139,250,0.12)" : "rgba(124,58,237,0.08)",
-          border: `1px solid ${dark ? "rgba(167,139,250,0.2)" : "rgba(124,58,237,0.14)"}`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          marginBottom: 20,
+        {/* Heading */}
+        <h3 style={{
+          fontSize: "clamp(24px,6vw,30px)", fontWeight: 800,
+          color: headClr, margin: "0 0 8px", letterSpacing: "-0.045em", lineHeight: 1.1,
         }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <rect x="2" y="4" width="20" height="16" rx="3" stroke={accent} strokeWidth="1.7"/>
-            <path d="M2 8l8.586 5.707a2 2 0 002.828 0L22 8" stroke={accent} strokeWidth="1.7" strokeLinecap="round"/>
-          </svg>
-        </div>
-
-        <h3 style={{ fontSize: "clamp(22px,5.5vw,27px)", fontWeight: 800, color: headClr, margin: "0 0 6px", letterSpacing: "-0.04em" }}>
           Check your email
         </h3>
-        <p style={{ fontSize: 14.5, color: subClr, margin: "0 0 28px", letterSpacing: "-0.01em", lineHeight: 1.55 }}>
+        <p style={{
+          fontSize: 14.5, color: subClr, margin: "0 0 32px",
+          letterSpacing: "-0.01em", lineHeight: 1.6,
+        }}>
           We sent a 6-digit code to{" "}
           <span style={{ color: headClr, fontWeight: 600 }}>{email}</span>
         </p>
 
         {/* OTP boxes */}
-        <div style={{ display: "flex", gap: "clamp(7px,2.2vw,10px)", marginBottom: 20, justifyContent: "center" }} onPaste={handlePaste}>
+        <div
+          style={{ display: "flex", gap: "clamp(7px,2.2vw,10px)", marginBottom: 28, justifyContent: "center" }}
+          onPaste={handlePaste}
+        >
           {otp.map((val, i) => (
             <input
               key={i}
@@ -200,63 +205,70 @@ export function OtpModal({
               onChange={e => handleChange(i, e.target.value)}
               onKeyDown={e => handleKey(i, e)}
               style={{
-                width: "clamp(44px,13vw,52px)", height: "clamp(54px,15vw,62px)",
-                borderRadius: 14,
+                width: "clamp(44px,13vw,52px)", height: "clamp(56px,16vw,64px)",
+                borderRadius: 16,
                 border: `1.5px solid ${error && !val ? errClr : val ? accent : boxBorder}`,
                 background: val ? boxFocBg : boxBg,
-                fontSize: 22, fontWeight: 700, textAlign: "center",
+                fontSize: 24, fontWeight: 700, textAlign: "center",
                 color: boxTxt, fontFamily: "inherit",
                 outline: "none", boxSizing: "border-box", caretColor: "transparent",
-                transform: val ? "scale(1.05)" : "scale(1)",
-                boxShadow: val ? (dark ? "0 0 0 3px rgba(167,139,250,0.15)" : "0 0 0 3px rgba(124,58,237,0.1)") : "none",
+                transform: val ? "scale(1.06)" : "scale(1)",
+                boxShadow: val ? (dark ? "0 0 0 3px rgba(127,120,242,0.18)" : "0 0 0 3px rgba(79,70,229,0.12)") : "none",
                 transition: "border-color 0.2s ease, background 0.2s ease, transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s ease",
               }}
             />
           ))}
         </div>
 
-        {/* Timer */}
-        <div style={{ textAlign: "center", marginBottom: 20, fontSize: 13, color: mutedClr, letterSpacing: "-0.01em" }}>
-          {expired ? (
-            <span style={{ color: errClr }}>OTP expired. Request a new OTP to continue.</span>
-          ) : (
-            <>OTP expires in{" "}
-              <strong style={{ color: timerClr, fontVariantNumeric: "tabular-nums", fontWeight: 700, transition: "color 0.3s ease" }}>
-                {timerStr}
-              </strong>
-            </>
-          )}
-        </div>
-
-        {/* Error */}
+        {/* Error or expired state */}
+        {expired && !error && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
+            border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
+            borderRadius: 12, padding: "10px 14px", marginBottom: 16,
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+              <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5 }}>
+              OTP expired. Request a new code to continue.
+            </span>
+          </div>
+        )}
         {error && (
           <div style={{
-            background: dark ? "rgba(248,113,113,0.1)" : "rgba(220,38,38,0.07)",
-            border: `1px solid ${dark ? "rgba(248,113,113,0.22)" : "rgba(220,38,38,0.18)"}`,
+            display: "flex", alignItems: "center", gap: 8,
+            background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
+            border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
             borderRadius: 12, padding: "10px 14px", marginBottom: 16,
-            fontSize: 13, color: errClr, lineHeight: 1.5, whiteSpace: "pre-line",
           }}>
-            {error}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+              <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5 }}>{error}</span>
           </div>
         )}
 
         {/* Verify button */}
         <button
           type="button" onClick={handleVerify}
-          disabled={!filled || loading || expired}
-          onPointerDown={e => { if (filled && !expired) e.currentTarget.style.transform = "scale(0.97)"; }}
+          disabled={!filled || loading}
+          onPointerDown={e => { if (canVerify) e.currentTarget.style.transform = "scale(0.97)"; }}
           onPointerUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
           onPointerLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
           style={{
             width: "100%", height: 54, borderRadius: 16, border: "none",
-            cursor: filled && !loading && !expired ? "pointer" : "default",
-            background: filled && !expired ? accentBtn : dark ? "rgba(255,255,255,0.06)" : "rgba(13,11,30,0.06)",
-            color: filled && !expired ? "#fff" : mutedClr,
+            cursor: canVerify ? "pointer" : "default",
+            background: verifyBg,
+            color: verifyClr,
             fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            boxShadow: filled && !loading && !expired ? btnShadow : "none",
+            boxShadow: canVerify ? btnShadow : "none",
             transition: "background 0.28s ease, box-shadow 0.25s ease, color 0.22s ease",
-            fontFamily: "inherit", marginBottom: 16,
+            fontFamily: "inherit", marginBottom: 18,
           }}
         >
           {loading ? <Spinner size={18} /> : "Verify & Continue"}
@@ -264,20 +276,21 @@ export function OtpModal({
 
         {/* Resend */}
         <div style={{ textAlign: "center" }}>
-          {expired ? (
-            <button onClick={handleResend} disabled={resending} style={{
-              background: "none", border: "none", cursor: resending ? "default" : "pointer",
-              fontSize: 13, color: accent, fontWeight: 600,
+          <button
+            onClick={handleResend}
+            disabled={resending || (!expired)}
+            style={{
+              background: "none", border: "none",
+              cursor: expired && !resending ? "pointer" : "default",
+              fontSize: 13.5, fontWeight: 600,
+              color: expired ? accent : dark ? "rgba(200,197,245,0.28)" : "rgba(13,11,30,0.25)",
               fontFamily: "inherit", letterSpacing: "-0.01em", padding: "4px 0",
               opacity: resending ? 0.6 : 1,
-            }}>
-              {resending ? "Sending…" : "Resend code"}
-            </button>
-          ) : (
-            <span style={{ fontSize: 13, color: mutedClr, letterSpacing: "-0.01em", fontVariantNumeric: "tabular-nums" }}>
-              Resend in <strong style={{ color: subClr }}>{timerStr}</strong>
-            </span>
-          )}
+              transition: "color 0.22s ease, opacity 0.18s ease",
+            }}
+          >
+            {resending ? "Sending…" : "Resend code"}
+          </button>
         </div>
       </div>
     </div>
