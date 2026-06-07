@@ -111,7 +111,7 @@ export function LoginPage({ onSuccess }: Props) {
   const divClr    = dark ? "rgba(255,255,255,0.07)"  : "rgba(13,11,30,0.09)";
   const divTxt    = dark ? "rgba(200,197,245,0.26)"  : "rgba(13,11,30,0.30)";
 
-  const FIELD_H  = 64;
+  const FIELD_H  = 58;
   const INPUT_H  = 34;
   const INPUT_PB = 10;
   const IDLE_TOP = FIELD_H - (INPUT_H / 2) - (INPUT_PB / 2) - 8;
@@ -359,7 +359,7 @@ export function LoginPage({ onSuccess }: Props) {
 
           {/* Terms */}
           <div style={{ margin: "20px 0 clamp(20px,5vw,26px)", ...rise(5) }}>
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}>
               <div
                 onClick={() => { setAgreed(v => !v); setErrors(e => ({ ...e, agreed: undefined })); }}
                 style={{
@@ -396,13 +396,13 @@ export function LoginPage({ onSuccess }: Props) {
           <div style={{ ...rise(6) }}>
             <button
               type="button"
-              onPointerDown={() => !sessionActive && setBS(0.967)}
-              onPointerUp={() => { setBS(1); handleSignIn(); }}
+              onPointerDown={() => !sessionActive && !loading && setBS(0.967)}
+              onPointerUp={() => { setBS(1); if (!sessionActive && !loading) handleSignIn(); }}
               onPointerLeave={() => setBS(1)}
-              disabled={loading}
+              disabled={loading || sessionActive}
               style={{
                 width: "100%", height: 54, borderRadius: 16, border: "none",
-                cursor: loading ? "default" : sessionActive ? "not-allowed" : "pointer",
+                cursor: loading || sessionActive ? "not-allowed" : "pointer",
                 background: sessionActive
                   ? dark ? "rgba(99,92,238,0.28)" : "rgba(79,70,229,0.22)"
                   : formValid ? accentBtn : dark ? "rgba(255,255,255,0.07)" : "rgba(13,11,30,0.07)",
