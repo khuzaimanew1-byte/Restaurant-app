@@ -11,7 +11,20 @@ function getClient() {
   return Parse;
 }
 
-/* ─── AppUser ────────────────────────────────────────────────────── */
+const OPT = { useMasterKey: false } as const;
+const em  = (e: string) => e.toLowerCase().trim();
+
+function qr(cls: string) {
+  const P = getClient();
+  return new P.Query(P.Object.extend(cls));
+}
+
+function mk(cls: string) {
+  const P = getClient();
+  return new (P.Object.extend(cls))();
+}
+
+/* ─── AppUser ─── */
 export interface B4User {
   objectId: string;
   email: string;
@@ -24,46 +37,37 @@ function toUser(obj: Parse.Object): B4User {
   return {
     objectId:     obj.id,
     email:        obj.get("email") as string,
-    passwordHash: obj.get("passwordHash") as string | null ?? null,
-    role:         obj.get("role") as "ADMIN" | "USER" ?? "USER",
-    activated:    obj.get("activated") as boolean ?? false,
+    passwordHash: (obj.get("passwordHash") as string | null) ?? null,
+    role:         (obj.get("role") as "ADMIN" | "USER") ?? "USER",
+    activated:    (obj.get("activated") as boolean) ?? false,
   };
 }
 
 export async function findUserByEmail(email: string): Promise<B4User | null> {
-  const P = getClient();
-  const AppUser = P.Object.extend("AppUser");
-  const q = new P.Query(AppUser);
-  q.equalTo("email", email.toLowerCase().trim());
+  const q = qr("AppUser");
+  q.equalTo("email", em(email));
   q.limit(1);
-  const results = await q.find({ useMasterKey: false });
-  return results[0] ? toUser(results[0]) : null;
+  const r = await q.find(OPT);
+  return r[0] ? toUser(r[0]) : null;
 }
 
 export async function createUser(fields: Partial<B4User> & { email: string }): Promise<B4User> {
-  const P = getClient();
-  const AppUser = P.Object.extend("AppUser");
-  const obj = new AppUser();
-  obj.set("email", fields.email.toLowerCase().trim());
-  obj.set("passwordHash", fields.passwordHash ?? null);
-  obj.set("role", fields.role ?? "USER");
-  obj.set("activated", fields.activated ?? false);
-  const saved = await obj.save(null, { useMasterKey: false });
-  return toUser(saved);
+  const o = mk("AppUser");
+  o.set("email", em(fields.email));
+  o.set("passwordHash", fields.passwordHash ?? null);
+  o.set("role", fields.role ?? "USER");
+  o.set("activated", fields.activated ?? false);
+  return toUser(await o.save(null, OPT));
 }
 
 export async function updateUser(objectId: string, fields: Partial<B4User>): Promise<void> {
-  const P = getClient();
-  const AppUser = P.Object.extend("AppUser");
-  const q = new P.Query(AppUser);
-  const obj = await q.get(objectId, { useMasterKey: false });
-  Object.entries(fields).forEach(([k, v]) => {
-    if (v !== undefined) obj.set(k, v);
-  });
-  await obj.save(null, { useMasterKey: false });
+  const q = qr("AppUser");
+  const o = await q.get(objectId, OPT);
+  Object.entries(fields).forEach(([k, v]) => { if (v !== undefined) o.set(k, v); });
+  await o.save(null, OPT);
 }
 
-/* ─── OtpSession ─────────────────────────────────────────────────── */
+/* ─── OtpSession ─── */
 export interface B4OtpSession {
   objectId: string;
   email: string;
@@ -75,79 +79,63 @@ export interface B4OtpSession {
 
 function toSession(obj: Parse.Object): B4OtpSession {
   return {
-    objectId: obj.id,
-    email:    obj.get("email") as string,
-    otpHash:  obj.get("otpHash") as string,
+    objectId:  obj.id,
+    email:     obj.get("email") as string,
+    otpHash:   obj.get("otpHash") as string,
     expiresAt: obj.get("expiresAt") as Date,
-    attempts: obj.get("attempts") as number ?? 0,
-    used:     obj.get("used") as boolean ?? false,
+    attempts:  (obj.get("attempts") as number) ?? 0,
+    used:      (obj.get("used") as boolean) ?? false,
   };
 }
 
 export async function findActiveOtpSession(email: string): Promise<B4OtpSession | null> {
-  const P = getClient();
-  const OtpSession = P.Object.extend("OtpSession");
-  const q = new P.Query(OtpSession);
-  q.equalTo("email", email.toLowerCase().trim());
+  const q = qr("OtpSession");
+  q.equalTo("email", em(email));
   q.equalTo("used", false);
   q.greaterThan("expiresAt", new Date());
   q.descending("createdAt");
   q.limit(1);
-  const results = await q.find({ useMasterKey: false });
-  return results[0] ? toSession(results[0]) : null;
+  const r = await q.find(OPT);
+  return r[0] ? toSession(r[0]) : null;
 }
 
 export async function findLatestOtpSession(email: string): Promise<B4OtpSession | null> {
-  const P = getClient();
-  const OtpSession = P.Object.extend("OtpSession");
-  const q = new P.Query(OtpSession);
-  q.equalTo("email", email.toLowerCase().trim());
+  const q = qr("OtpSession");
+  q.equalTo("email", em(email));
   q.descending("createdAt");
   q.limit(1);
-  const results = await q.find({ useMasterKey: false });
-  return results[0] ? toSession(results[0]) : null;
+  const r = await q.find(OPT);
+  return r[0] ? toSession(r[0]) : null;
 }
 
 export async function createOtpSession(email: string, otpHash: string, expiresAt: Date): Promise<B4OtpSession> {
-  const P = getClient();
-  const OtpSession = P.Object.extend("OtpSession");
-  const obj = new OtpSession();
-  obj.set("email", email.toLowerCase().trim());
-  obj.set("otpHash", otpHash);
-  obj.set("expiresAt", expiresAt);
-  obj.set("attempts", 0);
-  obj.set("used", false);
-  const saved = await obj.save(null, { useMasterKey: false });
-  return toSession(saved);
+  const o = mk("OtpSession");
+  o.set("email", em(email));
+  o.set("otpHash", otpHash);
+  o.set("expiresAt", expiresAt);
+  o.set("attempts", 0);
+  o.set("used", false);
+  return toSession(await o.save(null, OPT));
 }
 
 export async function invalidateOtpSessions(email: string): Promise<void> {
-  const P = getClient();
-  const OtpSession = P.Object.extend("OtpSession");
-  const q = new P.Query(OtpSession);
-  q.equalTo("email", email.toLowerCase().trim());
+  const q = qr("OtpSession");
+  q.equalTo("email", em(email));
   q.equalTo("used", false);
-  const sessions = await q.find({ useMasterKey: false });
-  await Promise.all(sessions.map(s => {
-    s.set("used", true);
-    return s.save(null, { useMasterKey: false });
-  }));
+  const sessions = await q.find(OPT);
+  await Promise.all(sessions.map(s => { s.set("used", true); return s.save(null, OPT); }));
 }
 
 export async function incrementOtpAttempts(objectId: string, currentAttempts: number): Promise<void> {
-  const P = getClient();
-  const OtpSession = P.Object.extend("OtpSession");
-  const q = new P.Query(OtpSession);
-  const obj = await q.get(objectId, { useMasterKey: false });
-  obj.set("attempts", currentAttempts + 1);
-  await obj.save(null, { useMasterKey: false });
+  const q = qr("OtpSession");
+  const o = await q.get(objectId, OPT);
+  o.set("attempts", currentAttempts + 1);
+  await o.save(null, OPT);
 }
 
 export async function markOtpUsed(objectId: string): Promise<void> {
-  const P = getClient();
-  const OtpSession = P.Object.extend("OtpSession");
-  const q = new P.Query(OtpSession);
-  const obj = await q.get(objectId, { useMasterKey: false });
-  obj.set("used", true);
-  await obj.save(null, { useMasterKey: false });
+  const q = qr("OtpSession");
+  const o = await q.get(objectId, OPT);
+  o.set("used", true);
+  await o.save(null, OPT);
 }

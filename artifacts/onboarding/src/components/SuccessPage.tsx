@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useDarkMode } from "../lib/shared";
 
 interface Props {
   email?: string;
@@ -7,7 +8,7 @@ interface Props {
 
 export function SuccessPage({ email, role }: Props) {
   const [mounted, setMounted] = useState(false);
-  const [dark] = useState(() => window.matchMedia("(prefers-color-scheme:dark)").matches);
+  const [dark] = useDarkMode();
 
   useEffect(() => {
     const id = setTimeout(() => setMounted(true), 60);
@@ -36,25 +37,21 @@ export function SuccessPage({ email, role }: Props) {
 
   return (
     <div style={{
-      width: "100vw", height: "100dvh",
-      background: bg,
+      width: "100vw", height: "100dvh", background: bg,
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       fontFamily: "'Inter',-apple-system,'Helvetica Neue',sans-serif",
       WebkitFontSmoothing: "antialiased",
       position: "relative", overflow: "hidden",
     }}>
-      {/* Ambient orbs */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
         <div style={{
-          position: "absolute", width: "80vw", height: "80vw",
-          maxWidth: 560, maxHeight: 560,
+          position: "absolute", width: "80vw", height: "80vw", maxWidth: 560, maxHeight: 560,
           top: "-20%", right: "-18%", borderRadius: "50%",
           background: `radial-gradient(circle,${dark ? "rgba(139,92,246,0.3)" : "rgba(167,139,250,0.38)"} 0%,transparent 65%)`,
         }}/>
         <div style={{
-          position: "absolute", width: "70vw", height: "70vw",
-          maxWidth: 460, maxHeight: 460,
+          position: "absolute", width: "70vw", height: "70vw", maxWidth: 460, maxHeight: 460,
           bottom: "-20%", left: "-18%", borderRadius: "50%",
           background: `radial-gradient(circle,${dark ? "rgba(79,70,229,0.22)" : "rgba(109,40,217,0.18)"} 0%,transparent 65%)`,
         }}/>
@@ -64,22 +61,14 @@ export function SuccessPage({ email, role }: Props) {
         position: "relative", zIndex: 1,
         display: "flex", flexDirection: "column",
         alignItems: "center", textAlign: "center",
-        padding: "0 clamp(32px,8vw,48px)",
-        maxWidth: 380,
+        padding: "0 clamp(32px,8vw,48px)", maxWidth: 380,
       }}>
-        {/* Success ring + check */}
         <div style={{ marginBottom: 32, ...fade(0) }}>
-          <div style={{
-            position: "relative",
-            width: 96, height: 96,
-          }}>
+          <div style={{ position: "relative", width: 96, height: 96 }}>
             {[1, 0.55, 0.25].map((o, i) => (
               <div key={i} style={{
-                position: "absolute",
-                inset: -(i * 18),
-                borderRadius: "50%",
-                background: ringClr,
-                opacity: o,
+                position: "absolute", inset: -(i * 18),
+                borderRadius: "50%", background: ringClr, opacity: o,
                 animation: `pulse-ring ${2.5 + i * 0.4}s ease-in-out infinite ${i * 0.3}s`,
               }}/>
             ))}
@@ -101,18 +90,13 @@ export function SuccessPage({ email, role }: Props) {
         <h1 style={{
           fontSize: "clamp(26px,6.5vw,36px)", fontWeight: 800,
           letterSpacing: "-0.04em", lineHeight: 1.1,
-          color: headClr, margin: "0 0 12px",
-          ...fade(0.15),
+          color: headClr, margin: "0 0 12px", ...fade(0.15),
         }}>
           Welcome to<br />Attendance App
         </h1>
 
         {(email || role) && (
-          <p style={{
-            fontSize: 14, color: subClr,
-            margin: "0", lineHeight: 1.55, letterSpacing: "-0.01em",
-            ...fade(0.25),
-          }}>
+          <p style={{ fontSize: 14, color: subClr, margin: "0", lineHeight: 1.55, letterSpacing: "-0.01em", ...fade(0.25) }}>
             {role === "ADMIN" ? "Signed in as Administrator" : "You're all set"}
             {email ? ` · ${email}` : ""}
           </p>

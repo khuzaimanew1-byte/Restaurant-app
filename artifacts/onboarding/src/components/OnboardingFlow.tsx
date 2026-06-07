@@ -1,10 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { getTokens, type ColorTokens } from "../lib/colors";
+import { useDarkMode } from "../lib/shared";
 
-/* ─── Glass helpers (derived from tokens) ───────────────────────── */
 const SIDE = "min(82vw, 340px)";
 
-/* ─── Shared chip ────────────────────────────────────────────────── */
 function Chip({
   t, val, sub, an, delay, chipColor,
   top, left, right, bottom,
@@ -30,7 +29,6 @@ function Chip({
   );
 }
 
-/* ─── Illustration 1 — Attendance ───────────────────────────────── */
 function AttendanceIllus({ t }: { t: ColorTokens }) {
   return (
     <div style={{ position: "relative", width: SIDE, height: SIDE }}>
@@ -46,7 +44,6 @@ function AttendanceIllus({ t }: { t: ColorTokens }) {
           animationDelay: `${i * .28}s`,
         }} />
       ))}
-      {/* Center card */}
       <div style={{
         position: "absolute", width: "36%", height: "48%", top: "26%", left: "32%",
         background: t.glassCard, backdropFilter: "blur(28px)",
@@ -76,20 +73,18 @@ function AttendanceIllus({ t }: { t: ColorTokens }) {
           background: t.chipA, color: t.illusBadgeText,
         }}>CHECK IN</div>
       </div>
-      <Chip t={t} val="98%" sub="On-Time"    top="12%" left="2%"  an="float-a" delay="0s"   chipColor={t.chipA} />
-      <Chip t={t} val="12"  sub="Checked in" top="28%" right="1%" an="float-b" delay=".22s" chipColor={t.chipB} />
+      <Chip t={t} val="98%" sub="On-Time"    top="12%" left="2%"   an="float-a" delay="0s"   chipColor={t.chipA} />
+      <Chip t={t} val="12"  sub="Checked in" top="28%" right="1%"  an="float-b" delay=".22s" chipColor={t.chipB} />
       <Chip t={t} val="✓"   sub="Synced"     bottom="15%" left="6%" an="float-c" delay=".44s" chipColor={t.chipC} />
     </div>
   );
 }
 
-/* ─── Illustration 2 — Leave ─────────────────────────────────────── */
 function LeaveIllus({ t }: { t: ColorTokens }) {
   const leaveDays = new Set([10, 11, 12, 13, 14]);
   return (
     <div style={{ position: "relative", width: SIDE, height: SIDE }}>
       <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: t.radialGlow }} />
-      {/* Calendar card */}
       <div style={{
         position: "absolute", width: "58%", height: "58%", top: "21%", left: "21%",
         background: t.glassCard, backdropFilter: "blur(28px)",
@@ -125,7 +120,6 @@ function LeaveIllus({ t }: { t: ColorTokens }) {
           })}
         </div>
       </div>
-      {/* Approval chip */}
       <div style={{
         position: "absolute", top: "6%", right: "2%",
         padding: "6px 10px", borderRadius: 13,
@@ -145,7 +139,6 @@ function LeaveIllus({ t }: { t: ColorTokens }) {
         </div>
         <span style={{ fontSize: "clamp(7px,1.9vw,9px)", fontWeight: 600, whiteSpace: "nowrap", color: t.illusText }}>Leave Approved</span>
       </div>
-      {/* Pending pill */}
       <div style={{
         position: "absolute", bottom: "6%", left: "3%",
         padding: "7px 10px", borderRadius: 13,
@@ -164,13 +157,11 @@ function LeaveIllus({ t }: { t: ColorTokens }) {
   );
 }
 
-/* ─── Illustration 3 — Analytics ─────────────────────────────────── */
 function AnalyticsIllus({ t }: { t: ColorTokens }) {
   const bars = [.65, .82, .58, .91, .74, .88, .96];
   return (
     <div style={{ position: "relative", width: SIDE, height: SIDE }}>
       <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: t.radialGlow }} />
-      {/* Chart card */}
       <div style={{
         position: "absolute", width: "66%", height: "54%", top: "23%", left: "17%",
         background: t.glassCard, backdropFilter: "blur(28px)",
@@ -200,7 +191,6 @@ function AnalyticsIllus({ t }: { t: ColorTokens }) {
           ))}
         </div>
       </div>
-      {/* A+ badge */}
       <div style={{
         position: "absolute", top: "6%", right: "6%", width: "18%", aspectRatio: "1",
         background: t.chipA, backdropFilter: "blur(16px)",
@@ -211,7 +201,6 @@ function AnalyticsIllus({ t }: { t: ColorTokens }) {
         <span style={{ fontSize: "clamp(12px,3.5vw,17px)", fontWeight: 700, color: t.illusBadgeText }}>A+</span>
         <span style={{ fontSize: "clamp(5.5px,1.5vw,7.5px)", color: t.illusTextSub }}>Rating</span>
       </div>
-      {/* Hours chip */}
       <div style={{
         position: "absolute", bottom: "6%", right: "4%", padding: "6px 11px", borderRadius: 13,
         background: t.chipC, backdropFilter: "blur(16px)",
@@ -221,7 +210,6 @@ function AnalyticsIllus({ t }: { t: ColorTokens }) {
         <div style={{ fontSize: "clamp(11px,3.2vw,15px)", fontWeight: 700, color: t.illusBadgeText }}>42h</div>
         <div style={{ fontSize: "clamp(6px,1.6vw,8px)", color: t.illusTextSub }}>This week</div>
       </div>
-      {/* Punctual chip */}
       <div style={{
         position: "absolute", bottom: "7%", left: "3%", padding: "6px 10px", borderRadius: 13,
         display: "flex", alignItems: "center", gap: 6,
@@ -236,7 +224,6 @@ function AnalyticsIllus({ t }: { t: ColorTokens }) {
   );
 }
 
-/* ─── Pages config ───────────────────────────────────────────────── */
 const PAGES = [
   {
     headline: "Attendance,\nSimplified",
@@ -255,25 +242,15 @@ const PAGES = [
   },
 ];
 
-/* ─── Transition phases ──────────────────────────────────────────── */
 type Phase = "idle" | "exit" | "enter";
 
-/* ─── Main Component ─────────────────────────────────────────────── */
 export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) {
   const [idx, setIdx]     = useState(0);
   const [dir, setDir]     = useState<"fwd" | "bwd">("fwd");
   const [phase, setPhase] = useState<Phase>("idle");
-  const [dark, setDark]   = useState(true);
+  const [dark, setDark]   = useDarkMode();
   const exitT  = useRef<ReturnType<typeof setTimeout>>();
   const enterT = useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme:dark)");
-    setDark(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setDark(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
 
   const goTo = useCallback((target: number) => {
     if (phase !== "idle" || target === idx) return;
@@ -310,14 +287,11 @@ export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) 
       fontFamily: "'Inter',-apple-system,'Helvetica Neue',sans-serif",
       position: "relative",
     }}>
-
-      {/* Ambient glow */}
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none",
         background: `radial-gradient(ellipse 70% 55% at 50% 5%, ${dark ? "rgba(79,70,229,0.2)" : "rgba(79,70,229,0.08)"} 0%, transparent 65%)`,
       }} />
 
-      {/* Top bar */}
       <div className="top-enter" style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
         padding: "clamp(40px,10vw,56px) clamp(18px,5vw,24px) 0",
@@ -350,7 +324,6 @@ export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) 
         }
       </div>
 
-      {/* Illustration */}
       <div style={{
         flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
         padding: "clamp(8px,2vw,16px) 0", minHeight: 0,
@@ -361,7 +334,6 @@ export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) 
         </div>
       </div>
 
-      {/* Bottom content */}
       <div style={{
         padding: "0 clamp(20px,6vw,28px) clamp(28px,7vw,44px)",
         flexShrink: 0, position: "relative", zIndex: 1,
@@ -378,7 +350,6 @@ export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) 
           marginBottom: "clamp(20px,5.5vw,30px)",
         }}>{page.desc}</p>
 
-        {/* Dots */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: "clamp(18px,5vw,26px)" }}>
           {PAGES.map((_, i) => (
             <button key={i} className="dot" onClick={() => goTo(i)} style={{
@@ -389,7 +360,6 @@ export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) 
           ))}
         </div>
 
-        {/* CTA button */}
         <button
           onPointerDown={e => (e.currentTarget.style.transform = "scale(.965)")}
           onPointerUp={e => {
@@ -402,13 +372,11 @@ export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) 
             width: "100%", height: "clamp(50px,13vw,58px)",
             borderRadius: "clamp(14px,4vw,18px)",
             border: "none", cursor: "pointer",
-            background: t.accent,
-            color: t.accentText,
+            background: t.accent, color: t.accentText,
             fontSize: "clamp(14px,4vw,16px)", fontWeight: 700, letterSpacing: "-.02em",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             boxShadow: `0 4px 24px ${dark ? "rgba(79,70,229,0.45)" : "rgba(79,70,229,0.3)"}`,
-            transition: "transform .12s",
-            willChange: "transform",
+            transition: "transform .12s", willChange: "transform",
             fontFamily: "inherit",
           }}>
           {isLast ? "Get Started" : "Continue"}

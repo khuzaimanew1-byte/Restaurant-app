@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { login, getOtpStatus, AppError } from "../lib/api";
 import { OtpModal } from "./OtpModal";
+import { useDarkMode, Spinner, formatTimer } from "../lib/shared";
 
 interface Props {
   onSuccess: (email: string, role: string) => void;
 }
 
 export function LoginPage({ onSuccess }: Props) {
-  const [dark, setDark]     = useState(() => window.matchMedia("(prefers-color-scheme:dark)").matches);
+  const [dark, setDark]     = useDarkMode();
   const [mounted, setMnt]   = useState(false);
   const [email, setEmail]   = useState("");
   const [password, setPw]   = useState("");
@@ -18,25 +19,15 @@ export function LoginPage({ onSuccess }: Props) {
   const [loading, setLoad]  = useState(false);
   const [btnScale, setBS]   = useState(1);
   const [showOtp, setShowOtp] = useState(false);
-
-  /* Backend-driven OTP session */
   const [otpExpiresAt, setOtpExpiresAt] = useState<number | null>(null);
   const [remainingMs, setRemMs]         = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  /* Field errors */
   const [errors, setErrors] = useState<{
     email?: string; password?: string; agreed?: string; general?: string;
   }>({});
 
   useEffect(() => { const id = setTimeout(() => setMnt(true), 40); return () => clearTimeout(id); }, []);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme:dark)");
-    const h = (e: MediaQueryListEvent) => setDark(e.matches);
-    mq.addEventListener("change", h); return () => mq.removeEventListener("change", h);
-  }, []);
 
-  /* Tick countdown from backend expiresAt */
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (!otpExpiresAt) { setRemMs(0); return; }
@@ -46,20 +37,16 @@ export function LoginPage({ onSuccess }: Props) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [otpExpiresAt]);
 
-  /* On email change: check if OTP session exists (sync timer after page reload) */
   const lastCheckedEmail = useRef("");
   async function checkOtpSession(em: string) {
     if (!em || lastCheckedEmail.current === em) return;
     lastCheckedEmail.current = em;
     try {
       const status = await getOtpStatus(em);
-      if (status.active && status.expiresAt) {
-        setOtpExpiresAt(status.expiresAt);
-      }
+      if (status.active && status.expiresAt) setOtpExpiresAt(status.expiresAt);
     } catch { /* ignore */ }
   }
 
-  /* Inline validation */
   function validateFields(submit = false): boolean {
     const e: typeof errors = {};
     if (!email.trim()) e.email = "Email is required.";
@@ -72,18 +59,12 @@ export function LoginPage({ onSuccess }: Props) {
   }
 
   const sessionActive   = remainingMs > 0;
-  const sessionSecs     = Math.ceil(remainingMs / 1000);
-  const sessionMins     = Math.floor(sessionSecs / 60);
-  const sessionRemSecs  = sessionSecs % 60;
-  const sessionTimerStr = `${sessionMins}:${String(sessionRemSecs).padStart(2, "0")}`;
+  const sessionTimerStr = formatTimer(remainingMs);
   const formValid       = !!(email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 6 && agreed);
 
   async function handleSignIn() {
     if (!validateFields(true)) return;
-    if (sessionActive) {
-      setShowOtp(true);
-      return;
-    }
+    if (sessionActive) { setShowOtp(true); return; }
     setErrors({});
     setLoad(true);
     try {
@@ -91,22 +72,19 @@ export function LoginPage({ onSuccess }: Props) {
       if (result.scenario === "login" && result.success) {
         onSuccess(result.email ?? email, result.role ?? "USER");
       } else if (result.scenario === "first-login") {
-        const exp = result.expiresAt ?? Date.now() + 300000;
-        setOtpExpiresAt(exp);
+        setOtpExpiresAt(result.expiresAt ?? Date.now() + 300000);
         setShowOtp(true);
       }
     } catch (err) {
       const e = err as AppError;
       if (e.field === "email") setErrors({ email: e.message });
       else if (e.field === "password") setErrors({ password: e.message });
-      else if (e.code === "RATE_LIMITED") setErrors({ general: e.message });
       else setErrors({ general: e.message });
     } finally {
       setLoad(false);
     }
   }
 
-  /* Password ref for Enter key chaining */
   const pwRef    = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -118,7 +96,7 @@ export function LoginPage({ onSuccess }: Props) {
   const o3        = dark ? "rgba(55,48,163,0.18)"  : "rgba(55,48,163,0.12)";
   const headClr   = dark ? "rgba(238,237,255,0.97)" : "#09071E";
   const subClr    = dark ? "rgba(200,197,245,0.46)" : "rgba(13,11,30,0.46)";
-  const accent    = dark ? "#8078F2"                 : "#4F46E5";
+  const accent    = dark ? "#8078F2" : "#4F46E5";
   const accentBtn = dark ? "linear-gradient(135deg,#6E67F0 0%,#4B44C5 100%)"
                          : "linear-gradient(135deg,#635CEE 0%,#3E37BE 100%)";
   const btnShadow = dark ? "0 12px 40px rgba(79,70,229,0.58),0 4px 12px rgba(79,70,229,0.32)"
@@ -127,10 +105,10 @@ export function LoginPage({ onSuccess }: Props) {
   const idleLbl   = dark ? "rgba(200,197,245,0.36)"  : "rgba(13,11,30,0.36)";
   const activeLbl = dark ? "rgba(200,197,245,0.60)"  : "rgba(13,11,30,0.52)";
   const inputTxt  = dark ? "rgba(238,237,255,0.93)"  : "#09071E";
-  const errClr    = dark ? "#F87171"                  : "#DC2626";
+  const errClr    = dark ? "#F87171" : "#DC2626";
   const tglBorder = dark ? "rgba(255,255,255,0.1)"   : "rgba(13,11,30,0.13)";
   const tglBg     = dark ? "rgba(255,255,255,0.05)"  : "rgba(255,255,255,0.6)";
-  const linkClr   = dark ? "#9992F5"                  : "#4F46E5";
+  const linkClr   = dark ? "#9992F5" : "#4F46E5";
   const divClr    = dark ? "rgba(255,255,255,0.07)"  : "rgba(13,11,30,0.09)";
   const divTxt    = dark ? "rgba(200,197,245,0.26)"  : "rgba(13,11,30,0.30)";
 
@@ -157,12 +135,7 @@ export function LoginPage({ onSuccess }: Props) {
       textTransform: active ? "uppercase" : "none" as const,
       lineHeight: 1, whiteSpace: "nowrap" as const, pointerEvents: "none" as const,
       color: err ? errClr : focused ? accent : active ? activeLbl : idleLbl,
-      transition: [
-        "top 0.28s cubic-bezier(0.22,1,0.36,1)",
-        "font-size 0.28s cubic-bezier(0.22,1,0.36,1)",
-        "color 0.22s ease",
-        "letter-spacing 0.28s cubic-bezier(0.22,1,0.36,1)",
-      ].join(", "),
+      transition: "top 0.28s cubic-bezier(0.22,1,0.36,1), font-size 0.28s cubic-bezier(0.22,1,0.36,1), color 0.22s ease, letter-spacing 0.28s cubic-bezier(0.22,1,0.36,1)",
     };
   }
 
@@ -189,7 +162,6 @@ export function LoginPage({ onSuccess }: Props) {
     transition: "background 0.22s ease",
   };
 
-  /* ── Sign-In button label ── */
   function btnLabel() {
     if (loading) return <Spinner />;
     if (sessionActive) return (
@@ -264,7 +236,6 @@ export function LoginPage({ onSuccess }: Props) {
       }}>
         <div style={{ width: "100%", maxWidth: 340 }}>
 
-          {/* Heading */}
           <div style={{ marginBottom: 8, ...rise(1) }}>
             <h1 style={{
               fontSize: "clamp(36px,9vw,44px)", fontWeight: 800,
@@ -278,21 +249,18 @@ export function LoginPage({ onSuccess }: Props) {
             </p>
           </div>
 
-          {/* General error banner */}
           {errors.general && (
             <div style={{
               ...rise(2),
               background: dark ? "rgba(248,113,113,0.1)" : "rgba(220,38,38,0.07)",
               border: `1px solid ${dark ? "rgba(248,113,113,0.22)" : "rgba(220,38,38,0.18)"}`,
               borderRadius: 14, padding: "12px 16px", marginBottom: 24,
-              fontSize: 13.5, color: errClr, lineHeight: 1.55,
-              whiteSpace: "pre-line",
+              fontSize: 13.5, color: errClr, lineHeight: 1.55, whiteSpace: "pre-line",
             }}>
               {errors.general}
             </div>
           )}
 
-          {/* OTP session banner */}
           {sessionActive && !showOtp && (
             <div style={{
               ...rise(2),
@@ -326,8 +294,7 @@ export function LoginPage({ onSuccess }: Props) {
             <div style={{ position: "relative", height: FIELD_H }}>
               <label style={labelStyle(!!(emailF || email), emailF, !!errors.email)}>Email</label>
               <input
-                ref={emailRef}
-                type="email" value={email} autoComplete="email"
+                ref={emailRef} type="email" value={email} autoComplete="email"
                 onChange={e => { setEmail(e.target.value); setErrors(v => ({ ...v, email: undefined, general: undefined })); }}
                 onBlur={() => { setEF(false); checkOtpSession(email.trim()); }}
                 onFocus={() => setEF(true)}
@@ -337,11 +304,7 @@ export function LoginPage({ onSuccess }: Props) {
               <div style={{ ...underlineBase, background: errors.email ? errClr : baseLine }}/>
               <div style={sweepLine(emailF, !!errors.email)}/>
             </div>
-            {errors.email && (
-              <p style={{ margin: "5px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>
-                {errors.email}
-              </p>
-            )}
+            {errors.email && <p style={{ margin: "5px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.email}</p>}
           </div>
 
           {/* Password */}
@@ -349,8 +312,7 @@ export function LoginPage({ onSuccess }: Props) {
             <div style={{ position: "relative", height: FIELD_H }}>
               <label style={labelStyle(!!(pwF || password), pwF, !!errors.password)}>Password</label>
               <input
-                ref={pwRef}
-                type={showPw ? "text" : "password"} value={password} autoComplete="current-password"
+                ref={pwRef} type={showPw ? "text" : "password"} value={password} autoComplete="current-password"
                 onChange={e => { setPw(e.target.value); setErrors(v => ({ ...v, password: undefined, general: undefined })); }}
                 onFocus={() => setPwF(true)}
                 onBlur={() => setPwF(false)}
@@ -363,8 +325,8 @@ export function LoginPage({ onSuccess }: Props) {
                 width: 18, height: 18,
                 background: "none", border: "none", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                color: idleLbl, opacity: 0.55,
-                transition: "color 0.22s, opacity 0.18s", padding: 0,
+                color: idleLbl, opacity: 0.55, padding: 0,
+                transition: "color 0.22s, opacity 0.18s",
               }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
                 onMouseLeave={e => (e.currentTarget.style.opacity = "0.55")}
@@ -382,11 +344,7 @@ export function LoginPage({ onSuccess }: Props) {
               <div style={{ ...underlineBase, background: errors.password ? errClr : baseLine }}/>
               <div style={sweepLine(pwF, !!errors.password)}/>
             </div>
-            {errors.password && (
-              <p style={{ margin: "5px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>
-                {errors.password}
-              </p>
-            )}
+            {errors.password && <p style={{ margin: "5px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.password}</p>}
           </div>
 
           {/* Terms */}
@@ -413,11 +371,7 @@ export function LoginPage({ onSuccess }: Props) {
                 <span style={{ color: linkClr, fontWeight: 600, cursor: "pointer" }}>Terms of Service</span>
               </span>
             </label>
-            {errors.agreed && (
-              <p style={{ margin: "6px 0 0 32px", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>
-                {errors.agreed}
-              </p>
-            )}
+            {errors.agreed && <p style={{ margin: "6px 0 0 32px", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.agreed}</p>}
           </div>
 
           {/* Sign In button */}
@@ -447,11 +401,8 @@ export function LoginPage({ onSuccess }: Props) {
             </button>
           </div>
 
-          {/* Divider + bottom */}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 12,
-            margin: "22px 0 16px", ...rise(7),
-          }}>
+          {/* Divider */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "22px 0 16px", ...rise(7) }}>
             <div style={{ flex: 1, height: 1, background: divClr }}/>
             <span style={{ fontSize: 12, color: divTxt, fontWeight: 500, letterSpacing: "0.04em" }}>secured</span>
             <div style={{ flex: 1, height: 1, background: divClr }}/>
@@ -470,37 +421,15 @@ export function LoginPage({ onSuccess }: Props) {
         </div>
       </div>
 
-      {/* OTP Modal — mounted only when needed, state preserved on close */}
       {showOtp && otpExpiresAt && (
         <OtpModal
-          email={email}
-          password={password}
-          dark={dark}
-          accent={accent}
-          accentBtn={accentBtn}
-          btnShadow={btnShadow}
-          expiresAt={otpExpiresAt}
-          onSuccess={onSuccess}
+          email={email} password={password} dark={dark}
+          accent={accent} accentBtn={accentBtn} btnShadow={btnShadow}
+          expiresAt={otpExpiresAt} onSuccess={onSuccess}
           onClose={() => setShowOtp(false)}
-          onNewExpiry={(exp) => setOtpExpiresAt(exp)}
+          onNewExpiry={setOtpExpiresAt}
         />
       )}
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        * { -webkit-tap-highlight-color: transparent; }
-      `}</style>
     </div>
-  );
-}
-
-function Spinner() {
-  return (
-    <span style={{
-      width: 19, height: 19, borderRadius: "50%",
-      border: "2.5px solid rgba(255,255,255,0.28)",
-      borderTopColor: "#fff", display: "inline-block",
-      animation: "spin 0.72s linear infinite",
-    }}/>
   );
 }

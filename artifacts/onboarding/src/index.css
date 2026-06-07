@@ -15,6 +15,7 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
   from{transform:scaleY(0);opacity:0;transform-origin:bottom}
   to  {transform:scaleY(1);opacity:1;transform-origin:bottom}
 }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Page load ── */
 @keyframes top-in { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
@@ -38,8 +39,8 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 .text-exit-up  { animation:text-exit-up  .28s cubic-bezier(.4,0,1,1)     both }
 .text-enter-up { animation:text-enter-up .44s cubic-bezier(.22,1,.36,1) .1s both }
 
-.stagger-1 { animation-delay:.06s  }
-.stagger-2 { animation-delay:.14s  }
+.stagger-1 { animation-delay:.06s }
+.stagger-2 { animation-delay:.14s }
 
 /* ── Dots ── */
 .dot { transition:width .36s cubic-bezier(.22,1,.36,1), background .28s }
@@ -62,20 +63,3 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 .auth-orb-a { animation:orb-a 24s ease-in-out infinite; }
 .auth-orb-b { animation:orb-b 30s ease-in-out infinite; }
 .auth-orb-c { animation:orb-c 20s ease-in-out infinite; }
-
-/* ── Auth page stagger enter ── */
-@keyframes auth-rise {
-  from { opacity:0; transform:translateY(22px); }
-  to   { opacity:1; transform:translateY(0);    }
-}
-.auth-item {
-  opacity: 0;
-  animation: auth-rise 0.6s cubic-bezier(0.22,1,0.36,1) forwards;
-}
-.auth-d0  { animation-delay: 0.04s; }
-.auth-d1  { animation-delay: 0.12s; }
-.auth-d2  { animation-delay: 0.20s; }
-.auth-d3  { animation-delay: 0.28s; }
-.auth-d4  { animation-delay: 0.36s; }
-.auth-d5  { animation-delay: 0.44s; }
-.auth-d6  { animation-delay: 0.52s; }
