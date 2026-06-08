@@ -3,6 +3,9 @@ name: NestJS + Neon migration
 description: Architecture decisions and gotchas from migrating api-server from Express+Back4App to NestJS+Neon PostgreSQL.
 ---
 
+## Data storage
+- **All data is stored in Neon (cloud PostgreSQL).** No local storage of any persistent data. Never suggest or implement local file/SQLite storage.
+
 ## Build system
 - esbuild bundles `src/main.ts` → `dist/main.mjs` (ESM). All `@nestjs/*`, `class-validator`, `class-transformer`, `reflect-metadata`, `helmet`, `nodemailer` are **externalized**; `@workspace/db` and `@workspace/api-zod` are **bundled**.
 - `rxjs` must be listed in `dependencies` (NestJS peer dep) and `@nestjs/core` must be in `pnpm-workspace.yaml` `onlyBuiltDependencies` for its postinstall script to run.
@@ -21,6 +24,7 @@ description: Architecture decisions and gotchas from migrating api-server from E
 - `POST /api/auth/login`: if user has `passwordHash` → immediate session; if no `passwordHash` (first login) → OTP sent, returns `{scenario:'first-login', expiresAt, email}`.
 - `POST /api/auth/verify-otp`: accepts `{email, otp, password}` — sets password hash and creates session in one step.
 - Login and signup use the **same endpoint** (`POST /api/auth/login`). The server checks the employee table and user table to determine the scenario.
+- **Logout redirect:** After logout, always redirect to `/signin` (not `/onboarding/0`).
 
 ## Flutter HTTP layer
 - Removed `parse_server_sdk_flutter` and `crypto`; added `http: ^1.2.0`.

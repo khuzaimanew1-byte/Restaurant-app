@@ -108,9 +108,8 @@ export default function App() {
     const token = getToken();
     clearToken();
     setAuth(null);
-    nav("/onboarding/0");
-    setScreen("onboarding");
-    setSlide(0);
+    nav("/signin");
+    setScreen("signin");
     if (token) logoutSession(token);
   }
 
