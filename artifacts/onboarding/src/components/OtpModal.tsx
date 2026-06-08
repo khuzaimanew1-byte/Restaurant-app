@@ -211,7 +211,7 @@ export function OtpModal({
                 background: val ? boxFocBg : boxBg,
                 fontSize: 24, fontWeight: 700, textAlign: "center",
                 color: boxTxt, fontFamily: "inherit",
-                outline: "none", boxSizing: "border-box", caretColor: val ? accent : "transparent",
+                outline: "none", boxSizing: "border-box", caretColor: accent,
                 transform: val ? "scale(1.06)" : "scale(1)",
                 boxShadow: val ? (dark ? "0 0 0 3px rgba(127,120,242,0.18)" : "0 0 0 3px rgba(79,70,229,0.12)") : "none",
                 transition: "border-color 0.2s ease, background 0.2s ease, transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s ease",
