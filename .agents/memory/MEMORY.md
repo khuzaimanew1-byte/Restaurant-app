@@ -1,1 +1,2 @@
 - [NestJS + Neon migration](nestjs-neon-migration.md) — full stack migrated from Express+Back4App to NestJS+Neon; key architecture decisions and gotchas.
+- [Cross-platform sync rule](cross-platform-sync.md) — React is reference; shared screens (Onboarding/Login/OTP) must stay in sync; lists deliberate differences and known gaps.
