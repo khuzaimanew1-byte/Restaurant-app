@@ -220,25 +220,37 @@ export function OtpModal({
           ))}
         </div>
 
-        {/* Error / expired state — fixed-height slot so button never shifts */}
-        <div style={{ minHeight: 44, marginBottom: 8 }}>
-          {(expired && !error) || error ? (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8,
-              background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
-              border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
-              borderRadius: 12, padding: "10px 14px",
-            }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
-                <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
-              </svg>
-              <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5 }}>
-                {error || "OTP expired. Request a new code to continue."}
-              </span>
-            </div>
-          ) : null}
-        </div>
+        {/* Error or expired state */}
+        {expired && !error && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
+            border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
+            borderRadius: 12, padding: "10px 14px", marginBottom: 16,
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+              <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5 }}>
+              OTP expired. Request a new code to continue.
+            </span>
+          </div>
+        )}
+        {error && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
+            border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
+            borderRadius: 12, padding: "10px 14px", marginBottom: 16,
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+              <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5 }}>{error}</span>
+          </div>
+        )}
 
         {/* Verify button */}
         <button
