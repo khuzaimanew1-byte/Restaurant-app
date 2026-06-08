@@ -1,19 +1,25 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo",
-    "outDir": "dist",
-    "rootDir": "src",
-    "types": ["node"]
+    "target":                  "ES2022",
+    "lib":                     ["ES2022"],
+    "module":                  "ESNext",
+    "moduleResolution":        "Bundler",
+    "experimentalDecorators":  true,
+    "emitDecoratorMetadata":   false,
+    "strict":                  true,
+    "strictNullChecks":        true,
+    "noImplicitAny":           true,
+    "skipLibCheck":            true,
+    "incremental":             true,
+    "tsBuildInfoFile":         ".tsbuildinfo",
+    "outDir":                  "dist",
+    "rootDir":                 "src",
+    "types":                   ["node"],
+    "customConditions":        ["workspace"]
   },
   "include": ["src"],
   "references": [
-    {
-      "path": "../../lib/db"
-    },
-    {
-      "path": "../../lib/api-zod"
-    }
+    { "path": "../../lib/db" },
+    { "path": "../../lib/api-zod" }
   ]
 }

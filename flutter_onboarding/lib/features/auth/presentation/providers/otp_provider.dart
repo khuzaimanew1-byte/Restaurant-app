@@ -8,38 +8,30 @@ import '../../data/repositories/otp_repository.dart';
 class OtpState {
   final bool isSending;
   final bool isSent;
-  final bool isVerifying;
   final String? error;
   final int countdownSeconds;
-  final bool verified;
 
   const OtpState({
     this.isSending = false,
-    this.isSent = false,
-    this.isVerifying = false,
+    this.isSent    = false,
     this.error,
     this.countdownSeconds = 0,
-    this.verified = false,
   });
 
   bool get canResend => !isSending && countdownSeconds == 0;
 
   OtpState copyWith({
-    bool? isSending,
-    bool? isSent,
-    bool? isVerifying,
+    bool?   isSending,
+    bool?   isSent,
     String? error,
-    int? countdownSeconds,
-    bool? verified,
-    bool clearError = false,
+    int?    countdownSeconds,
+    bool    clearError = false,
   }) {
     return OtpState(
-      isSending: isSending ?? this.isSending,
-      isSent: isSent ?? this.isSent,
-      isVerifying: isVerifying ?? this.isVerifying,
-      error: clearError ? null : error ?? this.error,
+      isSending:        isSending        ?? this.isSending,
+      isSent:           isSent           ?? this.isSent,
+      error:            clearError ? null : error ?? this.error,
       countdownSeconds: countdownSeconds ?? this.countdownSeconds,
-      verified: verified ?? this.verified,
     );
   }
 }
@@ -49,35 +41,40 @@ class OtpState {
 class OtpNotifier extends StateNotifier<OtpState> {
   final OtpRepository _repo;
   Timer? _timer;
-  static const _ttlSeconds = 300; // 5 minutes
 
   OtpNotifier(this._repo) : super(const OtpState());
 
-  Future<void> sendOtp(String email) async {
-    state = state.copyWith(isSending: true, clearError: true);
-    final error = await _repo.generateAndSend(email);
-    if (error != null) {
-      state = state.copyWith(isSending: false, error: error);
-      return;
-    }
+  /// Initialise the countdown from a server-provided [expiresAtMs] timestamp.
+  /// Called after the server sends an OTP (login / signup response).
+  void initCountdown(int expiresAtMs) {
+    _timer?.cancel();
+    final remaining =
+        ((expiresAtMs - DateTime.now().millisecondsSinceEpoch) / 1000)
+            .round()
+            .clamp(0, 600);
+    state = state.copyWith(
+      isSent: true,
+      countdownSeconds: remaining,
+      clearError: true,
+    );
     _startCountdown();
-    state = state.copyWith(isSending: false, isSent: true);
   }
 
-  Future<String?> verifyOtp(String email, String otp) async {
-    state = state.copyWith(isVerifying: true, clearError: true);
-    final error = await _repo.verifyOtp(email, otp);
-    if (error != null) {
-      state = state.copyWith(isVerifying: false, error: error);
-      return error;
+  /// Resend OTP by calling POST /api/auth/resend-otp.
+  /// Reused by the "Resend OTP" button in the OTP modal.
+  Future<void> sendOtp(String email) async {
+    state = state.copyWith(isSending: true, clearError: true);
+    try {
+      final expiresAt = await _repo.resendOtp(email);
+      initCountdown(expiresAt);
+      state = state.copyWith(isSending: false, isSent: true);
+    } catch (e) {
+      state = state.copyWith(isSending: false, error: e.toString());
     }
-    state = state.copyWith(isVerifying: false, verified: true);
-    return null;
   }
 
   void _startCountdown() {
     _timer?.cancel();
-    state = state.copyWith(countdownSeconds: _ttlSeconds);
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       final remaining = state.countdownSeconds - 1;
       if (remaining <= 0) {
@@ -90,6 +87,7 @@ class OtpNotifier extends StateNotifier<OtpState> {
   }
 
   void clearError() => state = state.copyWith(clearError: true);
+
   void reset() {
     _timer?.cancel();
     state = const OtpState();

@@ -22,6 +22,18 @@ class AuthSuccess extends AuthState {
   const AuthSuccess(this.user);
 }
 
+/// Server returned first-login; OTP has been sent. UI should show OTP modal.
+class AuthOtpPending extends AuthState {
+  final String email;
+  final int expiresAt;
+  final String pendingPassword;
+  const AuthOtpPending({
+    required this.email,
+    required this.expiresAt,
+    required this.pendingPassword,
+  });
+}
+
 class AuthError extends AuthState {
   final String message;
   const AuthError(this.message);
@@ -37,8 +49,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> login(String email, String password) async {
     state = const AuthLoading();
     try {
-      final user = await _repo.login(email.trim(), password);
-      state = AuthSuccess(user);
+      final result = await _repo.login(email.trim(), password);
+      if (result is LoginSession) {
+        state = AuthSuccess(result.user);
+      } else if (result is LoginOtpPending) {
+        state = AuthOtpPending(
+          email:           result.email,
+          expiresAt:       result.expiresAt,
+          pendingPassword: password,
+        );
+      }
     } on AuthException catch (e) {
       state = AuthError(e.message);
     } catch (_) {
@@ -46,10 +66,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> signup(String email, String password) async {
+  Future<void> signup(String email, String password) => login(email, password);
+
+  Future<void> verifyOtp(String email, String otp, String password) async {
     state = const AuthLoading();
     try {
-      final user = await _repo.signup(email.trim(), password);
+      final user = await _repo.verifyOtp(email, otp, password);
       state = AuthSuccess(user);
     } on AuthException catch (e) {
       state = AuthError(e.message);

@@ -1,131 +1,88 @@
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
-import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../../core/env/env.dart';
-import '../models/employee_model.dart';
 import '../models/user_model.dart';
 
+// ── Result types ─────────────────────────────────────────────────────
+
+sealed class LoginResult {}
+
+class LoginSession extends LoginResult {
+  final UserModel user;
+  LoginSession(this.user);
+}
+
+class LoginOtpPending extends LoginResult {
+  final String email;
+  final int expiresAt;
+  LoginOtpPending({required this.email, required this.expiresAt});
+}
+
+// ── Repository ───────────────────────────────────────────────────────
+
 class AuthRepository {
-  static const _salt = 'attendance_app_2025';
+  static String get _base => Env.apiBaseUrl;
 
-  // ── Password hashing ──────────────────────────────────────────────
+  Map<String, String> get _headers => {
+    'Content-Type': 'application/json',
+    'Accept':       'application/json',
+  };
 
-  String hashPassword(String password) {
-    final bytes = utf8.encode(password + _salt);
-    return sha256.convert(bytes).toString();
+  // ── Helpers ─────────────────────────────────────────────────────────
+
+  Map<String, dynamic> _decodeBody(http.Response res) {
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode >= 200 && res.statusCode < 300) return body;
+    final msg = (body['message'] as String?) ??
+        (body['error'] as String?) ??
+        'Request failed (${res.statusCode}).';
+    throw AuthException(msg);
   }
 
-  // ── Employee queries ──────────────────────────────────────────────
+  // ── POST /api/auth/login ────────────────────────────────────────────
 
-  /// Returns the Employee record for [email], or null if not found.
-  Future<EmployeeModel?> findEmployee(String email) async {
-    final query = QueryBuilder<ParseObject>(ParseObject('Employee'))
-      ..whereEqualTo('email', email.toLowerCase().trim())
-      ..setLimit(1);
-    final result = await query.query();
-    if (!result.success || result.results == null || result.results!.isEmpty) {
-      return null;
-    }
-    return EmployeeModel.fromParse(result.results!.first as ParseObject);
-  }
-
-  // ── AppUser queries ───────────────────────────────────────────────
-
-  /// Returns the AppUser record for [email], or null if not found.
-  Future<UserModel?> findUser(String email) async {
-    final query = QueryBuilder<ParseObject>(ParseObject('AppUser'))
-      ..whereEqualTo('email', email.toLowerCase().trim())
-      ..setLimit(1);
-    final result = await query.query();
-    if (!result.success || result.results == null || result.results!.isEmpty) {
-      return null;
-    }
-    return UserModel.fromParse(result.results!.first as ParseObject);
-  }
-
-  // ── Login ─────────────────────────────────────────────────────────
-
-  /// Returns [UserModel] on success, or throws [AuthException].
-  Future<UserModel> login(String email, String password) async {
-    final user = await findUser(email);
-    if (user == null) throw AuthException('Account not found.');
-
-    final hash = hashPassword(password);
-    if (user.passwordHash != hash) throw AuthException('Incorrect password.');
-
-    return user;
-  }
-
-  // ── Signup ────────────────────────────────────────────────────────
-
-  /// Validates the employee, then creates an AppUser record.
-  /// Returns [UserModel] on success, or throws [AuthException].
-  Future<UserModel> signup(String email, String password) async {
-    final normalEmail = email.toLowerCase().trim();
-
-    // 1. Employee must exist.
-    final employee = await findEmployee(normalEmail);
-    if (employee == null) {
-      throw AuthException(
-          'Your email has not been registered by the administrator.');
-    }
-
-    // 2. Must not already be activated.
-    if (employee.isActivated) {
-      throw AuthException('Account already exists.');
-    }
-
-    // 3. Create AppUser.
-    final role = normalEmail == Env.adminGmail.toLowerCase() ? 'ADMIN' : 'EMPLOYEE';
-    final newUser = UserModel(
-      objectId: '',
-      email: normalEmail,
-      passwordHash: hashPassword(password),
-      role: role,
-      employeeId: employee.employeeId,
-      createdAt: DateTime.now(),
+  Future<LoginResult> login(String email, String password) async {
+    final res = await http.post(
+      Uri.parse('$_base/auth/login'),
+      headers: _headers,
+      body: jsonEncode({'email': email.toLowerCase().trim(), 'password': password}),
     );
+    final body = _decodeBody(res);
 
-    final saveResult = await newUser.toParse().save();
-    if (!saveResult.success) {
-      throw AuthException(saveResult.error?.message ?? 'Signup failed.');
+    if (body['scenario'] == 'first-login') {
+      return LoginOtpPending(
+        email:     body['email'] as String? ?? email.toLowerCase().trim(),
+        expiresAt: body['expiresAt'] as int? ?? 0,
+      );
     }
 
-    // 4. Mark employee as activated.
-    await _activateEmployee(employee.objectId);
-
-    return UserModel.fromParse(saveResult.result as ParseObject);
+    return LoginSession(UserModel.fromJson(body));
   }
 
-  Future<void> _activateEmployee(String objectId) async {
-    final obj = ParseObject('Employee')..objectId = objectId;
-    obj.set('isActivated', true);
-    await obj.save();
-  }
+  // ── POST /api/auth/login (signup uses same endpoint) ─────────────────
 
-  // ── Admin bootstrap ───────────────────────────────────────────────
+  Future<LoginResult> signup(String email, String password) => login(email, password);
 
-  /// Called on every cold start. Creates the ADMIN Employee record if absent.
-  Future<void> ensureAdminEmployee() async {
-    final adminEmail = Env.adminGmail.toLowerCase().trim();
-    if (adminEmail.isEmpty) return;
+  // ── POST /api/auth/verify-otp ────────────────────────────────────────
 
-    final existing = await findEmployee(adminEmail);
-    if (existing != null) return;
-
-    final admin = EmployeeModel(
-      objectId: '',
-      employeeId: 'ADMIN-001',
-      fullName: 'Administrator',
-      email: adminEmail,
-      role: 'ADMIN',
-      isActivated: false,
-      createdAt: DateTime.now(),
+  Future<UserModel> verifyOtp(String email, String otp, String password) async {
+    final res = await http.post(
+      Uri.parse('$_base/auth/verify-otp'),
+      headers: _headers,
+      body: jsonEncode({
+        'email':    email.toLowerCase().trim(),
+        'otp':      otp,
+        'password': password,
+      }),
     );
-
-    await admin.toParse().save();
+    final body = _decodeBody(res);
+    return UserModel.fromJson(body);
   }
+
+  // ── Admin bootstrap (no-op — server handles bootstrap) ───────────────
+
+  Future<void> ensureAdminEmployee() async {}
 }
 
 class AuthException implements Exception {

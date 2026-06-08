@@ -1,1 +1,1 @@
-- [Parse SDK import for Back4App](parse-back4app.md) — use `parse/node` (not `parse/node.js`) and add to esbuild externals.
+- [NestJS + Neon migration](nestjs-neon-migration.md) — full stack migrated from Express+Back4App to NestJS+Neon; key architecture decisions and gotchas.

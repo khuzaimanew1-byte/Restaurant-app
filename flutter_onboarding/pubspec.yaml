@@ -10,8 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Backend — Back4App / Parse
-  parse_server_sdk_flutter: ^7.0.3
+  # HTTP client — NestJS API calls
+  http: ^1.2.0
 
   # State management
   flutter_riverpod: ^2.5.1
@@ -21,9 +21,6 @@ dependencies:
 
   # Storage
   shared_preferences: ^2.3.1
-
-  # Crypto — password hashing
-  crypto: ^3.0.5
 
   # Animations
   flutter_animate: ^4.5.2

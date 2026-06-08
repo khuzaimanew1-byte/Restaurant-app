@@ -19,31 +19,30 @@ class SignupScreen extends ConsumerStatefulWidget {
 
 class _SignupScreenState extends ConsumerState<SignupScreen>
     with SingleTickerProviderStateMixin {
-  final _formKey = GlobalKey<FormState>();
-  final _emailCtrl = TextEditingController();
+  final _formKey      = GlobalKey<FormState>();
+  final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
+  final _confirmCtrl  = TextEditingController();
   bool _obscurePassword = true;
-  bool _obscureConfirm = true;
+  bool _obscureConfirm  = true;
 
   late final AnimationController _entryCtrl;
-  late final Animation<double> _entryOpacity;
-  late final Animation<Offset> _entrySlide;
+  late final Animation<double>  _entryOpacity;
+  late final Animation<Offset>  _entrySlide;
 
-  // Tracks whether we've passed the pre-OTP validation stage.
   bool _pendingOtp = false;
 
   @override
   void initState() {
     super.initState();
     _entryCtrl = AnimationController(
-      vsync: this,
+      vsync:    this,
       duration: const Duration(milliseconds: 540),
     );
     _entryOpacity = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
-    _entrySlide = Tween<Offset>(
+    _entrySlide   = Tween<Offset>(
       begin: const Offset(0, 0.05),
-      end: Offset.zero,
+      end:   Offset.zero,
     ).animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
     _entryCtrl.forward();
   }
@@ -60,81 +59,34 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   Future<void> _requestOtp() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     FocusScope.of(context).unfocus();
-
-    // Validate with Back4App first (employee check) via auth provider.
-    // We call a lightweight employee lookup before sending OTP.
-    final repo = ref.read(authRepositoryProvider);
-    final normalEmail = _emailCtrl.text.trim().toLowerCase();
-
-    final employee = await repo.findEmployee(normalEmail);
-    if (!mounted) return;
-
-    if (employee == null) {
-      ref.read(authProvider.notifier).reset(); // ensure idle
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Your email has not been registered by the administrator.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    if (employee.isActivated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account already exists. Please log in.'),
-          backgroundColor: AppColors.indigo,
-        ),
-      );
-      return;
-    }
-
-    // Send OTP.
     setState(() => _pendingOtp = true);
-    await ref.read(otpProvider.notifier).sendOtp(normalEmail);
-    if (!mounted) return;
 
-    final otpState = ref.read(otpProvider);
-    if (otpState.error != null) {
-      setState(() => _pendingOtp = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(otpState.error!),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    // Show OTP modal.
-    _showOtpModal(normalEmail);
-  }
-
-  void _showOtpModal(String email) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => OtpModal(
-        email: email,
-        onVerified: () {
-          Navigator.of(context).pop();
-          _completeSignup();
-        },
-        onBack: () {
-          Navigator.of(context).pop();
-          ref.read(otpProvider.notifier).reset();
-          setState(() => _pendingOtp = false);
-        },
-      ),
-    );
-  }
-
-  Future<void> _completeSignup() async {
+    // POST /api/auth/login — server validates the employee, creates the user
+    // record if needed, and sends the OTP. AuthNotifier sets AuthOtpPending.
     await ref
         .read(authProvider.notifier)
         .signup(_emailCtrl.text.trim(), _passwordCtrl.text);
+
+    if (mounted) setState(() => _pendingOtp = false);
+  }
+
+  void _showOtpModal(String email, String password, int expiresAt) {
+    ref.read(otpProvider.notifier).initCountdown(expiresAt);
+    showModalBottomSheet<void>(
+      context:          context,
+      isScrollControlled: true,
+      backgroundColor:  Colors.transparent,
+      builder: (_) => OtpModal(
+        email:      email,
+        password:   password,
+        onVerified: () => Navigator.of(context).pop(),
+        onBack: () {
+          Navigator.of(context).pop();
+          ref.read(otpProvider.notifier).reset();
+          ref.read(authProvider.notifier).reset();
+        },
+      ),
+    );
   }
 
   @override
@@ -145,12 +97,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       if (next is AuthSuccess) {
         ref.read(authProvider.notifier).reset();
         context.go('/success');
+      } else if (next is AuthOtpPending) {
+        setState(() => _pendingOtp = false);
+        _showOtpModal(next.email, next.pendingPassword, next.expiresAt);
       }
     });
 
     final authState = ref.watch(authProvider);
     final isLoading = authState is AuthLoading || _pendingOtp;
-    final errorMsg = authState is AuthError ? authState.message : null;
+    final errorMsg  = authState is AuthError ? authState.message : null;
 
     return Scaffold(
       body: AnnotatedRegion<SystemUiOverlayStyle>(
@@ -172,19 +127,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 16),
-                            // Back
                             IconButton(
                               onPressed: () => context.pop(),
                               icon: Icon(
                                 Icons.arrow_back_ios_new_rounded,
                                 size: 18,
-                                color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+                                color: isDark
+                                    ? AppColors.darkSecondary
+                                    : AppColors.lightSecondary,
                               ),
-                              padding: EdgeInsets.zero,
+                              padding:     EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
                             const SizedBox(height: 32),
-                            Text('Create account', style: AppTextStyles.displayMedium(isDark)),
+                            Text(
+                              'Create account',
+                              style: AppTextStyles.displayMedium(isDark),
+                            ),
                             const SizedBox(height: 8),
                             Text(
                               'Only pre-registered employee emails are accepted.',
@@ -200,20 +159,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                             _FieldLabel('Email', isDark),
                             const SizedBox(height: 8),
                             TextFormField(
-                              controller: _emailCtrl,
-                              keyboardType: TextInputType.emailAddress,
-                              autocorrect: false,
+                              controller:      _emailCtrl,
+                              keyboardType:    TextInputType.emailAddress,
+                              autocorrect:     false,
                               textInputAction: TextInputAction.next,
                               style: TextStyle(
                                 fontSize: 15,
-                                color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+                                color: isDark
+                                    ? AppColors.darkPrimary
+                                    : AppColors.lightPrimary,
                               ),
                               decoration: const InputDecoration(
-                                hintText: 'your.work@company.com',
+                                hintText:   'your.work@company.com',
                                 prefixIcon: Icon(Icons.mail_outline_rounded, size: 18),
                               ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Email is required.';
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Email is required.';
+                                }
                                 if (!v.contains('@')) return 'Enter a valid email.';
                                 return null;
                               },
@@ -223,16 +186,19 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                             _FieldLabel('Password', isDark),
                             const SizedBox(height: 8),
                             TextFormField(
-                              controller: _passwordCtrl,
-                              obscureText: _obscurePassword,
+                              controller:      _passwordCtrl,
+                              obscureText:     _obscurePassword,
                               textInputAction: TextInputAction.next,
                               style: TextStyle(
                                 fontSize: 15,
-                                color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+                                color: isDark
+                                    ? AppColors.darkPrimary
+                                    : AppColors.lightPrimary,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'Min. 8 characters',
-                                prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18),
+                                hintText:   'Min. 8 characters',
+                                prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded, size: 18),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword
@@ -240,12 +206,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                         : Icons.visibility_outlined,
                                     size: 18,
                                   ),
-                                  onPressed: () =>
-                                      setState(() => _obscurePassword = !_obscurePassword),
+                                  onPressed: () => setState(
+                                      () => _obscurePassword = !_obscurePassword),
                                 ),
                               ),
                               validator: (v) {
-                                if (v == null || v.isEmpty) return 'Password is required.';
+                                if (v == null || v.isEmpty) {
+                                  return 'Password is required.';
+                                }
                                 if (v.length < 8) return 'Minimum 8 characters.';
                                 return null;
                               },
@@ -255,17 +223,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                             _FieldLabel('Confirm Password', isDark),
                             const SizedBox(height: 8),
                             TextFormField(
-                              controller: _confirmCtrl,
-                              obscureText: _obscureConfirm,
+                              controller:      _confirmCtrl,
+                              obscureText:     _obscureConfirm,
                               textInputAction: TextInputAction.done,
                               onFieldSubmitted: (_) => _requestOtp(),
                               style: TextStyle(
                                 fontSize: 15,
-                                color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+                                color: isDark
+                                    ? AppColors.darkPrimary
+                                    : AppColors.lightPrimary,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'Re-enter password',
-                                prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18),
+                                hintText:   'Re-enter password',
+                                prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded, size: 18),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscureConfirm
@@ -273,13 +244,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                         : Icons.visibility_outlined,
                                     size: 18,
                                   ),
-                                  onPressed: () =>
-                                      setState(() => _obscureConfirm = !_obscureConfirm),
+                                  onPressed: () => setState(
+                                      () => _obscureConfirm = !_obscureConfirm),
                                 ),
                               ),
                               validator: (v) {
-                                if (v == null || v.isEmpty) return 'Please confirm your password.';
-                                if (v != _passwordCtrl.text) return 'Passwords do not match.';
+                                if (v == null || v.isEmpty) {
+                                  return 'Please confirm your password.';
+                                }
+                                if (v != _passwordCtrl.text) {
+                                  return 'Passwords do not match.';
+                                }
                                 return null;
                               },
                             ),
@@ -287,14 +262,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                             const SizedBox(height: 32),
 
                             AppButton(
-                              label: 'Continue',
+                              label:     'Continue',
                               onPressed: isLoading ? null : _requestOtp,
                               isLoading: isLoading,
                             ),
                             const SizedBox(height: 14),
                             AppButton(
-                              label: 'Already have an account? Log In',
-                              variant: AppButtonVariant.ghost,
+                              label:    'Already have an account? Log In',
+                              variant:  AppButtonVariant.ghost,
                               onPressed: isLoading ? null : () => context.pop(),
                             ),
                             const SizedBox(height: 20),
@@ -323,7 +298,7 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        fontSize: 13,
+        fontSize:   13,
         fontWeight: FontWeight.w600,
         letterSpacing: -0.1,
         color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
@@ -342,9 +317,9 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
+        color:        AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+        border:       Border.all(color: AppColors.error.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -354,10 +329,10 @@ class _ErrorBanner extends StatelessWidget {
             child: Text(
               message,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize:   13,
                 fontWeight: FontWeight.w500,
-                color: AppColors.error,
-                height: 1.4,
+                color:      AppColors.error,
+                height:     1.4,
               ),
             ),
           ),

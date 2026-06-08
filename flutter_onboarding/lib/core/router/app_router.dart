@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/onboarding/data/onboarding_repository.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
-import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/auth/presentation/screens/success_screen.dart';
@@ -14,38 +13,38 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/init',
     routes: [
       GoRoute(
-        path: '/init',
+        path:    '/init',
         builder: (_, __) => const _InitGate(),
       ),
       GoRoute(
         path: '/onboarding',
         pageBuilder: (_, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const OnboardingPage(),
+          key:                state.pageKey,
+          child:              const OnboardingPage(),
           transitionsBuilder: _fadeTransition,
         ),
       ),
       GoRoute(
         path: '/login',
         pageBuilder: (_, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const LoginScreen(),
+          key:                state.pageKey,
+          child:              const LoginScreen(),
           transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         path: '/signup',
         pageBuilder: (_, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const SignupScreen(),
+          key:                state.pageKey,
+          child:              const SignupScreen(),
           transitionsBuilder: _slideTransition,
         ),
       ),
       GoRoute(
         path: '/success',
         pageBuilder: (_, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const SuccessScreen(),
+          key:                state.pageKey,
+          child:              const SuccessScreen(),
           transitionsBuilder: _fadeTransition,
         ),
       ),
@@ -53,7 +52,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-// Decides initial route: onboarding (first launch) or login (returning).
 class _InitGate extends StatefulWidget {
   const _InitGate();
   @override
@@ -68,13 +66,8 @@ class _InitGateState extends State<_InitGate> {
   }
 
   Future<void> _route() async {
-    // Ensure admin employee record exists on every cold start.
-    await AuthRepository().ensureAdminEmployee();
-
     final seen = await OnboardingRepository().hasCompletedOnboarding();
-    if (mounted) {
-      context.go(seen ? '/login' : '/onboarding');
-    }
+    if (mounted) context.go(seen ? '/login' : '/onboarding');
   }
 
   @override
@@ -83,7 +76,7 @@ class _InitGateState extends State<_InitGate> {
     return Scaffold(
       body: Center(
         child: CircularProgressIndicator(
-          color: dark ? Colors.white38 : Colors.black26,
+          color:       dark ? Colors.white38 : Colors.black26,
           strokeWidth: 2,
         ),
       ),
@@ -91,13 +84,11 @@ class _InitGateState extends State<_InitGate> {
   }
 }
 
-// ── Transitions ──────────────────────────────────────────────────────
-
 Widget _fadeTransition(_, Animation<double> animation,
     Animation<double> secondary, Widget child) {
   return FadeTransition(
     opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-    child: child,
+    child:   child,
   );
 }
 
@@ -106,11 +97,11 @@ Widget _slideTransition(BuildContext context, Animation<double> animation,
   return SlideTransition(
     position: Tween<Offset>(
       begin: const Offset(0.06, 0),
-      end: Offset.zero,
+      end:   Offset.zero,
     ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
     child: FadeTransition(
       opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-      child: child,
+      child:   child,
     ),
   );
 }

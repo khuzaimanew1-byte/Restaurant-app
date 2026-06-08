@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 
-import 'core/env/env.dart';
 import 'core/constants/app_colors.dart';
 import 'core/router/app_router.dart';
 
@@ -15,15 +13,6 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
   ));
-
-  await Parse().initialize(
-    Env.back4appAppId,
-    'https://parseapi.back4app.com',
-    clientKey: Env.back4appJsKey,
-    debug: false,
-    autoSendSessionId: true,
-    coreStore: await CoreStoreSembastImp.getInstance(),
-  );
 
   runApp(const ProviderScope(child: AttendanceApp()));
 }
