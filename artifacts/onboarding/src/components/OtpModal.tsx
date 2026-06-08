@@ -96,7 +96,7 @@ export function OtpModal({
       setTimeout(() => onSuccess(result.email, result.role), 400);
     } catch (err) {
       const e = err as AppError;
-      setError(e.message ?? "Verification failed. Please try again.");
+      setError(e.message ?? "Verification failed. Please try again."); triggerShake();
     } finally {
       setLoading(false);
     }
@@ -204,6 +204,7 @@ export function OtpModal({
 
         {/* OTP boxes */}
         <div
+          className={shake ? "otp-shake" : ""}
           style={{ display: "flex", gap: "clamp(7px,2.2vw,10px)", marginBottom: 28, justifyContent: "center" }}
           onPaste={handlePaste}
         >
