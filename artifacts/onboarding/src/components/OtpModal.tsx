@@ -24,10 +24,21 @@ export function OtpModal({
   const [loading, setLoading]   = useState(false);
   const [resending, setResend]  = useState(false);
   const [error, setError]       = useState("");
+  const [shake, setShake]       = useState(false);
   const [remainingMs, setMs]    = useState(() => Math.max(0, expiresAt - Date.now()));
   const [dragging, setDragging] = useState(false);
   const [dragY, setDragY]       = useState(0);
   const startY      = useRef(0);
+  const shakeTimer  = useRef<ReturnType<typeof setTimeout>>();
+
+  function triggerShake() {
+    setShake(false);
+    clearTimeout(shakeTimer.current);
+    requestAnimationFrame(() => {
+      setShake(true);
+      shakeTimer.current = setTimeout(() => setShake(false), 450);
+    });
+  }
   const inputRefs   = useRef<(HTMLInputElement | null)[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -75,8 +86,8 @@ export function OtpModal({
 
   async function handleVerify() {
     const code = otp.join("");
-    if (code.length < 6) { setError("Please enter the full 6-digit code."); return; }
-    if (remainingMs <= 0) { setError("OTP expired. Request a new code to continue."); return; }
+    if (code.length < 6) { setError("Please enter the full 6-digit code."); triggerShake(); return; }
+    if (remainingMs <= 0) { setError("OTP expired. Request a new code to continue."); triggerShake(); return; }
     setError("");
     setLoading(true);
     try {
