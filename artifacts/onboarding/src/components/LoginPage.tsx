@@ -4,7 +4,7 @@ import { OtpModal } from "./OtpModal";
 import { useDarkMode, Spinner, formatCountdown } from "../lib/shared";
 
 interface Props {
-  onSuccess: (email: string, role: string) => void;
+  onSuccess: (email: string, role: string, sessionToken: string) => void;
 }
 
 export function LoginPage({ onSuccess }: Props) {
@@ -69,7 +69,7 @@ export function LoginPage({ onSuccess }: Props) {
     try {
       const result = await login(email.trim(), password);
       if (result.scenario === "login" && result.success) {
-        onSuccess(result.email ?? email, result.role ?? "USER");
+        onSuccess(result.email ?? email, result.role ?? "USER", result.sessionToken ?? "");
       } else if (result.scenario === "first-login") {
         setOtpExpiresAt(result.expiresAt ?? Date.now() + 300000);
         setShowOtp(true);

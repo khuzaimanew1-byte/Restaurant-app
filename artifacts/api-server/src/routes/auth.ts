@@ -1,4 +1,5 @@
 import { Router, type Response } from "express";
+import { randomUUID } from "crypto";
 import {
   findUserByEmail,
   createOtpSession,
@@ -8,7 +9,11 @@ import {
   incrementOtpAttempts,
   markOtpUsed,
   updateUser,
+  createUserSession,
+  findUserSession,
+  deleteUserSession,
 } from "../lib/back4app.js";
+
 import { sendOtpEmail } from "../lib/email.js";
 import {
   generateOtp,
@@ -20,6 +25,19 @@ import {
 } from "../lib/otp.js";
 import { checkRateLimit } from "../lib/rateLimit.js";
 import { logger } from "../lib/logger.js";
+
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+async function issueSession(email: string, role: string) {
+  const token     = randomUUID();
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+  await createUserSession(email, role, token, expiresAt);
+  return { sessionToken: token, sessionExpiresAt: expiresAt.getTime() };
+}
+
+function bearerToken(req: any): string {
+  return String(req.headers?.authorization ?? "").replace(/^Bearer\s+/i, "").trim();
+}
 
 const router = Router();
 
@@ -85,7 +103,8 @@ router.post("/login", async (req, res) => {
       if (!valid) {
         res.status(401).json({ error: "INCORRECT_PASSWORD", field: "password", message: "Incorrect password. Please try again." }); return;
       }
-      res.json({ scenario: "login", success: true, email: user.email, role: user.role }); return;
+      const sess = await issueSession(user.email, user.role);
+      res.json({ scenario: "login", success: true, email: user.email, role: user.role, ...sess }); return;
     }
 
     /* Scenario 2: no password → OTP flow */
@@ -172,7 +191,8 @@ router.post("/verify-otp", async (req, res) => {
     }
 
     logger.info({ email: email.trim() }, "OTP verified, account activated");
-    res.json({ success: true, email: user.email, role: user.role });
+    const sess = await issueSession(user.email, user.role);
+    res.json({ success: true, email: user.email, role: user.role, ...sess });
   } catch (err) {
     logger.error({ err }, "verify-otp error");
     res.status(500).json({ error: "SERVER_ERROR", message: "Unable to connect to the server. Please try again." });
@@ -231,6 +251,32 @@ router.get("/otp-status", async (req, res) => {
     res.json({ active: remainingMs > 0, remainingMs, expiresAt });
   } catch (err) {
     logger.error({ err }, "otp-status error");
+    res.status(500).json({ error: "SERVER_ERROR", message: "Server error." });
+  }
+});
+
+/* ── GET /api/auth/session ── validate token, return user info */
+router.get("/session", async (req, res) => {
+  try {
+    const token = bearerToken(req);
+    if (!token) { res.status(401).json({ error: "UNAUTHORIZED", message: "No session token." }); return; }
+    const session = await findUserSession(token);
+    if (!session) { res.status(401).json({ error: "SESSION_INVALID", message: "Session expired or invalid. Please sign in again." }); return; }
+    res.json({ email: session.email, role: session.role, expiresAt: session.expiresAt.getTime() });
+  } catch (err) {
+    logger.error({ err }, "session validate error");
+    res.status(500).json({ error: "SERVER_ERROR", message: "Server error." });
+  }
+});
+
+/* ── DELETE /api/auth/session ── invalidate token (logout) */
+router.delete("/session", async (req, res) => {
+  try {
+    const token = bearerToken(req);
+    if (token) await deleteUserSession(token);
+    res.json({ success: true });
+  } catch (err) {
+    logger.error({ err }, "session delete error");
     res.status(500).json({ error: "SERVER_ERROR", message: "Server error." });
   }
 });

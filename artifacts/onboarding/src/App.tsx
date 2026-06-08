@@ -2,46 +2,71 @@ import { useState, useEffect } from "react";
 import { OnboardingFlow } from "./components/OnboardingFlow";
 import { LoginPage } from "./components/LoginPage";
 import { SuccessPage } from "./components/SuccessPage";
+import { validateSession, logoutSession } from "./lib/api";
+import { useDarkMode } from "./lib/shared";
 
 type Screen = "onboarding" | "login" | "success";
 
 interface AuthResult { email: string; role: string; }
 
-const SESSION_KEY = "att_session";
+const TOKEN_KEY = "att_tok";
 
-function loadSession(): AuthResult | null {
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null"); }
-  catch { return null; }
-}
-
-function saveSession(r: AuthResult) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(r));
-}
-
-function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
-}
+function getToken(): string | null { return localStorage.getItem(TOKEN_KEY); }
+function setToken(t: string)       { localStorage.setItem(TOKEN_KEY, t); }
+function clearToken()              { localStorage.removeItem(TOKEN_KEY); }
 
 function hashToScreen(): Screen {
   const h = window.location.hash;
   if (h === "#/login") return "login";
-  if (h === "#/success") return "success";
   return "onboarding";
 }
 
-export default function App() {
-  const existingSession = loadSession();
+function CheckingScreen() {
+  const [dark] = useDarkMode();
+  return (
+    <div style={{
+      width: "100vw", height: "100dvh",
+      background: dark ? "#03021A" : "#F4F3FF",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: "50%",
+        border: `3px solid ${dark ? "rgba(167,139,250,0.15)" : "rgba(79,70,229,0.12)"}`,
+        borderTopColor: dark ? "#8078F2" : "#4F46E5",
+        animation: "spin 0.7s linear infinite",
+      }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
-  const [screen, setScreen]   = useState<Screen>(existingSession ? "success" : hashToScreen);
-  const [authResult, setAuth] = useState<AuthResult | null>(existingSession);
+export default function App() {
+  const [screen,     setScreen]  = useState<Screen>("onboarding");
+  const [authResult, setAuth]    = useState<AuthResult | null>(null);
+  const [checking,   setChecking] = useState(() => !!getToken());
 
   useEffect(() => {
-    if (loadSession()) {
-      history.replaceState(null, "", "#/success");
+    const token = getToken();
+
+    async function boot() {
+      if (!token) { setScreen(hashToScreen()); setChecking(false); return; }
+      try {
+        const s = await validateSession(token);
+        setAuth({ email: s.email, role: s.role });
+        setScreen("success");
+        history.replaceState(null, "", "#/success");
+      } catch {
+        clearToken();
+        setScreen(hashToScreen());
+      } finally {
+        setChecking(false);
+      }
     }
 
+    boot();
+
     const onHash = () => {
-      if (loadSession()) {
+      if (getToken()) {
         history.replaceState(null, "", "#/success");
         setScreen("success");
         return;
@@ -57,19 +82,22 @@ export default function App() {
     setScreen(s);
   }
 
-  function handleSuccess(email: string, role: string) {
-    const r = { email, role };
-    saveSession(r);
-    setAuth(r);
+  function handleSuccess(email: string, role: string, sessionToken: string) {
+    setToken(sessionToken);
+    setAuth({ email, role });
     goTo("success");
   }
 
-  function handleLogout() {
-    clearSession();
+  async function handleLogout() {
+    const token = getToken();
+    clearToken();
     setAuth(null);
     window.location.hash = "/onboarding/1";
     setScreen("onboarding");
+    if (token) logoutSession(token);
   }
+
+  if (checking) return <CheckingScreen />;
 
   return (
     <>

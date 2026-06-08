@@ -10,7 +10,7 @@ interface Props {
   accentBtn: string;
   btnShadow: string;
   expiresAt: number;
-  onSuccess: (email: string, role: string) => void;
+  onSuccess: (email: string, role: string, sessionToken: string) => void;
   onClose: () => void;
   onNewExpiry: (expiresAt: number) => void;
 }
@@ -93,7 +93,7 @@ export function OtpModal({
     try {
       const result = await verifyOtp(email, code, password);
       setSheet(false);
-      setTimeout(() => onSuccess(result.email, result.role), 400);
+      setTimeout(() => onSuccess(result.email, result.role, result.sessionToken), 400);
     } catch (err) {
       const e = err as AppError;
       setError(e.message ?? "Verification failed. Please try again."); triggerShake();

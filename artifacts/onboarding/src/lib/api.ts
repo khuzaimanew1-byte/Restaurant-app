@@ -68,6 +68,8 @@ export interface LoginResult {
   email?: string;
   role?: string;
   message?: string;
+  sessionToken?: string;
+  sessionExpiresAt?: number;
 }
 
 export async function login(email: string, password: string): Promise<LoginResult> {
@@ -78,6 +80,8 @@ export interface VerifyOtpResult {
   success: boolean;
   email: string;
   role: string;
+  sessionToken: string;
+  sessionExpiresAt: number;
 }
 
 export async function verifyOtp(email: string, otp: string, password: string): Promise<VerifyOtpResult> {
@@ -101,4 +105,33 @@ export interface OtpStatusResult {
 
 export async function getOtpStatus(email: string): Promise<OtpStatusResult> {
   return get<OtpStatusResult>(`/otp-status?email=${encodeURIComponent(email)}`);
+}
+
+export interface SessionResult {
+  email: string;
+  role: string;
+  expiresAt: number;
+}
+
+export async function validateSession(token: string): Promise<SessionResult> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/session`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    throw new AppError({ error: "NETWORK_ERROR", message: "Unable to connect to the server.\nCheck your internet connection and try again." });
+  }
+  const data = await res.json() as SessionResult & ApiError;
+  if (!res.ok) throw new AppError(data as ApiError);
+  return data;
+}
+
+export async function logoutSession(token: string): Promise<void> {
+  try {
+    await fetch(`${BASE}/session`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch { /* best-effort */ }
 }

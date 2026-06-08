@@ -139,3 +139,49 @@ export async function markOtpUsed(objectId: string): Promise<void> {
   o.set("used", true);
   await o.save(null, OPT);
 }
+
+/* ─── UserSession ─── */
+export interface B4UserSession {
+  objectId:  string;
+  email:     string;
+  role:      string;
+  token:     string;
+  expiresAt: Date;
+}
+
+function toUserSession(obj: Parse.Object): B4UserSession {
+  return {
+    objectId:  obj.id,
+    email:     obj.get("email") as string,
+    role:      obj.get("role")  as string,
+    token:     obj.get("token") as string,
+    expiresAt: obj.get("expiresAt") as Date,
+  };
+}
+
+export async function createUserSession(
+  email: string, role: string, token: string, expiresAt: Date,
+): Promise<B4UserSession> {
+  const o = mk("UserSession");
+  o.set("email",     em(email));
+  o.set("role",      role);
+  o.set("token",     token);
+  o.set("expiresAt", expiresAt);
+  return toUserSession(await o.save(null, OPT));
+}
+
+export async function findUserSession(token: string): Promise<B4UserSession | null> {
+  const q = qr("UserSession");
+  q.equalTo("token", token);
+  q.greaterThan("expiresAt", new Date());
+  q.limit(1);
+  const r = await q.find(OPT);
+  return r[0] ? toUserSession(r[0]) : null;
+}
+
+export async function deleteUserSession(token: string): Promise<void> {
+  const q = qr("UserSession");
+  q.equalTo("token", token);
+  const rows = await q.find(OPT);
+  await Promise.all(rows.map(s => s.destroy(OPT)));
+}
