@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { getTokens, type ColorTokens } from "../lib/colors";
 import { useDarkMode } from "../lib/shared";
 
@@ -244,16 +244,38 @@ const PAGES = [
 
 type Phase = "idle" | "exit" | "enter";
 
+function slideFromHash(): number {
+  const m = window.location.hash.match(/#\/onboarding\/(\d+)/);
+  if (m) { const n = parseInt(m[1]); return n >= 0 && n < PAGES.length ? n : 0; }
+  return 0;
+}
+
 export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) {
-  const [idx, setIdx]     = useState(0);
+  const [idx, setIdx]     = useState(slideFromHash);
   const [dir, setDir]     = useState<"fwd" | "bwd">("fwd");
   const [phase, setPhase] = useState<Phase>("idle");
   const [dark, setDark]   = useDarkMode();
-  const exitT  = useRef<ReturnType<typeof setTimeout>>();
-  const enterT = useRef<ReturnType<typeof setTimeout>>();
+  const exitT       = useRef<ReturnType<typeof setTimeout>>();
+  const enterT      = useRef<ReturnType<typeof setTimeout>>();
+  const skipHash    = useRef(false);
+
+  useEffect(() => {
+    if (!window.location.hash.match(/#\/onboarding\/\d+/)) {
+      history.replaceState(null, "", `#/onboarding/${idx}`);
+    }
+    const onHash = () => {
+      if (skipHash.current) { skipHash.current = false; return; }
+      const n = slideFromHash();
+      setIdx(n);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const goTo = useCallback((target: number) => {
     if (phase !== "idle" || target === idx) return;
+    skipHash.current = true;
+    window.location.hash = `#/onboarding/${target}`;
     setDir(target > idx ? "fwd" : "bwd");
     setPhase("exit");
     clearTimeout(exitT.current);
