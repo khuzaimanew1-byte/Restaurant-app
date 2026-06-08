@@ -211,7 +211,7 @@ export function OtpModal({
                 background: val ? boxFocBg : boxBg,
                 fontSize: 24, fontWeight: 700, textAlign: "center",
                 color: boxTxt, fontFamily: "inherit",
-                outline: "none", boxSizing: "border-box", caretColor: "transparent",
+                outline: "none", boxSizing: "border-box", caretColor: accent,
                 transform: val ? "scale(1.06)" : "scale(1)",
                 boxShadow: val ? (dark ? "0 0 0 3px rgba(127,120,242,0.18)" : "0 0 0 3px rgba(79,70,229,0.12)") : "none",
                 transition: "border-color 0.2s ease, background 0.2s ease, transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.2s ease",
@@ -219,38 +219,6 @@ export function OtpModal({
             />
           ))}
         </div>
-
-        {/* Error or expired state */}
-        {expired && !error && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
-            border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
-            borderRadius: 12, padding: "10px 14px", marginBottom: 16,
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
-              <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
-            </svg>
-            <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5 }}>
-              OTP expired. Request a new code to continue.
-            </span>
-          </div>
-        )}
-        {error && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
-            border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
-            borderRadius: 12, padding: "10px 14px", marginBottom: 16,
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
-              <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
-            </svg>
-            <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5 }}>{error}</span>
-          </div>
-        )}
 
         {/* Verify button */}
         <button
@@ -268,11 +236,29 @@ export function OtpModal({
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             boxShadow: canVerify ? btnShadow : "none",
             transition: "background 0.28s ease, box-shadow 0.25s ease, color 0.22s ease",
-            fontFamily: "inherit", marginBottom: 18,
+            fontFamily: "inherit", marginBottom: 14,
           }}
         >
           {loading ? <Spinner size={18} /> : "Verify & Continue"}
         </button>
+
+        {/* Error / expired — below button so layout doesn't shift */}
+        {(error || expired) && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
+            border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
+            borderRadius: 12, padding: "10px 14px", marginBottom: 14,
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+              <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5 }}>
+              {error || "OTP expired. Request a new code to continue."}
+            </span>
+          </div>
+        )}
 
         {/* Resend */}
         <div style={{ textAlign: "center" }}>

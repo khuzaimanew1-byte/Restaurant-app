@@ -151,7 +151,7 @@ router.post("/verify-otp", async (req, res) => {
       res.status(400).json({
         error: "OTP_INCORRECT",
         message: remaining > 0
-          ? `Incorrect code. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining.`
+          ? "Incorrect code. Please try again."
           : "Incorrect code. Too many attempts — please request a new OTP.",
       });
       return;
