@@ -1,13 +1,14 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
+import { Logger } from "nestjs-pino";
 import helmet from "helmet";
 import { AppModule } from "./app.module.js";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: ["log", "warn", "error"],
-  });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  app.useLogger(app.get(Logger));
 
   app.use(helmet());
 
@@ -17,9 +18,9 @@ async function bootstrap() {
     .filter(Boolean);
 
   app.enableCors({
-    origin: allowedOrigins.includes("*") ? "*" : allowedOrigins,
-    credentials: true,
-    methods: ["GET", "POST", "DELETE", "OPTIONS"],
+    origin:         allowedOrigins.includes("*") ? "*" : allowedOrigins,
+    credentials:    true,
+    methods:        ["GET", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   });
 
@@ -38,7 +39,6 @@ async function bootstrap() {
   if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT: "${rawPort}"`);
 
   await app.listen(port, "0.0.0.0");
-  console.log(`[API] NestJS server listening on port ${port}`);
 }
 
 bootstrap().catch((err) => {

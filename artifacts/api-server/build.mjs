@@ -23,6 +23,11 @@ async function buildAll() {
       "class-validator",
       "class-transformer",
       "reflect-metadata",
+      // Pino logging — must remain external (native bindings, transports)
+      "nestjs-pino",
+      "pino-http",
+      "pino",
+      "pino-pretty",
       // Cannot be bundled (native addons, dynamic paths, etc.)
       "*.node",
       "nodemailer",

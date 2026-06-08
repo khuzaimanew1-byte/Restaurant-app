@@ -5,8 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../features/onboarding/data/onboarding_repository.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/auth/presentation/screens/signup_screen.dart';
-import '../../features/auth/presentation/screens/success_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -32,22 +30,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           transitionsBuilder: _slideTransition,
         ),
       ),
-      GoRoute(
-        path: '/signup',
-        pageBuilder: (_, state) => CustomTransitionPage(
-          key:                state.pageKey,
-          child:              const SignupScreen(),
-          transitionsBuilder: _slideTransition,
-        ),
-      ),
-      GoRoute(
-        path: '/success',
-        pageBuilder: (_, state) => CustomTransitionPage(
-          key:                state.pageKey,
-          child:              const SuccessScreen(),
-          transitionsBuilder: _fadeTransition,
-        ),
-      ),
+
     ],
   );
 });

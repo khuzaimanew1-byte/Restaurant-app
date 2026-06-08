@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { verifyOtp, resendOtp, AppError } from "../lib/api";
 import { Spinner, formatCountdown } from "../lib/shared";
 
@@ -21,15 +22,15 @@ export function OtpModal({
 }: Props) {
   const [otp, setOtp]           = useState(["", "", "", "", "", ""]);
   const [sheetVisible, setSheet] = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [resending, setResend]  = useState(false);
   const [error, setError]       = useState("");
   const [shake, setShake]       = useState(false);
   const [remainingMs, setMs]    = useState(() => Math.max(0, expiresAt - Date.now()));
   const [dragging, setDragging] = useState(false);
   const [dragY, setDragY]       = useState(0);
-  const startY      = useRef(0);
-  const shakeTimer  = useRef<ReturnType<typeof setTimeout>>();
+  const startY     = useRef(0);
+  const shakeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const inputRefs  = useRef<(HTMLInputElement | null)[]>([]);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function triggerShake() {
     setShake(false);
@@ -39,8 +40,6 @@ export function OtpModal({
       shakeTimer.current = setTimeout(() => setShake(false), 450);
     });
   }
-  const inputRefs   = useRef<(HTMLInputElement | null)[]>([]);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => { const id = setTimeout(() => setSheet(true), 20); return () => clearTimeout(id); }, []);
   useEffect(() => { setMs(Math.max(0, expiresAt - Date.now())); }, [expiresAt]);
@@ -84,38 +83,44 @@ export function OtpModal({
     setTimeout(() => inputRefs.current[Math.min(digits.length, 5)]?.focus(), 0);
   }
 
-  async function handleVerify() {
+  // ── Verify OTP mutation ──────────────────────────────────────────
+  const verifyMutation = useMutation({
+    mutationFn: ({ code }: { code: string }) => verifyOtp(email, code, password),
+    onSuccess: (result) => {
+      setSheet(false);
+      setTimeout(() => onSuccess(result.email, result.role, result.sessionToken), 400);
+    },
+    onError: (err) => {
+      const e = err as AppError;
+      setError(e.message ?? "Verification failed. Please try again.");
+      triggerShake();
+    },
+  });
+
+  // ── Resend OTP mutation ──────────────────────────────────────────
+  const resendMutation = useMutation({
+    mutationFn: () => resendOtp(email),
+    onSuccess: (result) => {
+      onNewExpiry(result.expiresAt);
+      setOtp(["", "", "", "", "", ""]);
+      setError("");
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    },
+    onError: (err) => {
+      setError((err as AppError).message ?? "Failed to resend. Please try again.");
+    },
+  });
+
+  function handleVerify() {
     const code = otp.join("");
     if (code.length < 6) { setError("Please enter the full 6-digit code."); triggerShake(); return; }
     if (remainingMs <= 0) { setError("OTP expired. Request a new code to continue."); triggerShake(); return; }
     setError("");
-    setLoading(true);
-    try {
-      const result = await verifyOtp(email, code, password);
-      setSheet(false);
-      setTimeout(() => onSuccess(result.email, result.role, result.sessionToken), 400);
-    } catch (err) {
-      const e = err as AppError;
-      setError(e.message ?? "Verification failed. Please try again."); triggerShake();
-    } finally {
-      setLoading(false);
-    }
+    verifyMutation.mutate({ code });
   }
 
-  async function handleResend() {
-    setResend(true); setError("");
-    try {
-      const result = await resendOtp(email);
-      onNewExpiry(result.expiresAt);
-      setOtp(["", "", "", "", "", ""]);
-      setTimeout(() => inputRefs.current[0]?.focus(), 100);
-    } catch (err) {
-      setError((err as AppError).message ?? "Failed to resend. Please try again.");
-    } finally {
-      setResend(false);
-    }
-  }
-
+  const loading  = verifyMutation.isPending;
+  const resending = resendMutation.isPending;
   const filled   = otp.join("").length === 6;
   const expired  = remainingMs <= 0;
 
@@ -187,7 +192,6 @@ export function OtpModal({
           <div style={{ width: 38, height: 5, borderRadius: 100, background: handleClr }}/>
         </div>
 
-        {/* Heading */}
         <h3 style={{
           fontSize: "clamp(24px,6vw,30px)", fontWeight: 800,
           color: headClr, margin: "0 0 8px", letterSpacing: "-0.045em", lineHeight: 1.1,
@@ -254,7 +258,7 @@ export function OtpModal({
           {loading ? <Spinner size={18} /> : "Verify & Continue"}
         </button>
 
-        {/* Error / expired — below button so layout doesn't shift */}
+        {/* Error / expired */}
         {(error || expired) && (
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
@@ -276,7 +280,7 @@ export function OtpModal({
         <div style={{ textAlign: "center" }}>
           {expired ? (
             <button
-              onClick={handleResend}
+              onClick={() => resendMutation.mutate()}
               disabled={resending}
               style={{
                 background: "none", border: "none",

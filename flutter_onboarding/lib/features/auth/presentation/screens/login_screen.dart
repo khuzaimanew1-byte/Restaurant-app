@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +8,8 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../providers/auth_provider.dart';
+import '../providers/otp_provider.dart';
+import '../widgets/otp_modal.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -17,13 +20,15 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
-  final _formKey = GlobalKey<FormState>();
-  final _emailCtrl = TextEditingController();
+  final _formKey      = GlobalKey<FormState>();
+  final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
+  bool _pendingOtp      = false;
+
   late final AnimationController _entryCtrl;
   late final Animation<double> _entryOpacity;
-  late final Animation<Offset> _entrySlide;
+  late final Animation<Offset>  _entrySlide;
 
   @override
   void initState() {
@@ -33,9 +38,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       duration: const Duration(milliseconds: 540),
     );
     _entryOpacity = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut);
-    _entrySlide = Tween<Offset>(
+    _entrySlide   = Tween<Offset>(
       begin: const Offset(0, 0.05),
-      end: Offset.zero,
+      end:   Offset.zero,
     ).animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
     _entryCtrl.forward();
   }
@@ -54,20 +59,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     ref.read(authProvider.notifier).login(_emailCtrl.text, _passwordCtrl.text);
   }
 
+  void _showOtpModal(String email, String password, int expiresAt) {
+    ref.read(otpProvider.notifier).initCountdown(expiresAt);
+    showModalBottomSheet<void>(
+      context:            context,
+      isScrollControlled: true,
+      backgroundColor:    Colors.transparent,
+      builder: (_) => OtpModal(
+        email:      email,
+        password:   password,
+        onVerified: () => Navigator.of(context).pop(),
+        onBack: () {
+          Navigator.of(context).pop();
+          ref.read(otpProvider.notifier).reset();
+          ref.read(authProvider.notifier).reset();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark    = Theme.of(context).brightness == Brightness.dark;
+    final authState = ref.watch(authProvider);
 
     ref.listen<AuthState>(authProvider, (_, next) {
       if (next is AuthSuccess) {
         ref.read(authProvider.notifier).reset();
-        context.go('/success');
+        setState(() => _pendingOtp = false);
+      } else if (next is AuthOtpPending) {
+        setState(() => _pendingOtp = false);
+        _showOtpModal(next.email, next.pendingPassword, next.expiresAt);
       }
     });
 
-    final authState = ref.watch(authProvider);
-    final isLoading = authState is AuthLoading;
-    final errorMsg = authState is AuthError ? authState.message : null;
+    final isLoading = authState is AuthLoading || _pendingOtp;
+    final errorMsg  = authState is AuthError ? authState.message : null;
+
+    if (authState is AuthSuccess) {
+      return _SuccessView(isDark: isDark);
+    }
 
     return Scaffold(
       body: AnnotatedRegion<SystemUiOverlayStyle>(
@@ -99,26 +130,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                             const SizedBox(height: 40),
 
-                            // Error banner
                             if (errorMsg != null) ...[
                               _ErrorBanner(message: errorMsg, isDark: isDark),
                               const SizedBox(height: 20),
                             ],
 
-                            // Email
                             _FieldLabel('Email', isDark),
                             const SizedBox(height: 8),
                             TextFormField(
-                              controller: _emailCtrl,
-                              keyboardType: TextInputType.emailAddress,
-                              autocorrect: false,
+                              controller:      _emailCtrl,
+                              keyboardType:    TextInputType.emailAddress,
+                              autocorrect:     false,
                               textInputAction: TextInputAction.next,
                               style: TextStyle(
                                 fontSize: 15,
                                 color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
                               ),
                               decoration: const InputDecoration(
-                                hintText: 'you@company.com',
+                                hintText:   'you@company.com',
                                 prefixIcon: Icon(Icons.mail_outline_rounded, size: 18),
                               ),
                               validator: (v) {
@@ -129,12 +158,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                             const SizedBox(height: 18),
 
-                            // Password
                             _FieldLabel('Password', isDark),
                             const SizedBox(height: 8),
                             TextFormField(
-                              controller: _passwordCtrl,
-                              obscureText: _obscurePassword,
+                              controller:      _passwordCtrl,
+                              obscureText:     _obscurePassword,
                               textInputAction: TextInputAction.done,
                               onFieldSubmitted: (_) => _login(),
                               style: TextStyle(
@@ -142,7 +170,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
                               ),
                               decoration: InputDecoration(
-                                hintText: '••••••••',
+                                hintText:   '••••••••',
                                 prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18),
                                 suffixIcon: IconButton(
                                   icon: Icon(
@@ -150,7 +178,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                         ? Icons.visibility_off_outlined
                                         : Icons.visibility_outlined,
                                     size: 18,
-                                    color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+                                    color: isDark
+                                        ? AppColors.darkSecondary
+                                        : AppColors.lightSecondary,
                                   ),
                                   onPressed: () =>
                                       setState(() => _obscurePassword = !_obscurePassword),
@@ -166,17 +196,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             const SizedBox(height: 32),
 
                             AppButton(
-                              label: 'Log In',
+                              label:     'Log In',
                               onPressed: isLoading ? null : _login,
                               isLoading: isLoading,
-                            ),
-                            const SizedBox(height: 14),
-                            AppButton(
-                              label: "Don't have an account? Sign Up",
-                              variant: AppButtonVariant.ghost,
-                              onPressed: isLoading
-                                  ? null
-                                  : () => context.push('/signup'),
                             ),
                             const SizedBox(height: 20),
                           ],
@@ -194,6 +216,82 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 }
 
+// ── Inline success view (replaces removed SuccessScreen) ──────────────
+
+class _SuccessView extends StatelessWidget {
+  final bool isDark;
+  const _SuccessView({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width:  72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.emerald.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: AppColors.emerald.withValues(alpha: 0.28),
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.check_rounded,
+                      size:  36,
+                      color: AppColors.emerald,
+                    ),
+                  ),
+                )
+                    .animate()
+                    .scale(
+                      begin:    const Offset(0.6, 0.6),
+                      end:      const Offset(1, 1),
+                      curve:    Curves.elasticOut,
+                      duration: 700.ms,
+                    )
+                    .fadeIn(duration: 300.ms),
+
+                const SizedBox(height: 36),
+
+                Text(
+                  'Welcome to\nAttendance App',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize:      34,
+                    fontWeight:    FontWeight.w800,
+                    letterSpacing: -1.2,
+                    height:        1.1,
+                    color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+                  ),
+                )
+                    .animate(delay: 220.ms)
+                    .slideY(
+                      begin:    0.15,
+                      end:      0,
+                      curve:    Curves.easeOutCubic,
+                      duration: 500.ms,
+                    )
+                    .fadeIn(duration: 400.ms),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Supporting widgets ────────────────────────────────────────────────
+
 class _AppIcon extends StatelessWidget {
   final bool isDark;
   const _AppIcon({required this.isDark});
@@ -201,19 +299,19 @@ class _AppIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 56,
+      width:  56,
       height: 56,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: isDark ? AppColors.darkCard : AppColors.lightSurface,
+        color:  isDark ? AppColors.darkCard : AppColors.lightSurface,
         border: Border.all(
           color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
+            color:      Colors.black.withValues(alpha: isDark ? 0.3 : 0.06),
             blurRadius: 20,
-            offset: const Offset(0, 4),
+            offset:     const Offset(0, 4),
           ),
         ],
       ),
@@ -234,8 +332,8 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
+        fontSize:      13,
+        fontWeight:    FontWeight.w600,
         letterSpacing: -0.1,
         color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
       ),
@@ -253,9 +351,9 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
+        color:        AppColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.25)),
+        border:       Border.all(color: AppColors.error.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
@@ -265,10 +363,10 @@ class _ErrorBanner extends StatelessWidget {
             child: Text(
               message,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize:   13,
                 fontWeight: FontWeight.w500,
-                color: AppColors.error,
-                height: 1.4,
+                color:      AppColors.error,
+                height:     1.4,
               ),
             ),
           ),

@@ -39,6 +39,19 @@ description: Architecture decisions and gotchas from migrating api-server from E
 - Server bootstraps the admin employee + user records on cold start (via `UsersRepository.ensureAdminAccount()`).
 - Flutter `AuthRepository.ensureAdminEmployee()` is a no-op — kept for router compatibility, does nothing.
 
+## Logging (Pino)
+- `nestjs-pino` + `pino-http` + `pino-pretty` installed; `LoggerModule.forRoot()` in `app.module.ts`.
+- `main.ts` uses `bufferLogs: true` + `app.useLogger(app.get(Logger))` from `nestjs-pino`.
+- All four Pino packages are externalized in `build.mjs` — never bundle them.
+- Service files keep `new Logger(ClassName.name)` from `@nestjs/common`; they route through Pino automatically.
+
+## TanStack Query (web)
+- `QueryClientProvider` wraps the app in `main.tsx` with `retry:1 / staleTime:30s` defaults.
+- `App.tsx`: session validation uses `useQuery({queryKey:['auth-session',token], enabled:!!token, retry:false})`; logout uses `useMutation`.
+- `LoginPage.tsx`: `login()` → `useMutation`; `getOtpStatus()` (email-blur check) → `useMutation` (imperative, not auto).
+- `OtpModal.tsx`: `verifyOtp()` → `useMutation`; `resendOtp()` → `useMutation`.
+- On logout: `queryClient.removeQueries({queryKey:['auth-session']})` to clear cached session.
+
 ## API contract (unchanged from Express version)
 - `POST /api/auth/login`
 - `POST /api/auth/verify-otp`

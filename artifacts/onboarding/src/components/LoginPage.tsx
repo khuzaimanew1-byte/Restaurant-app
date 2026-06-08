@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { login, getOtpStatus, AppError } from "../lib/api";
 import { OtpModal } from "./OtpModal";
 import { useDarkMode, Spinner, formatCountdown } from "../lib/shared";
@@ -16,11 +17,10 @@ export function LoginPage({ onSuccess }: Props) {
   const [agreed, setAgreed] = useState(false);
   const [emailF, setEF]     = useState(false);
   const [pwF, setPwF]       = useState(false);
-  const [loading, setLoad]  = useState(false);
   const [btnScale, setBS]   = useState(1);
-  const [showOtp, setShowOtp] = useState(false);
-  const [otpExpiresAt, setOtpExpiresAt] = useState<number | null>(null);
-  const [remainingMs, setRemMs]         = useState(0);
+  const [showOtp, setShowOtp]       = useState(false);
+  const [otpExpiresAt, setOtpExpiry] = useState<number | null>(null);
+  const [remainingMs, setRemMs]      = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [errors, setErrors] = useState<{
     email?: string; password?: string; agreed?: string; general?: string;
@@ -37,51 +37,60 @@ export function LoginPage({ onSuccess }: Props) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [otpExpiresAt]);
 
+  // ── OTP status check (best-effort on email blur) ──────────────────
   const lastCheckedEmail = useRef("");
-  async function checkOtpSession(em: string) {
+  const otpStatusMutation = useMutation({
+    mutationFn: (em: string) => getOtpStatus(em),
+    onSuccess: (status) => {
+      if (status.active && status.expiresAt) setOtpExpiry(status.expiresAt);
+    },
+  });
+
+  function checkOtpSession(em: string) {
     if (!em || lastCheckedEmail.current === em) return;
     lastCheckedEmail.current = em;
-    try {
-      const status = await getOtpStatus(em);
-      if (status.active && status.expiresAt) setOtpExpiresAt(status.expiresAt);
-    } catch { /* ignore */ }
+    otpStatusMutation.mutate(em);
   }
 
-  function validateFields(submit = false): boolean {
+  // ── Login mutation ────────────────────────────────────────────────
+  const loginMutation = useMutation({
+    mutationFn: ({ em, pw }: { em: string; pw: string }) => login(em, pw),
+    onSuccess: (result) => {
+      if (result.scenario === "login" && result.success) {
+        onSuccess(result.email ?? email, result.role ?? "USER", result.sessionToken ?? "");
+      } else if (result.scenario === "first-login") {
+        setOtpExpiry(result.expiresAt ?? Date.now() + 300_000);
+        setShowOtp(true);
+      }
+    },
+    onError: (err) => {
+      const e = err as AppError;
+      if (e.field === "email")    setErrors({ email: e.message });
+      else if (e.field === "password") setErrors({ password: e.message });
+      else setErrors({ general: e.message });
+    },
+  });
+
+  function validateFields(): boolean {
     const e: typeof errors = {};
     if (!email.trim()) e.email = "Email is required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) e.email = "Enter a valid email address.";
     if (!password) e.password = "Password is required.";
     else if (password.length < 6) e.password = "Password must be at least 6 characters.";
     if (!agreed) e.agreed = "You must agree to the Terms of Service to continue.";
-    if (submit) setErrors(e);
+    setErrors(e);
     return !e.email && !e.password && !e.agreed;
   }
 
   const sessionActive = remainingMs > 0;
+  const loading       = loginMutation.isPending;
   const formValid     = !!(email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 6 && agreed);
 
-  async function handleSignIn() {
+  function handleSignIn() {
     if (sessionActive) { setShowOtp(true); return; }
-    if (!validateFields(true)) return;
+    if (!validateFields()) return;
     setErrors({});
-    setLoad(true);
-    try {
-      const result = await login(email.trim(), password);
-      if (result.scenario === "login" && result.success) {
-        onSuccess(result.email ?? email, result.role ?? "USER", result.sessionToken ?? "");
-      } else if (result.scenario === "first-login") {
-        setOtpExpiresAt(result.expiresAt ?? Date.now() + 300000);
-        setShowOtp(true);
-      }
-    } catch (err) {
-      const e = err as AppError;
-      if (e.field === "email") setErrors({ email: e.message });
-      else if (e.field === "password") setErrors({ password: e.message });
-      else setErrors({ general: e.message });
-    } finally {
-      setLoad(false);
-    }
+    loginMutation.mutate({ em: email.trim(), pw: password });
   }
 
   const pwRef    = useRef<HTMLInputElement>(null);
@@ -432,7 +441,7 @@ export function LoginPage({ onSuccess }: Props) {
           accent={accent} accentBtn={accentBtn} btnShadow={btnShadow}
           expiresAt={otpExpiresAt} onSuccess={onSuccess}
           onClose={() => setShowOtp(false)}
-          onNewExpiry={setOtpExpiresAt}
+          onNewExpiry={setOtpExpiry}
         />
       )}
     </div>

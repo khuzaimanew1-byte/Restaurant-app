@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { OnboardingFlow } from "./components/OnboardingFlow";
 import { LoginPage } from "./components/LoginPage";
 import { SuccessPage } from "./components/SuccessPage";
@@ -8,9 +9,9 @@ import { useDarkMode } from "./lib/shared";
 type Screen = "onboarding" | "signin" | "success";
 interface AuthResult { email: string; role: string; }
 
-const TOKEN_KEY = "att_tok";
-const getToken  = (): string | null => localStorage.getItem(TOKEN_KEY);
-const setToken  = (t: string) => localStorage.setItem(TOKEN_KEY, t);
+const TOKEN_KEY  = "att_tok";
+const getToken   = (): string | null => localStorage.getItem(TOKEN_KEY);
+const setToken   = (t: string) => localStorage.setItem(TOKEN_KEY, t);
 const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
 function parsePath(): { screen: Screen; slide: number } {
@@ -51,37 +52,58 @@ function CheckingScreen() {
 }
 
 export default function App() {
-  const [screen,   setScreen]   = useState<Screen>("onboarding");
-  const [slide,    setSlide]    = useState(0);
-  const [auth,     setAuth]     = useState<AuthResult | null>(null);
-  const [checking, setChecking] = useState(() => !!getToken());
+  const [screen, setScreen] = useState<Screen>("onboarding");
+  const [slide,  setSlide]  = useState(0);
+  const [auth,   setAuth]   = useState<AuthResult | null>(null);
+  const queryClient = useQueryClient();
 
+  // ── Session validation query ──────────────────────────────────────
+  const token = getToken();
+
+  const sessionQuery = useQuery({
+    queryKey:  ["auth-session", token],
+    queryFn:   () => validateSession(token!),
+    enabled:   !!token,
+    retry:     false,
+    staleTime: 5 * 60 * 1_000,
+    gcTime:    10 * 60 * 1_000,
+  });
+
+  // Derive checking state — show spinner while token is being validated
+  const checking = !!token && sessionQuery.isPending;
+
+  // React to session query outcome
   useEffect(() => {
-    async function boot() {
-      const token = getToken();
-      if (!token) {
-        const r = parsePath();
-        if (r.screen === "success") { nav("/onboarding/0", true); setScreen("onboarding"); setSlide(0); }
-        else { setScreen(r.screen); setSlide(r.slide); }
-        setChecking(false);
-        return;
-      }
-      try {
-        const s = await validateSession(token);
-        setAuth({ email: s.email, role: s.role });
-        nav("/success", true);
-        setScreen("success");
-      } catch {
-        clearToken();
-        const r = parsePath();
-        setScreen(r.screen === "success" ? "onboarding" : r.screen);
+    if (!token) {
+      const r = parsePath();
+      if (r.screen === "success") {
+        nav("/onboarding/0", true);
+        setScreen("onboarding");
+        setSlide(0);
+      } else {
+        setScreen(r.screen);
         setSlide(r.slide);
-      } finally {
-        setChecking(false);
       }
+      return;
     }
-    boot();
+    if (sessionQuery.isPending) return;
 
+    if (sessionQuery.isSuccess) {
+      setAuth({ email: sessionQuery.data.email, role: sessionQuery.data.role });
+      nav("/success", true);
+      setScreen("success");
+    } else if (sessionQuery.isError) {
+      clearToken();
+      queryClient.removeQueries({ queryKey: ["auth-session"] });
+      const r = parsePath();
+      setScreen(r.screen === "success" ? "onboarding" : r.screen);
+      setSlide(r.slide);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, sessionQuery.isPending, sessionQuery.isSuccess, sessionQuery.isError]);
+
+  // Browser back/forward
+  useEffect(() => {
     const onPop = () => {
       if (getToken()) { nav("/success", true); setScreen("success"); return; }
       const r = parsePath();
@@ -92,6 +114,11 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
+  // ── Logout mutation ──────────────────────────────────────────────
+  const logoutMutation = useMutation({
+    mutationFn: (t: string) => logoutSession(t),
+  });
+
   function goSignin() {
     nav("/signin");
     setScreen("signin");
@@ -100,17 +127,19 @@ export default function App() {
   function handleSuccess(email: string, role: string, sessionToken: string) {
     setToken(sessionToken);
     setAuth({ email, role });
+    queryClient.invalidateQueries({ queryKey: ["auth-session"] });
     nav("/success");
     setScreen("success");
   }
 
-  async function handleLogout() {
-    const token = getToken();
+  function handleLogout() {
+    const t = getToken();
     clearToken();
     setAuth(null);
+    queryClient.removeQueries({ queryKey: ["auth-session"] });
     nav("/signin");
     setScreen("signin");
-    if (token) logoutSession(token);
+    if (t) logoutMutation.mutate(t);
   }
 
   if (checking) return <CheckingScreen />;
