@@ -37,23 +37,9 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 .auth-sign-btn:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 3px;
 }
-.auth-sign-btn:disabled {
+.auth-sign-btn[data-off] {
   pointer-events: none;
   cursor: default;
-  opacity: 1;
-  background: var(--accent-btn);
-  color: #fff;
-  box-shadow: var(--btn-shadow);
-  outline: none;
-}
-.auth-sign-btn:disabled:hover,
-.auth-sign-btn:disabled:focus,
-.auth-sign-btn:disabled:focus-visible,
-.auth-sign-btn:disabled:active {
-  background: var(--accent-btn);
-  box-shadow: var(--btn-shadow);
-  outline: none;
-  transform: none;
 }
 
 /* ── Autofill override ── */
