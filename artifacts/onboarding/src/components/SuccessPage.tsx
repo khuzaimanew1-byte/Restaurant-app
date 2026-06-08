@@ -4,9 +4,10 @@ import { useDarkMode } from "../lib/shared";
 interface Props {
   email?: string;
   role?: string;
+  onLogout?: () => void;
 }
 
-export function SuccessPage({ email, role }: Props) {
+export function SuccessPage({ email, role, onLogout }: Props) {
   const [mounted, setMounted] = useState(false);
   const [dark] = useDarkMode();
 
@@ -96,11 +97,35 @@ export function SuccessPage({ email, role }: Props) {
         </h1>
 
         {(email || role) && (
-          <p style={{ fontSize: 14, color: subClr, margin: "0", lineHeight: 1.55, letterSpacing: "-0.01em", ...fade(0.25) }}>
+          <p style={{ fontSize: 14, color: subClr, margin: "0 0 32px", lineHeight: 1.55, letterSpacing: "-0.01em", ...fade(0.25) }}>
             {role === "ADMIN" ? "Signed in as Administrator" : "You're all set"}
             {email ? ` · ${email}` : ""}
           </p>
         )}
+
+        <div style={{ ...fade(0.35) }}>
+          <button
+            onClick={onLogout}
+            onPointerDown={e => (e.currentTarget.style.transform = "scale(0.96)")}
+            onPointerUp={e => (e.currentTarget.style.transform = "")}
+            onPointerLeave={e => (e.currentTarget.style.transform = "")}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "10px 22px", borderRadius: 999,
+              border: `1.5px solid ${dark ? "rgba(167,139,250,0.22)" : "rgba(124,58,237,0.18)"}`,
+              background: dark ? "rgba(167,139,250,0.07)" : "rgba(124,58,237,0.05)",
+              color: accent, fontSize: 14, fontWeight: 600, letterSpacing: "-0.01em",
+              cursor: "pointer", fontFamily: "inherit",
+              transition: "transform 0.12s, background 0.2s",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"
+                stroke={accent} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Sign Out
+          </button>
+        </div>
       </div>
 
       <style>{`
