@@ -397,6 +397,7 @@ export function LoginPage({ onSuccess }: Props) {
               className="auth-sign-btn"
               type="button"
               data-off={loading || sessionActive ? "" : undefined}
+              tabIndex={loading || sessionActive ? -1 : 0}
               onPointerDown={() => setBS(0.967)}
               onPointerUp={() => { setBS(1); handleSignIn(); }}
               onPointerLeave={() => setBS(1)}

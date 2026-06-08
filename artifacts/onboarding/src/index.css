@@ -40,6 +40,16 @@ html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 .auth-sign-btn[data-off] {
   pointer-events: none;
   cursor: default;
+  outline: none;
+}
+.auth-sign-btn[data-off]:hover,
+.auth-sign-btn[data-off]:focus,
+.auth-sign-btn[data-off]:focus-visible,
+.auth-sign-btn[data-off]:active {
+  background: var(--accent-btn);
+  box-shadow: var(--btn-shadow);
+  outline: none;
+  transform: none;
 }
 
 /* ── Autofill override ── */
