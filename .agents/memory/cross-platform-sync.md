@@ -33,8 +33,9 @@ React is the reference implementation. Whenever a shared screen changes in eithe
 - **Countdown timer format**: React shows "1 min" / "45s". Flutter shows "MM:SS". Minor cosmetic difference.
 - **Onboarding skip behavior**: Skip jumps to last slide on both platforms (not directly to login) — already in sync.
 
-## Known functional gaps (need resolution)
-1. **Email validation**: React uses full regex `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`; Flutter uses `v.contains('@')` only — Flutter is weaker. Flutter should match React.
-2. **OTP auto-submit**: Flutter auto-verifies when 6th digit is entered; React requires button press. User to decide reference direction.
+## Resolved gaps (June 2026)
+1. **Email validation**: Flutter validator updated to `RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')` — matches React.
+2. **OTP auto-submit**: Added to React `OtpModal.tsx` — fires 60ms after 6th digit entered or full-6-digit paste. Both platforms now auto-submit. Paste also triggers auto-submit on both platforms.
+3. **OTP paste**: Flutter `otp_modal.dart` — `_OtpBox` uses `LengthLimitingTextInputFormatter(6)` instead of `maxLength:1`; `_distributePaste()` distributes digits across boxes when `value.length > 1` in `_onChanged`.
 
-**Why:** These gaps were discovered during the sync audit when the cross-platform rule was established (June 2026).
+**Why:** User confirmed React as reference for validation; Flutter as reference for auto-submit UX (better mobile experience). Paste support added to Flutter to match React.

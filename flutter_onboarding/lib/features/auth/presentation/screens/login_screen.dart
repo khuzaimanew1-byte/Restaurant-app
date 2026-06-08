@@ -152,7 +152,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ),
                               validator: (v) {
                                 if (v == null || v.trim().isEmpty) return 'Email is required.';
-                                if (!v.contains('@')) return 'Enter a valid email.';
+                                if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v.trim()))
+                                  return 'Enter a valid email address.';
                                 return null;
                               },
                             ),

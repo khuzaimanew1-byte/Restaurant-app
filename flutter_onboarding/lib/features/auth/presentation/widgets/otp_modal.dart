@@ -39,12 +39,48 @@ class _OtpModalState extends ConsumerState<OtpModal> {
 
   String get _otp => _ctls.map((c) => c.text).join();
 
+  // ── Paste support ────────────────────────────────────────────────
+  // Distribute digits starting at [startIndex] when the user pastes
+  // a multi-digit string into any box.
+  void _distributePaste(String raw, {int startIndex = 0}) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return;
+
+    for (int j = 0; j < 6; j++) {
+      final srcIdx = j - startIndex;
+      if (srcIdx >= 0 && srcIdx < digits.length) {
+        _ctls[j].text = digits[srcIdx];
+      } else if (j >= startIndex + digits.length) {
+        // leave boxes after the pasted range untouched
+      }
+    }
+
+    final filled = startIndex + digits.length;
+    if (filled < 6) {
+      _foci[filled].requestFocus();
+    } else {
+      FocusScope.of(context).unfocus();
+    }
+
+    // Auto-submit if all 6 boxes now have a digit
+    if (_otp.length == 6) _verify();
+  }
+
   void _onChanged(int index, String value) {
+    // Paste detected: more than one digit entered in a single box
+    if (value.length > 1) {
+      _distributePaste(value, startIndex: index);
+      return;
+    }
+
+    // Single digit typed
     if (value.length == 1 && index < 5) {
       _foci[index + 1].requestFocus();
     } else if (value.isEmpty && index > 0) {
       _foci[index - 1].requestFocus();
     }
+
+    // Auto-submit when 6th digit is entered
     if (_otp.length == 6) _verify();
   }
 
@@ -66,7 +102,7 @@ class _OtpModalState extends ConsumerState<OtpModal> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark    = Theme.of(context).brightness == Brightness.dark;
     final otpState  = ref.watch(otpProvider);
     final authState = ref.watch(authProvider);
     final isLoading = authState is AuthLoading;
@@ -114,7 +150,7 @@ class _OtpModalState extends ConsumerState<OtpModal> {
               ),
 
               Text(
-                'Verify your email',
+                'Check your email',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
@@ -124,7 +160,7 @@ class _OtpModalState extends ConsumerState<OtpModal> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Enter the 6-digit code sent to\n${widget.email}',
+                'We sent a 6-digit code to\n${widget.email}',
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.5,
@@ -133,6 +169,7 @@ class _OtpModalState extends ConsumerState<OtpModal> {
               ),
               const SizedBox(height: 32),
 
+              // OTP boxes
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: List.generate(6, (i) => _OtpBox(
@@ -257,12 +294,16 @@ class _OtpBox extends StatelessWidget {
           }
         },
         child: TextFormField(
-          controller: controller,
-          focusNode:  focusNode,
-          maxLength:  1,
-          textAlign:  TextAlign.center,
-          keyboardType:    TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          controller:   controller,
+          focusNode:    focusNode,
+          textAlign:    TextAlign.center,
+          keyboardType: TextInputType.number,
+          // Allow up to 6 chars so paste is not silently truncated before
+          // reaching onChanged; the _distributePaste logic handles the rest.
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(6),
+          ],
           onChanged: onChanged,
           style: TextStyle(
             fontSize:   22,

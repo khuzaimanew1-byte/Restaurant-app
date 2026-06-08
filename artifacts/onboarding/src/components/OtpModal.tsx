@@ -74,13 +74,29 @@ export function OtpModal({
   function handleChange(i: number, val: string) {
     const digit = val.replace(/\D/g, "").slice(-1);
     const n = [...otp]; n[i] = digit; setOtp(n);
-    if (digit && i < 5) setTimeout(() => inputRefs.current[i + 1]?.focus(), 0);
+    if (digit && i < 5) {
+      setTimeout(() => inputRefs.current[i + 1]?.focus(), 0);
+    }
+    // Auto-submit when the 6th box gets a digit and every box is filled
+    if (digit && i === 5 && n.every(d => d !== "")) {
+      const code = n.join("");
+      if (remainingMs > 0) {
+        setError("");
+        setTimeout(() => verifyMutation.mutate({ code }), 60);
+      }
+    }
   }
   function handlePaste(e: React.ClipboardEvent) {
     e.preventDefault();
     const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6).split("");
     const n = [...otp]; digits.forEach((d, i) => { n[i] = d; }); setOtp(n);
     setTimeout(() => inputRefs.current[Math.min(digits.length, 5)]?.focus(), 0);
+    // Auto-submit if paste filled all 6 digits
+    if (digits.length === 6 && remainingMs > 0) {
+      const code = digits.join("");
+      setError("");
+      setTimeout(() => verifyMutation.mutate({ code }), 60);
+    }
   }
 
   // ── Verify OTP mutation ──────────────────────────────────────────
