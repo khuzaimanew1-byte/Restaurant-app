@@ -255,27 +255,16 @@ export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) 
   const [dir, setDir]     = useState<"fwd" | "bwd">("fwd");
   const [phase, setPhase] = useState<Phase>("idle");
   const [dark, setDark]   = useDarkMode();
-  const exitT       = useRef<ReturnType<typeof setTimeout>>();
-  const enterT      = useRef<ReturnType<typeof setTimeout>>();
-  const skipHash    = useRef(false);
+  const exitT  = useRef<ReturnType<typeof setTimeout>>();
+  const enterT = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    if (!window.location.hash.match(/#\/onboarding\/\d+/)) {
-      history.replaceState(null, "", `#/onboarding/${idx + 1}`);
-    }
-    const onHash = () => {
-      if (skipHash.current) { skipHash.current = false; return; }
-      const n = slideFromHash();
-      setIdx(n);
-    };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    history.replaceState(null, "", `#/onboarding/${idx + 1}`);
   }, []);
 
   const goTo = useCallback((target: number) => {
     if (phase !== "idle" || target === idx) return;
-    skipHash.current = true;
-    window.location.hash = `/onboarding/${target + 1}`;
+    history.replaceState(null, "", `#/onboarding/${target + 1}`);
     setDir(target > idx ? "fwd" : "bwd");
     setPhase("exit");
     clearTimeout(exitT.current);

@@ -6,19 +6,26 @@ import { validateSession, logoutSession } from "./lib/api";
 import { useDarkMode } from "./lib/shared";
 
 type Screen = "onboarding" | "login" | "success";
-
 interface AuthResult { email: string; role: string; }
 
 const TOKEN_KEY = "att_tok";
-
 function getToken(): string | null { return localStorage.getItem(TOKEN_KEY); }
 function setToken(t: string)       { localStorage.setItem(TOKEN_KEY, t); }
 function clearToken()              { localStorage.removeItem(TOKEN_KEY); }
 
-function hashToScreen(): Screen {
+function parseHash(): Screen {
   const h = window.location.hash;
-  if (h === "#/login") return "login";
+  if (h.startsWith("#/login"))   return "login";
+  if (h.startsWith("#/success")) return "success";
   return "onboarding";
+}
+
+function push(screen: Screen) {
+  const hash =
+    screen === "login"   ? "#/login"   :
+    screen === "success" ? "#/success" :
+    "#/onboarding/1";
+  history.pushState(null, "", hash);
 }
 
 function CheckingScreen() {
@@ -41,58 +48,67 @@ function CheckingScreen() {
 }
 
 export default function App() {
-  const [screen,     setScreen]  = useState<Screen>("onboarding");
-  const [authResult, setAuth]    = useState<AuthResult | null>(null);
-  const [checking,   setChecking] = useState(() => !!getToken());
+  const [screen,   setScreen]   = useState<Screen>("onboarding");
+  const [auth,     setAuth]     = useState<AuthResult | null>(null);
+  const [checking, setChecking] = useState(() => !!getToken());
 
   useEffect(() => {
-    const token = getToken();
-
+    /* ── Session check on boot ── */
     async function boot() {
-      if (!token) { setScreen(hashToScreen()); setChecking(false); return; }
+      const token = getToken();
+      if (!token) {
+        const s = parseHash();
+        history.replaceState(null, "", s === "onboarding" ? "#/onboarding/1" : window.location.hash);
+        setScreen(s);
+        setChecking(false);
+        return;
+      }
       try {
         const s = await validateSession(token);
         setAuth({ email: s.email, role: s.role });
-        setScreen("success");
         history.replaceState(null, "", "#/success");
+        setScreen("success");
       } catch {
         clearToken();
-        setScreen(hashToScreen());
+        const s = parseHash();
+        setScreen(s === "success" ? "onboarding" : s);
       } finally {
         setChecking(false);
       }
     }
-
     boot();
 
-    const onHash = () => {
+    /* ── Back / Forward (popstate) — the ONLY navigation listener ── */
+    const onPop = () => {
       if (getToken()) {
         history.replaceState(null, "", "#/success");
         setScreen("success");
         return;
       }
-      setScreen(hashToScreen());
+      const s = parseHash();
+      setScreen(s === "success" ? "onboarding" : s);
     };
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   function goTo(s: Screen) {
-    window.location.hash = s === "login" ? "/login" : s === "success" ? "/success" : "/";
+    push(s);
     setScreen(s);
   }
 
   function handleSuccess(email: string, role: string, sessionToken: string) {
     setToken(sessionToken);
     setAuth({ email, role });
-    goTo("success");
+    push("success");
+    setScreen("success");
   }
 
   async function handleLogout() {
     const token = getToken();
     clearToken();
     setAuth(null);
-    window.location.hash = "/onboarding/1";
+    history.pushState(null, "", "#/onboarding/1");
     setScreen("onboarding");
     if (token) logoutSession(token);
   }
@@ -103,7 +119,7 @@ export default function App() {
     <>
       {screen === "onboarding" && <OnboardingFlow onGetStarted={() => goTo("login")} />}
       {screen === "login"      && <LoginPage onSuccess={handleSuccess} />}
-      {screen === "success"    && <SuccessPage email={authResult?.email} role={authResult?.role} onLogout={handleLogout} />}
+      {screen === "success"    && <SuccessPage email={auth?.email} role={auth?.role} onLogout={handleLogout} />}
     </>
   );
 }
