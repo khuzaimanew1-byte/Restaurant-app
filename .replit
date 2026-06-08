@@ -38,8 +38,7 @@ externalPort = 3000
 [userenv]
 
 [userenv.shared]
-BACK4APP_APP_ID = "8w5qwghjGOLqJfJIe2QGd7qr9J5J7TNi0ikFSMsN"
-BACK4APP_JS_KEY = "fqFHqUe5xxYcGdEPY5dUEQxLsSnjpwHdvttpyadT"
 GMAIL = "usamasif090@gmail.com"
 GMAIL_APP_PASSWORD = "svwq tcfz rlzt youg"
 ADMIN_GMAIL = "khuzaimadeveloper777@gmail.com"
+NEON_DATABASE_URL = "postgresql://neondb_owner:npg_unEr2WsbS4Hy@ep-dark-cloud-apc45f5z.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require"
