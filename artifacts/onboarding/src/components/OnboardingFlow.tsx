@@ -244,14 +244,14 @@ const PAGES = [
 
 type Phase = "idle" | "exit" | "enter";
 
-function slideFromHash(): number {
-  const m = window.location.hash.match(/#\/onboarding\/(\d+)/);
-  if (m) { const n = parseInt(m[1]) - 1; return n >= 0 && n < PAGES.length ? n : 0; }
-  return 0;
+interface OnboardingFlowProps {
+  onGetStarted?: () => void;
+  initialSlide?: number;
+  onSlideChange?: (n: number) => void;
 }
 
-export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) {
-  const [idx, setIdx]     = useState(slideFromHash);
+export function OnboardingFlow({ onGetStarted, initialSlide = 0, onSlideChange }: OnboardingFlowProps) {
+  const [idx, setIdx]     = useState(() => Math.max(0, Math.min(initialSlide, PAGES.length - 1)));
   const [dir, setDir]     = useState<"fwd" | "bwd">("fwd");
   const [phase, setPhase] = useState<Phase>("idle");
   const [dark, setDark]   = useDarkMode();
@@ -259,22 +259,23 @@ export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) 
   const enterT = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    history.replaceState(null, "", `#/onboarding/${idx + 1}`);
+    history.replaceState(null, "", `/onboarding/${idx}`);
   }, []);
 
   const goTo = useCallback((target: number) => {
     if (phase !== "idle" || target === idx) return;
-    history.replaceState(null, "", `#/onboarding/${target + 1}`);
+    history.replaceState(null, "", `/onboarding/${target}`);
     setDir(target > idx ? "fwd" : "bwd");
     setPhase("exit");
     clearTimeout(exitT.current);
     clearTimeout(enterT.current);
     exitT.current = setTimeout(() => {
       setIdx(target);
+      onSlideChange?.(target);
       setPhase("enter");
       enterT.current = setTimeout(() => setPhase("idle"), 500);
     }, 300);
-  }, [phase, idx]);
+  }, [phase, idx, onSlideChange]);
 
   const isLast = idx === PAGES.length - 1;
   const page   = PAGES[idx];

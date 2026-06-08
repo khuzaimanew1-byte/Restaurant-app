@@ -5,27 +5,30 @@ import { SuccessPage } from "./components/SuccessPage";
 import { validateSession, logoutSession } from "./lib/api";
 import { useDarkMode } from "./lib/shared";
 
-type Screen = "onboarding" | "login" | "success";
+type Screen = "onboarding" | "signin" | "success";
 interface AuthResult { email: string; role: string; }
 
 const TOKEN_KEY = "att_tok";
-function getToken(): string | null { return localStorage.getItem(TOKEN_KEY); }
-function setToken(t: string)       { localStorage.setItem(TOKEN_KEY, t); }
-function clearToken()              { localStorage.removeItem(TOKEN_KEY); }
+const getToken  = (): string | null => localStorage.getItem(TOKEN_KEY);
+const setToken  = (t: string) => localStorage.setItem(TOKEN_KEY, t);
+const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
-function parseHash(): Screen {
-  const h = window.location.hash;
-  if (h.startsWith("#/login"))   return "login";
-  if (h.startsWith("#/success")) return "success";
-  return "onboarding";
+function parsePath(): { screen: Screen; slide: number } {
+  const p = window.location.pathname;
+  if (p === "/signin")  return { screen: "signin",  slide: 0 };
+  if (p === "/success") return { screen: "success", slide: 0 };
+  const m = p.match(/^\/onboarding\/(\d+)$/);
+  if (m) {
+    const slide = parseInt(m[1]);
+    return { screen: "onboarding", slide: Math.max(0, Math.min(slide, 2)) };
+  }
+  return { screen: "onboarding", slide: 0 };
 }
 
-function push(screen: Screen) {
-  const hash =
-    screen === "login"   ? "#/login"   :
-    screen === "success" ? "#/success" :
-    "#/onboarding/1";
-  history.pushState(null, "", hash);
+function nav(path: string, replace = false) {
+  replace
+    ? history.replaceState(null, "", path)
+    : history.pushState(null, "", path);
 }
 
 function CheckingScreen() {
@@ -42,65 +45,62 @@ function CheckingScreen() {
         borderTopColor: dark ? "#8078F2" : "#4F46E5",
         animation: "spin 0.7s linear infinite",
       }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
 
 export default function App() {
   const [screen,   setScreen]   = useState<Screen>("onboarding");
+  const [slide,    setSlide]    = useState(0);
   const [auth,     setAuth]     = useState<AuthResult | null>(null);
   const [checking, setChecking] = useState(() => !!getToken());
 
   useEffect(() => {
-    /* ── Session check on boot ── */
     async function boot() {
       const token = getToken();
       if (!token) {
-        const s = parseHash();
-        history.replaceState(null, "", s === "onboarding" ? "#/onboarding/1" : window.location.hash);
-        setScreen(s);
+        const r = parsePath();
+        if (r.screen === "success") { nav("/onboarding/0", true); setScreen("onboarding"); setSlide(0); }
+        else { setScreen(r.screen); setSlide(r.slide); }
         setChecking(false);
         return;
       }
       try {
         const s = await validateSession(token);
         setAuth({ email: s.email, role: s.role });
-        history.replaceState(null, "", "#/success");
+        nav("/success", true);
         setScreen("success");
       } catch {
         clearToken();
-        const s = parseHash();
-        setScreen(s === "success" ? "onboarding" : s);
+        const r = parsePath();
+        setScreen(r.screen === "success" ? "onboarding" : r.screen);
+        setSlide(r.slide);
       } finally {
         setChecking(false);
       }
     }
     boot();
 
-    /* ── Back / Forward (popstate) — the ONLY navigation listener ── */
     const onPop = () => {
-      if (getToken()) {
-        history.replaceState(null, "", "#/success");
-        setScreen("success");
-        return;
-      }
-      const s = parseHash();
-      setScreen(s === "success" ? "onboarding" : s);
+      if (getToken()) { nav("/success", true); setScreen("success"); return; }
+      const r = parsePath();
+      setScreen(r.screen === "success" ? "onboarding" : r.screen);
+      setSlide(r.slide);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  function goTo(s: Screen) {
-    push(s);
-    setScreen(s);
+  function goSignin() {
+    nav("/signin");
+    setScreen("signin");
   }
 
   function handleSuccess(email: string, role: string, sessionToken: string) {
     setToken(sessionToken);
     setAuth({ email, role });
-    push("success");
+    nav("/success");
     setScreen("success");
   }
 
@@ -108,8 +108,9 @@ export default function App() {
     const token = getToken();
     clearToken();
     setAuth(null);
-    history.pushState(null, "", "#/onboarding/1");
+    nav("/onboarding/0");
     setScreen("onboarding");
+    setSlide(0);
     if (token) logoutSession(token);
   }
 
@@ -117,9 +118,15 @@ export default function App() {
 
   return (
     <>
-      {screen === "onboarding" && <OnboardingFlow onGetStarted={() => goTo("login")} />}
-      {screen === "login"      && <LoginPage onSuccess={handleSuccess} />}
-      {screen === "success"    && <SuccessPage email={auth?.email} role={auth?.role} onLogout={handleLogout} />}
+      {screen === "onboarding" && (
+        <OnboardingFlow
+          initialSlide={slide}
+          onSlideChange={n => setSlide(n)}
+          onGetStarted={goSignin}
+        />
+      )}
+      {screen === "signin"  && <LoginPage onSuccess={handleSuccess} />}
+      {screen === "success" && <SuccessPage email={auth?.email} role={auth?.role} onLogout={handleLogout} />}
     </>
   );
 }
