@@ -147,13 +147,7 @@ router.post("/verify-otp", async (req, res) => {
     const valid = await verifyOtp(otp.trim(), session.otpHash);
     if (!valid) {
       await incrementOtpAttempts(session.objectId, session.attempts);
-      const remaining = 5 - (session.attempts + 1);
-      res.status(400).json({
-        error: "OTP_INCORRECT",
-        message: remaining > 0
-          ? `Incorrect code. ${remaining} attempt${remaining !== 1 ? "s" : ""} remaining.`
-          : "Incorrect code. Too many attempts — please request a new OTP.",
-      });
+      res.status(400).json({ error: "OTP_INCORRECT", message: "Incorrect code. Please try again." });
       return;
     }
 
