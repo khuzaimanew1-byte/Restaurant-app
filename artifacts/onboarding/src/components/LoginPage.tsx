@@ -396,7 +396,7 @@ export function LoginPage({ onSuccess }: Props) {
             <button
               className="auth-sign-btn"
               type="button"
-              data-off={loading || sessionActive ? "" : undefined}
+              data-off={!formValid || loading || sessionActive ? "" : undefined}
               onPointerDown={() => setBS(0.967)}
               onPointerUp={() => { setBS(1); handleSignIn(); }}
               onPointerLeave={() => setBS(1)}
