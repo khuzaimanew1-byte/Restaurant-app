@@ -246,7 +246,7 @@ type Phase = "idle" | "exit" | "enter";
 
 function slideFromHash(): number {
   const m = window.location.hash.match(/#\/onboarding\/(\d+)/);
-  if (m) { const n = parseInt(m[1]); return n >= 0 && n < PAGES.length ? n : 0; }
+  if (m) { const n = parseInt(m[1]) - 1; return n >= 0 && n < PAGES.length ? n : 0; }
   return 0;
 }
 
@@ -261,7 +261,7 @@ export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) 
 
   useEffect(() => {
     if (!window.location.hash.match(/#\/onboarding\/\d+/)) {
-      history.replaceState(null, "", `#/onboarding/${idx}`);
+      history.replaceState(null, "", `#/onboarding/${idx + 1}`);
     }
     const onHash = () => {
       if (skipHash.current) { skipHash.current = false; return; }
@@ -275,7 +275,7 @@ export function OnboardingFlow({ onGetStarted }: { onGetStarted?: () => void }) 
   const goTo = useCallback((target: number) => {
     if (phase !== "idle" || target === idx) return;
     skipHash.current = true;
-    window.location.hash = `#/onboarding/${target}`;
+    window.location.hash = `/onboarding/${target + 1}`;
     setDir(target > idx ? "fwd" : "bwd");
     setPhase("exit");
     clearTimeout(exitT.current);
