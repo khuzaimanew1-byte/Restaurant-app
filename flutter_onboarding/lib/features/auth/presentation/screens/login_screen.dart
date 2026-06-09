@@ -43,6 +43,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   // ── Password regex ────────────────────────────────────────────────
   static final _hasNum     = RegExp(r'[0-9]');
+  static final _hasUpper   = RegExp(r'[A-Z]');
   static final _hasSpecial = RegExp(r'[!@#$%^&*()\-_=+\[\]{};\':"\\|,.<>/?]');
 
   @override
@@ -87,6 +88,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   String? _validatePassword(String? v) {
     if (v == null || v.isEmpty)   return 'Password is required.';
     if (v.length < 8)             return 'Password must be at least 8 characters.';
+    if (!_hasUpper.hasMatch(v))   return 'Password must contain at least one uppercase letter.';
     if (!_hasNum.hasMatch(v))     return 'Password must contain at least one number.';
     if (!_hasSpecial.hasMatch(v)) return 'Password must contain at least one special character.';
     return null;
@@ -337,12 +339,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             // ── Password requirements ─────────────────
                             if (_passwordCtrl.text.isNotEmpty) ...[
                               const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 14, runSpacing: 4,
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  _pwReqChip('8+ characters',         _passwordCtrl.text.length >= 8,          ),
-                                  _pwReqChip('One number',            _hasNum.hasMatch(_passwordCtrl.text),    ),
-                                  _pwReqChip('One special character', _hasSpecial.hasMatch(_passwordCtrl.text)),
+                                  _pwReqChip('8+ chars',  _passwordCtrl.text.length >= 8),
+                                  const SizedBox(width: 10),
+                                  _pwReqChip('Uppercase', _hasUpper.hasMatch(_passwordCtrl.text)),
+                                  const SizedBox(width: 10),
+                                  _pwReqChip('Number',    _hasNum.hasMatch(_passwordCtrl.text)),
+                                  const SizedBox(width: 10),
+                                  _pwReqChip('Special',   _hasSpecial.hasMatch(_passwordCtrl.text)),
                                 ],
                               ),
                             ],

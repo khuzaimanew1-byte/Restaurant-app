@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
 import '../providers/auth_provider.dart';
 import '../providers/otp_provider.dart';
 
@@ -189,12 +188,11 @@ class _OtpModalState extends ConsumerState<OtpModal> {
 
               const SizedBox(height: 28),
 
-              AppButton(
-                label: 'Verify OTP',
-                onPressed: isLoading ? null : _verify,
-                isLoading: isLoading,
-              ),
-              const SizedBox(height: 14),
+              if (isLoading) ...[
+                const Center(child: CircularProgressIndicator()),
+                const SizedBox(height: 14),
+              ] else
+                const SizedBox(height: 14),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

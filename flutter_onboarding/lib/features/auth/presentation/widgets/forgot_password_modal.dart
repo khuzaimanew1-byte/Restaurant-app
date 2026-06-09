@@ -223,11 +223,13 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
   // ── Password validation ───────────────────────────────────────────
 
   static final _hasNum     = RegExp(r'[0-9]');
+  static final _hasUpper   = RegExp(r'[A-Z]');
   static final _hasSpecial = RegExp(r'[!@#$%^&*()\-_=+\[\]{};\':"\\|,.<>/?]');
 
   String? _validateNewPw(String pw) {
     if (pw.isEmpty)         return 'Password is required.';
     if (pw.length < 8)      return 'Password must be at least 8 characters.';
+    if (!_hasUpper.hasMatch(pw))   return 'Password must contain at least one uppercase letter.';
     if (!_hasNum.hasMatch(pw))     return 'Password must contain at least one number.';
     if (!_hasSpecial.hasMatch(pw)) return 'Password must contain at least one special character.';
     return null;
@@ -564,7 +566,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
                     color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
                   ),
                 ),
-                const TextSpan(text: ' — must include a number and special character.'),
+                const TextSpan(text: ' — must include uppercase, a number and special character.'),
               ],
             ),
           ),
@@ -621,12 +623,16 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
           // ── Password requirements ───────────────────────────────────
           if (_newPwCtrl.text.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 14, runSpacing: 4,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                _pwReqChip('8+ characters',         _newPwCtrl.text.length >= 8,          ),
-                _pwReqChip('One number',            _hasNum.hasMatch(_newPwCtrl.text),    ),
-                _pwReqChip('One special character', _hasSpecial.hasMatch(_newPwCtrl.text)),
+                _pwReqChip('8+ chars',  _newPwCtrl.text.length >= 8),
+                const SizedBox(width: 10),
+                _pwReqChip('Uppercase', _hasUpper.hasMatch(_newPwCtrl.text)),
+                const SizedBox(width: 10),
+                _pwReqChip('Number',    _hasNum.hasMatch(_newPwCtrl.text)),
+                const SizedBox(width: 10),
+                _pwReqChip('Special',   _hasSpecial.hasMatch(_newPwCtrl.text)),
               ],
             ),
           ],
