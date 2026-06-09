@@ -16,6 +16,15 @@ interface Props {
   onNewExpiry: (expiresAt: number) => void;
 }
 
+function maskEmail(email: string): string {
+  const atIdx = email.indexOf("@");
+  if (atIdx < 0) return email;
+  const local  = email.slice(0, atIdx);
+  const domain = email.slice(atIdx);
+  if (local.length <= 2) return `${local}***${domain}`;
+  return `${local.slice(0, 2)}***${domain}`;
+}
+
 export function OtpModal({
   email, password, dark, accent, accentBtn, btnShadow,
   expiresAt, onSuccess, onClose, onNewExpiry,
@@ -67,8 +76,6 @@ export function OtpModal({
     if (e.key === "Backspace") {
       if (otp[i]) { const n = [...otp]; n[i] = ""; setOtp(n); }
       else if (i > 0) inputRefs.current[i - 1]?.focus();
-    } else if (e.key === "Enter") {
-      handleVerify();
     }
   }
   function handleChange(i: number, val: string) {
@@ -77,7 +84,6 @@ export function OtpModal({
     if (digit && i < 5) {
       setTimeout(() => inputRefs.current[i + 1]?.focus(), 0);
     }
-    // Auto-submit when the 6th box gets a digit and every box is filled
     if (digit && i === 5 && n.every(d => d !== "")) {
       const code = n.join("");
       if (remainingMs > 0) {
@@ -91,7 +97,6 @@ export function OtpModal({
     const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6).split("");
     const n = [...otp]; digits.forEach((d, i) => { n[i] = d; }); setOtp(n);
     setTimeout(() => inputRefs.current[Math.min(digits.length, 5)]?.focus(), 0);
-    // Auto-submit if paste filled all 6 digits
     if (digits.length === 6 && remainingMs > 0) {
       const code = digits.join("");
       setError("");
@@ -99,7 +104,6 @@ export function OtpModal({
     }
   }
 
-  // ── Verify OTP mutation ──────────────────────────────────────────
   const verifyMutation = useMutation({
     mutationFn: ({ code }: { code: string }) => verifyOtp(email, code, password),
     onSuccess: (result) => {
@@ -113,7 +117,6 @@ export function OtpModal({
     },
   });
 
-  // ── Resend OTP mutation ──────────────────────────────────────────
   const resendMutation = useMutation({
     mutationFn: () => resendOtp(email),
     onSuccess: (result) => {
@@ -126,14 +129,6 @@ export function OtpModal({
       setError((err as AppError).message ?? "Failed to resend. Please try again.");
     },
   });
-
-  function handleVerify() {
-    const code = otp.join("");
-    if (code.length < 6) { setError("Please enter the full 6-digit code."); triggerShake(); return; }
-    if (remainingMs <= 0) { setError("OTP expired. Request a new code to continue."); triggerShake(); return; }
-    setError("");
-    verifyMutation.mutate({ code });
-  }
 
   const loading  = verifyMutation.isPending;
   const resending = resendMutation.isPending;
@@ -197,7 +192,6 @@ export function OtpModal({
         padding: "0 clamp(24px,6vw,36px) clamp(32px,8vw,48px)",
       }}>
 
-        {/* Drag handle */}
         <div
           onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
           style={{
@@ -219,10 +213,19 @@ export function OtpModal({
           letterSpacing: "-0.01em", lineHeight: 1.6,
         }}>
           We sent a 6-digit code to{" "}
-          <span style={{ color: headClr, fontWeight: 600 }}>{email}</span>
+          <span style={{ color: headClr, fontWeight: 600 }}>{maskEmail(email)}</span>
         </p>
 
-        {/* OTP boxes */}
+        {loading && (
+          <div style={{
+            position: "absolute", top: 20, right: 24,
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <Spinner size={14} />
+            <span style={{ fontSize: 12, color: subClr }}>Verifying…</span>
+          </div>
+        )}
+
         <div
           className={shake ? "otp-shake" : ""}
           style={{ display: "flex", gap: "clamp(7px,2.2vw,10px)", marginBottom: 28, justifyContent: "center" }}
@@ -252,13 +255,17 @@ export function OtpModal({
           ))}
         </div>
 
-        {/* Verify button */}
         <button
-          type="button" onClick={handleVerify}
+          type="button"
           disabled={!filled || loading}
           onPointerDown={e => { if (canVerify) e.currentTarget.style.transform = "scale(0.97)"; }}
           onPointerUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
           onPointerLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
+          onClick={() => {
+            const code = otp.join("");
+            if (!filled || remainingMs <= 0) return;
+            verifyMutation.mutate({ code });
+          }}
           style={{
             width: "100%", height: 54, borderRadius: 16, border: "none",
             cursor: canVerify ? "pointer" : "default",
@@ -274,7 +281,6 @@ export function OtpModal({
           {loading ? <Spinner size={18} /> : "Verify & Continue"}
         </button>
 
-        {/* Error / expired */}
         {(error || expired) && (
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
@@ -292,7 +298,6 @@ export function OtpModal({
           </div>
         )}
 
-        {/* Resend */}
         <div style={{ textAlign: "center" }}>
           {expired ? (
             <button

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
 import '../providers/otp_provider.dart';
 import '../widgets/forgot_password_modal.dart';
@@ -20,6 +23,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
     with TickerProviderStateMixin {
+  final _repo         = AuthRepository();
   final _formKey      = GlobalKey<FormState>();
   final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -27,6 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _agreedToTerms    = false;
   bool _agreedError      = false;
   bool _pendingOtp       = false;
+  bool _loadingForgot    = false;
 
   // ── Entry animation ───────────────────────────────────────────────
   late final AnimationController _entryCtrl;
@@ -35,7 +40,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   // ── Email shake animation ─────────────────────────────────────────
   late final AnimationController _shakeCtrl;
-  late final Animation<double>   _shakeAnim;
 
   // ── Password regex ────────────────────────────────────────────────
   static final _hasNum     = RegExp(r'[0-9]');
@@ -60,7 +64,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       vsync: this,
       duration: const Duration(milliseconds: 480),
     );
-    _shakeAnim = Tween<double>(begin: 0, end: 1).animate(_shakeCtrl);
   }
 
   @override
@@ -72,7 +75,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     super.dispose();
   }
 
-  // ── Validation helpers ────────────────────────────────────────────
+  // ── Validation ────────────────────────────────────────────────────
 
   String? _validateEmail(String? v) {
     if (v == null || v.trim().isEmpty) return 'Email is required.';
@@ -82,8 +85,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   String? _validatePassword(String? v) {
-    if (v == null || v.isEmpty) return 'Password is required.';
-    if (v.length < 8)           return 'Password must be at least 8 characters.';
+    if (v == null || v.isEmpty)   return 'Password is required.';
+    if (v.length < 8)             return 'Password must be at least 8 characters.';
     if (!_hasNum.hasMatch(v))     return 'Password must contain at least one number.';
     if (!_hasSpecial.hasMatch(v)) return 'Password must contain at least one special character.';
     return null;
@@ -92,6 +95,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool get _emailValid {
     final v = _emailCtrl.text.trim();
     return v.isNotEmpty && RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v);
+  }
+
+  void _triggerEmailShake() {
+    HapticFeedback.heavyImpact();
+    _shakeCtrl.reset();
+    _shakeCtrl.forward();
   }
 
   // ── Login ─────────────────────────────────────────────────────────
@@ -104,39 +113,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     ref.read(authProvider.notifier).login(_emailCtrl.text, _passwordCtrl.text);
   }
 
-  // ── Forgot Password ───────────────────────────────────────────────
+  // ── Forgot Password — calls API first, then opens modal ───────────
 
-  void _handleForgotPassword() {
+  Future<void> _handleForgotPassword() async {
     if (!_emailValid) {
       _formKey.currentState?.validate();
       _triggerEmailShake();
       return;
     }
-    showModalBottomSheet<void>(
-      context:            context,
-      isScrollControlled: true,
-      backgroundColor:    Colors.transparent,
-      builder: (_) => ForgotPasswordModal(
-        email:           _emailCtrl.text.trim(),
-        onPasswordReset: () {
-          _passwordCtrl.clear();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:         Text('Password updated! Please sign in.'),
-              backgroundColor: AppColors.emerald,
-              behavior:        SnackBarBehavior.floating,
-            ),
-          );
-        },
-        onClose: () => Navigator.of(context).pop(),
-      ),
-    );
-  }
 
-  void _triggerEmailShake() {
-    HapticFeedback.heavyImpact();
-    _shakeCtrl.reset();
-    _shakeCtrl.forward();
+    setState(() => _loadingForgot = true);
+    try {
+      final expiresAt = await _repo.forgotPassword(_emailCtrl.text.trim());
+      if (!mounted) return;
+      setState(() => _loadingForgot = false);
+
+      await showModalBottomSheet<void>(
+        context:            context,
+        isScrollControlled: true,
+        backgroundColor:    Colors.transparent,
+        isDismissible:      false,
+        enableDrag:         false,
+        builder: (_) => ForgotPasswordModal(
+          email:            _emailCtrl.text.trim(),
+          initialExpiresAt: expiresAt,
+          onPasswordReset:  () {
+            _passwordCtrl.clear();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:         Text('Password updated! Please sign in.'),
+                backgroundColor: AppColors.emerald,
+                behavior:        SnackBarBehavior.floating,
+              ),
+            );
+          },
+          onClose: () => Navigator.of(context).pop(),
+        ),
+      );
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingForgot = false);
+
+      final msg = e.message.toLowerCase().contains('not registered') ||
+              e.message.toLowerCase().contains('not found')
+          ? "Your email isn't registered."
+          : e.message;
+
+      _formKey.currentState?.validate();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:         Text(msg),
+          backgroundColor: AppColors.error,
+          behavior:        SnackBarBehavior.floating,
+        ),
+      );
+      _triggerEmailShake();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingForgot = false);
+      _triggerEmailShake();
+    }
   }
 
   // ── OTP modal ─────────────────────────────────────────────────────
@@ -221,10 +257,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             _FieldLabel('Email', isDark),
                             const SizedBox(height: 8),
                             AnimatedBuilder(
-                              animation: _shakeAnim,
+                              animation: _shakeCtrl,
                               builder: (context, child) {
-                                final dx = ((_shakeAnim.value * 6 * 3.14159).sin() * 9)
-                                    .clamp(-9.0, 9.0);
+                                final dx = sin(_shakeCtrl.value * pi * 5) * 9;
                                 return Transform.translate(
                                   offset: Offset(dx, 0),
                                   child: child,
@@ -283,22 +318,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             // ── Forgot password link ──────────────────
                             Align(
                               alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: _handleForgotPassword,
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: Text(
-                                  'Forgot password?',
-                                  style: TextStyle(
-                                    fontSize:   12.5,
-                                    fontWeight: FontWeight.w600,
-                                    color:      AppColors.indigo,
-                                  ),
-                                ),
-                              ),
+                              child: _loadingForgot
+                                  ? Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 6),
+                                      child: SizedBox(
+                                        width: 14, height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 1.8,
+                                          color: AppColors.indigo,
+                                        ),
+                                      ),
+                                    )
+                                  : TextButton(
+                                      onPressed: _handleForgotPassword,
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 4),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: const Text(
+                                        'Forgot password?',
+                                        style: TextStyle(
+                                          fontSize:   12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color:      AppColors.indigo,
+                                        ),
+                                      ),
+                                    ),
                             ),
                             const SizedBox(height: 20),
 
@@ -350,11 +396,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                   : AppColors.lightSecondary,
                                               height: 1.5,
                                             ),
-                                            children: [
-                                              const TextSpan(text: 'I agree to the '),
+                                            children: const [
+                                              TextSpan(text: 'I agree to the '),
                                               TextSpan(
                                                 text: 'Terms of Service',
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   color:      AppColors.indigo,
                                                   fontWeight: FontWeight.w600,
                                                 ),
@@ -404,7 +450,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 }
 
-// ── Inline success view ───────────────────────────────────────────────
+// ── Success view ──────────────────────────────────────────────────────
 
 class _SuccessView extends StatelessWidget {
   final bool isDark;
@@ -427,16 +473,10 @@ class _SuccessView extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.emerald.withValues(alpha: 0.12),
-                    border: Border.all(
-                      color: AppColors.emerald.withValues(alpha: 0.28),
-                    ),
+                    border: Border.all(color: AppColors.emerald.withValues(alpha: 0.28)),
                   ),
                   child: const Center(
-                    child: Icon(
-                      Icons.check_rounded,
-                      size:  36,
-                      color: AppColors.emerald,
-                    ),
+                    child: Icon(Icons.check_rounded, size: 36, color: AppColors.emerald),
                   ),
                 )
                     .animate()

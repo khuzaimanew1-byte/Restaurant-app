@@ -5,6 +5,7 @@ import { Spinner, formatCountdown } from "../lib/shared";
 
 interface Props {
   email: string;
+  initialExpiresAt: number;
   dark: boolean;
   accent: string;
   accentBtn: string;
@@ -24,28 +25,37 @@ function validateNewPw(pw: string): string | null {
   return null;
 }
 
+function maskEmail(email: string): string {
+  const atIdx = email.indexOf("@");
+  if (atIdx < 0) return email;
+  const local  = email.slice(0, atIdx);
+  const domain = email.slice(atIdx);
+  if (local.length <= 2) return `${local}***${domain}`;
+  return `${local.slice(0, 2)}***${domain}`;
+}
+
 export function ForgotPasswordModal({
-  email, dark, accent, accentBtn, btnShadow, onClose, onPasswordReset,
+  email, initialExpiresAt, dark, accent, accentBtn, btnShadow, onClose, onPasswordReset,
 }: Props) {
-  const [sheetVisible, setSheet]   = useState(false);
-  const [dragging, setDragging]    = useState(false);
-  const [dragY, setDragY]          = useState(0);
-  const startY = useRef(0);
+  const [sheetVisible, setSheet] = useState(false);
 
   // Step 0: OTP  |  Step 1: New password
-  const [step, setStep]             = useState<0 | 1>(0);
-  const [otpConfirmed, setOtpConf]  = useState(false);
+  const [step, setStep]           = useState<0 | 1>(0);
+  const [otpConfirmed, setOtpConf] = useState(false);
 
   // OTP
   const [otp, setOtp]         = useState(["", "", "", "", "", ""]);
   const [savedOtp, setSavedOtp] = useState("");
   const [otpError, setOtpError] = useState("");
-  const [shake, setShake]      = useState(false);
-  const [remainingMs, setMs]   = useState(0);
-  const [expiresAt, setExpiry] = useState<number>(0);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const shakeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const [shakeOtp, setShakeOtp] = useState(false);
+  const [shakeResend, setShakeResend] = useState(false);
+  const [remainingMs, setMs]   = useState(() => Math.max(0, initialExpiresAt - Date.now()));
+  const [expiresAt, setExpiry] = useState(initialExpiresAt);
+  const inputRefs  = useRef<(HTMLInputElement | null)[]>([]);
+  const otpShakeTimer   = useRef<ReturnType<typeof setTimeout>>();
+  const resendShakeTimer = useRef<ReturnType<typeof setTimeout>>();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const verifyingRef = useRef(false);
 
   // New password
   const [newPw, setNewPw]         = useState("");
@@ -54,24 +64,13 @@ export function ForgotPasswordModal({
   const [showConfPw, setShowConfPw] = useState(false);
   const [pwErrors, setPwErrors]   = useState<{ newPw?: string; confirmPw?: string; general?: string }>({});
   const [pwSuccess, setPwSuccess] = useState(false);
+  const [newPwF, setNewPwF]   = useState(false);
+  const [confPwF, setConfPwF] = useState(false);
   const newPwRef = useRef<HTMLInputElement>(null);
 
-  // Send OTP on mount
-  const sendMutation = useMutation({
-    mutationFn: () => forgotPasswordRequest(email),
-    onSuccess: (r) => {
-      setExpiry(r.expiresAt);
-      setMs(Math.max(0, r.expiresAt - Date.now()));
-    },
-    onError: (err) => {
-      setOtpError((err as AppError).message ?? "Failed to send OTP.");
-    },
-  });
-
   useEffect(() => {
-    const id = setTimeout(() => { setSheet(true); sendMutation.mutate(); }, 20);
+    const id = setTimeout(() => { setSheet(true); }, 20);
     return () => clearTimeout(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -81,37 +80,36 @@ export function ForgotPasswordModal({
   // Timer
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-    if (!expiresAt) return;
     const tick = () => setMs(Math.max(0, expiresAt - Date.now()));
     tick();
     intervalRef.current = setInterval(tick, 1_000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [expiresAt]);
 
-  function triggerShake() {
-    setShake(false);
-    clearTimeout(shakeTimer.current);
+  function triggerOtpShake() {
+    setShakeOtp(false);
+    clearTimeout(otpShakeTimer.current);
     requestAnimationFrame(() => {
-      setShake(true);
-      shakeTimer.current = setTimeout(() => setShake(false), 450);
+      setShakeOtp(true);
+      otpShakeTimer.current = setTimeout(() => setShakeOtp(false), 450);
     });
   }
 
-  function onTouchStart(e: React.TouchEvent) { startY.current = e.touches[0].clientY; setDragging(true); }
-  function onTouchMove(e: React.TouchEvent)  { setDragY(Math.max(0, e.touches[0].clientY - startY.current)); }
-  function onTouchEnd() {
-    setDragging(false);
-    if (dragY > 90) dismiss(); else setDragY(0);
+  function triggerResendShake() {
+    setShakeResend(false);
+    clearTimeout(resendShakeTimer.current);
+    requestAnimationFrame(() => {
+      setShakeResend(true);
+      resendShakeTimer.current = setTimeout(() => setShakeResend(false), 450);
+    });
   }
-
-  function dismiss() { setSheet(false); setDragY(0); setTimeout(() => onClose(), 400); }
 
   // OTP handlers
   function handleKey(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Backspace") {
       if (otp[i]) { const n = [...otp]; n[i] = ""; setOtp(n); }
       else if (i > 0) inputRefs.current[i - 1]?.focus();
-    } else if (e.key === "Enter") { handleVerifyOtp(); }
+    }
   }
   function handleOtpChange(i: number, val: string) {
     const digit = val.replace(/\D/g, "").slice(-1);
@@ -119,8 +117,9 @@ export function ForgotPasswordModal({
     setOtpError("");
     if (digit && i < 5) setTimeout(() => inputRefs.current[i + 1]?.focus(), 0);
     if (digit && i === 5 && n.every(d => d !== "") && remainingMs > 0) {
-      setSavedOtp(n.join(""));
-      setTimeout(() => handleVerifyOtpWith(n.join("")), 60);
+      const code = n.join("");
+      setSavedOtp(code);
+      setTimeout(() => handleVerifyOtpWith(code), 60);
     }
   }
   function handlePaste(e: React.ClipboardEvent) {
@@ -135,23 +134,22 @@ export function ForgotPasswordModal({
     }
   }
 
-  function handleVerifyOtp() {
-    const code = otp.join("");
-    handleVerifyOtpWith(code);
-  }
-
   function handleVerifyOtpWith(code: string) {
-    if (code.length < 6) { setOtpError("Please enter the full 6-digit code."); triggerShake(); return; }
-    if (remainingMs <= 0) { setOtpError("OTP expired. Request a new code to continue."); triggerShake(); return; }
+    if (verifyingRef.current) return;
+    if (code.length < 6) { setOtpError("Please enter the full 6-digit code."); triggerOtpShake(); return; }
+    if (remainingMs <= 0) { setOtpError("OTP expired. Request a new code."); triggerOtpShake(); return; }
+    verifyingRef.current = true;
     setSavedOtp(code);
     setOtpError("");
-    // Slide to step 1 - elements mount now
     setOtpConf(true);
     setStep(1);
-    setTimeout(() => newPwRef.current?.focus(), 500);
+    setTimeout(() => {
+      newPwRef.current?.focus();
+      verifyingRef.current = false;
+    }, 500);
   }
 
-  // Resend OTP (calls forgot-password again)
+  // Resend (calls forgot-password again)
   const resendMutation = useMutation({
     mutationFn: () => forgotPasswordRequest(email),
     onSuccess: (r) => {
@@ -166,17 +164,25 @@ export function ForgotPasswordModal({
     },
   });
 
+  function handleResendClick() {
+    if (remainingMs > 0) { triggerResendShake(); return; }
+    resendMutation.mutate();
+  }
+
   // Reset password mutation
   const resetMutation = useMutation({
     mutationFn: () => resetPassword(email, savedOtp, newPw, confirmPw),
     onSuccess: () => {
       setPwSuccess(true);
-      setTimeout(() => { setSheet(false); setTimeout(() => { onPasswordReset(); onClose(); }, 400); }, 1_200);
+      setTimeout(() => {
+        setSheet(false);
+        setTimeout(() => { onPasswordReset(); onClose(); }, 400);
+      }, 1_200);
     },
     onError: (err) => {
       const e = err as AppError;
       if (e.code === "OTP_INCORRECT" || e.code === "OTP_EXPIRED" || e.code === "OTP_USED" || e.code === "NO_SESSION") {
-        setPwErrors({ general: e.message + " Please go back and try again." });
+        setPwErrors({ general: e.message + " Please go back and request a new code." });
       } else if (e.field === "confirmPassword") {
         setPwErrors({ confirmPw: e.message });
       } else {
@@ -197,7 +203,6 @@ export function ForgotPasswordModal({
   }
 
   const expired = remainingMs <= 0;
-  const otpFilled = otp.join("").length === 6;
 
   // Colours
   const cardBg    = dark ? "rgba(12,10,35,0.97)"   : "rgba(255,255,255,0.98)";
@@ -207,15 +212,16 @@ export function ForgotPasswordModal({
   const boxBg     = dark ? "rgba(255,255,255,0.04)" : "rgba(249,248,255,0.7)";
   const boxFocBg  = dark ? "rgba(127,120,242,0.14)" : "rgba(79,70,229,0.06)";
   const boxTxt    = dark ? "rgba(242,241,255,0.96)" : "#09071E";
-  const handleClr = dark ? "rgba(255,255,255,0.14)" : "rgba(13,11,30,0.12)";
   const errClr    = dark ? "#F87171" : "#DC2626";
   const baseLine  = dark ? "rgba(255,255,255,0.09)" : "rgba(13,11,30,0.13)";
   const inputTxt  = dark ? "rgba(238,237,255,0.93)" : "#09071E";
   const idleLbl   = dark ? "rgba(200,197,245,0.36)" : "rgba(13,11,30,0.36)";
   const activeLbl = dark ? "rgba(200,197,245,0.60)" : "rgba(13,11,30,0.52)";
   const successClr = dark ? "#34D399" : "#059669";
+  const changeClr  = dark ? "rgba(200,197,245,0.45)" : "rgba(13,11,30,0.38)";
+  const timerClr  = dark ? "rgba(200,197,245,0.32)" : "rgba(13,11,30,0.28)";
 
-  const translateY = sheetVisible ? `${dragY}px` : "100%";
+  const translateY = sheetVisible ? "0px" : "100%";
 
   const FIELD_H  = 58;
   const INPUT_H  = 34;
@@ -249,21 +255,15 @@ export function ForgotPasswordModal({
     transition: "background 0.22s ease",
   };
 
-  const [newPwF, setNewPwF]   = useState(false);
-  const [confPwF, setConfPwF] = useState(false);
-
   return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
-      onClick={e => e.target === e.currentTarget && dismiss()}
-    >
-      {/* Backdrop */}
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      {/* Backdrop — non-closeable */}
       <div style={{
         position: "absolute", inset: 0,
         background: dark ? "rgba(4,3,20,0.76)" : "rgba(13,11,30,0.50)",
         backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
         opacity: sheetVisible ? 1 : 0, transition: "opacity 0.36s ease",
-      }} onClick={dismiss}/>
+      }}/>
 
       {/* Sheet */}
       <div style={{
@@ -278,20 +278,26 @@ export function ForgotPasswordModal({
           ? "0 -24px 80px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.06)"
           : "0 -24px 80px rgba(13,11,30,0.14), 0 -1px 0 rgba(255,255,255,0.9)",
         transform: `translateY(${translateY})`,
-        transition: dragging ? "none" : "transform 0.46s cubic-bezier(0.22,1,0.36,1)",
+        transition: "transform 0.46s cubic-bezier(0.22,1,0.36,1)",
         boxSizing: "border-box", willChange: "transform",
         overflow: "hidden",
       }}>
+        <style>{`
+          @keyframes fp-shake {
+            0%,100%{transform:translateX(0)}
+            15%,45%,75%{transform:translateX(-6px)}
+            30%,60%{transform:translateX(6px)}
+          }
+          .fp-otp-shake { animation: fp-shake 0.45s cubic-bezier(0.36,0.07,0.19,0.97); }
+          .fp-resend-shake { animation: fp-shake 0.42s cubic-bezier(0.36,0.07,0.19,0.97); }
+        `}</style>
 
-        {/* Drag handle */}
-        <div
-          onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-          style={{
-            padding: "16px 0 0", display: "flex", justifyContent: "center",
-            cursor: "grab", userSelect: "none", touchAction: "none",
-          }}
-        >
-          <div style={{ width: 38, height: 5, borderRadius: 100, background: handleClr }}/>
+        {/* Handle bar (decorative only — no dismiss) */}
+        <div style={{ padding: "16px 0 0", display: "flex", justifyContent: "center" }}>
+          <div style={{
+            width: 38, height: 5, borderRadius: 100,
+            background: dark ? "rgba(255,255,255,0.14)" : "rgba(13,11,30,0.12)",
+          }}/>
         </div>
 
         {/* Sliding panels */}
@@ -305,24 +311,20 @@ export function ForgotPasswordModal({
           }}>
 
             {/* ── Panel 0: OTP ── */}
-            <div style={{ width: "50%", boxSizing: "border-box", padding: "24px clamp(24px,6vw,36px) clamp(32px,8vw,48px)" }}>
+            <div style={{ width: "50%", boxSizing: "border-box", padding: "20px clamp(24px,6vw,36px) clamp(28px,7vw,40px)" }}>
               <h3 style={{
-                fontSize: "clamp(22px,5.5vw,28px)", fontWeight: 800,
-                color: headClr, margin: "0 0 8px", letterSpacing: "-0.045em", lineHeight: 1.1,
+                fontSize: "clamp(20px,5vw,26px)", fontWeight: 800,
+                color: headClr, margin: "0 0 6px", letterSpacing: "-0.04em", lineHeight: 1.1,
               }}>Reset Password</h3>
-              <p style={{ fontSize: 14.5, color: subClr, margin: "0 0 28px", letterSpacing: "-0.01em", lineHeight: 1.6 }}>
-                {sendMutation.isPending
-                  ? "Sending OTP to your email…"
-                  : sendMutation.isError
-                    ? "Failed to send OTP."
-                    : <>We sent a 6-digit code to{" "}<span style={{ color: headClr, fontWeight: 600 }}>{email}</span></>
-                }
+              <p style={{ fontSize: 14, color: subClr, margin: "0 0 24px", letterSpacing: "-0.01em", lineHeight: 1.6 }}>
+                We sent a 6-digit code to{" "}
+                <span style={{ color: headClr, fontWeight: 600 }}>{maskEmail(email)}</span>
               </p>
 
               {/* OTP boxes */}
               <div
-                className={shake ? "otp-shake" : ""}
-                style={{ display: "flex", gap: "clamp(7px,2.2vw,10px)", marginBottom: 24, justifyContent: "center" }}
+                className={shakeOtp ? "fp-otp-shake" : ""}
+                style={{ display: "flex", gap: "clamp(7px,2vw,9px)", marginBottom: 20, justifyContent: "center" }}
                 onPaste={handlePaste}
               >
                 {otp.map((val, i) => (
@@ -334,7 +336,7 @@ export function ForgotPasswordModal({
                     onChange={e => handleOtpChange(i, e.target.value)}
                     onKeyDown={e => handleKey(i, e)}
                     style={{
-                      width: "clamp(44px,13vw,52px)", height: "clamp(52px,15vw,60px)",
+                      width: "clamp(42px,12vw,50px)", height: "clamp(50px,14vw,58px)",
                       borderRadius: 14,
                       border: `1.5px solid ${otpError && !val ? errClr : val ? accent : boxBorder}`,
                       background: val ? boxFocBg : boxBg,
@@ -349,39 +351,13 @@ export function ForgotPasswordModal({
                 ))}
               </div>
 
-              {/* Verify button */}
-              <button
-                type="button" onClick={handleVerifyOtp}
-                disabled={!otpFilled || expired}
-                onPointerDown={e => { if (otpFilled && !expired) e.currentTarget.style.transform = "scale(0.97)"; }}
-                onPointerUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
-                onPointerLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
-                style={{
-                  width: "100%", height: 52, borderRadius: 16, border: "none",
-                  cursor: otpFilled && !expired ? "pointer" : "default",
-                  background: otpFilled && !expired
-                    ? accentBtn
-                    : dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.14)",
-                  color: otpFilled && !expired
-                    ? "#fff"
-                    : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.38)",
-                  fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: otpFilled && !expired ? btnShadow : "none",
-                  transition: "background 0.28s, box-shadow 0.25s, color 0.22s",
-                  fontFamily: "inherit", marginBottom: 14,
-                }}
-              >
-                Verify OTP →
-              </button>
-
               {/* Error */}
               {otpError && (
                 <div style={{
                   display: "flex", alignItems: "center", gap: 8,
                   background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
                   border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
-                  borderRadius: 12, padding: "10px 14px", marginBottom: 14,
+                  borderRadius: 12, padding: "9px 12px", marginBottom: 14,
                 }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
                     <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
@@ -391,14 +367,18 @@ export function ForgotPasswordModal({
                 </div>
               )}
 
-              {/* Timer / Resend */}
-              <div style={{ textAlign: "center" }}>
+              {/* Timer / Resend — shakes if resend attempted too early */}
+              <div
+                className={shakeResend ? "fp-resend-shake" : ""}
+                style={{ textAlign: "center", marginBottom: 16 }}
+              >
                 {expired ? (
                   <button
-                    onClick={() => resendMutation.mutate()}
+                    onClick={handleResendClick}
                     disabled={resendMutation.isPending}
                     style={{
-                      background: "none", border: "none", cursor: resendMutation.isPending ? "default" : "pointer",
+                      background: "none", border: "none",
+                      cursor: resendMutation.isPending ? "default" : "pointer",
                       fontSize: 13.5, fontWeight: 600, color: accent,
                       fontFamily: "inherit", letterSpacing: "-0.01em", padding: "4px 0",
                       opacity: resendMutation.isPending ? 0.6 : 1, transition: "opacity 0.18s",
@@ -407,23 +387,43 @@ export function ForgotPasswordModal({
                     {resendMutation.isPending ? "Sending…" : "Resend OTP"}
                   </button>
                 ) : (
-                  <span style={{
-                    fontSize: 13, fontVariantNumeric: "tabular-nums",
-                    color: dark ? "rgba(200,197,245,0.32)" : "rgba(13,11,30,0.28)",
-                    letterSpacing: "-0.01em",
-                  }}>
-                    Resend in <strong style={{ fontWeight: 600 }}>{formatCountdown(remainingMs)}</strong>
-                  </span>
+                  <button
+                    onClick={handleResendClick}
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      fontSize: 13, fontVariantNumeric: "tabular-nums",
+                      color: timerClr, letterSpacing: "-0.01em",
+                      fontFamily: "inherit", padding: "4px 0",
+                    }}
+                  >
+                    Resend in{" "}
+                    <strong style={{ fontWeight: 600 }}>{formatCountdown(remainingMs)}</strong>
+                  </button>
                 )}
+              </div>
+
+              {/* Change email link — the only way to close */}
+              <div style={{ textAlign: "center" }}>
+                <button
+                  onClick={() => { setSheet(false); setTimeout(onClose, 400); }}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    fontSize: 12.5, color: changeClr, fontFamily: "inherit",
+                    letterSpacing: "-0.01em", padding: "2px 0",
+                    textDecoration: "underline", textDecorationColor: changeClr,
+                  }}
+                >
+                  ← Change email address
+                </button>
               </div>
             </div>
 
             {/* ── Panel 1: New Password (only mounts after OTP confirmed) ── */}
-            <div style={{ width: "50%", boxSizing: "border-box", padding: "24px clamp(24px,6vw,36px) clamp(32px,8vw,48px)" }}>
+            <div style={{ width: "50%", boxSizing: "border-box", padding: "20px clamp(24px,6vw,36px) clamp(28px,7vw,40px)" }}>
               {otpConfirmed && (
                 <>
                   {pwSuccess ? (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 0 48px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0 40px" }}>
                       <div style={{
                         width: 64, height: 64, borderRadius: "50%",
                         background: dark ? "rgba(52,211,153,0.12)" : "rgba(5,150,105,0.08)",
@@ -445,11 +445,11 @@ export function ForgotPasswordModal({
                   ) : (
                     <>
                       <h3 style={{
-                        fontSize: "clamp(22px,5.5vw,28px)", fontWeight: 800,
-                        color: headClr, margin: "0 0 8px", letterSpacing: "-0.045em", lineHeight: 1.1,
+                        fontSize: "clamp(20px,5vw,26px)", fontWeight: 800,
+                        color: headClr, margin: "0 0 6px", letterSpacing: "-0.04em", lineHeight: 1.1,
                       }}>Set New Password</h3>
-                      <p style={{ fontSize: 14.5, color: subClr, margin: "0 0 28px", letterSpacing: "-0.01em", lineHeight: 1.6 }}>
-                        Choose a strong password with a number and special character.
+                      <p style={{ fontSize: 14, color: subClr, margin: "0 0 24px", letterSpacing: "-0.01em", lineHeight: 1.6 }}>
+                        For <span style={{ color: headClr, fontWeight: 600 }}>{maskEmail(email)}</span> — must include a number and special character.
                       </p>
 
                       {pwErrors.general && (
@@ -514,7 +514,7 @@ export function ForgotPasswordModal({
                       </div>
 
                       {/* Confirm password */}
-                      <div style={{ marginBottom: 28 }}>
+                      <div style={{ marginBottom: 24 }}>
                         <div style={{ position: "relative", height: FIELD_H }}>
                           <label style={labelStyle(!!(confPwF || confirmPw), confPwF, !!pwErrors.confirmPw)}>Confirm Password</label>
                           <input
@@ -559,7 +559,6 @@ export function ForgotPasswordModal({
                         )}
                       </div>
 
-                      {/* Set Password button */}
                       <button
                         type="button" onClick={handleSetPassword}
                         disabled={resetMutation.isPending}
@@ -567,7 +566,7 @@ export function ForgotPasswordModal({
                         onPointerUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
                         onPointerLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
                         style={{
-                          width: "100%", height: 54, borderRadius: 16, border: "none",
+                          width: "100%", height: 52, borderRadius: 16, border: "none",
                           cursor: resetMutation.isPending ? "default" : "pointer",
                           background: accentBtn, color: "#fff",
                           fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",

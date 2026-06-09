@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { login, getOtpStatus, AppError } from "../lib/api";
+import { login, getOtpStatus, forgotPasswordRequest, AppError } from "../lib/api";
 import { OtpModal } from "./OtpModal";
 import { ForgotPasswordModal } from "./ForgotPasswordModal";
 import { useDarkMode, Spinner, formatCountdown } from "../lib/shared";
@@ -30,13 +30,14 @@ export function LoginPage({ onSuccess }: Props) {
   const [emailF, setEF]     = useState(false);
   const [pwF, setPwF]       = useState(false);
   const [btnScale, setBS]   = useState(1);
-  const [showOtp, setShowOtp]       = useState(false);
-  const [showForgot, setShowForgot] = useState(false);
-  const [otpExpiresAt, setOtpExpiry] = useState<number | null>(null);
-  const [remainingMs, setRemMs]      = useState(0);
-  const [shakeEmail, setShakeEmail]  = useState(false);
-  const shakeTimer = useRef<ReturnType<typeof setTimeout>>();
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showOtp, setShowOtp]         = useState(false);
+  const [showForgot, setShowForgot]   = useState(false);
+  const [forgotExpiresAt, setForgotExpiry] = useState<number>(0);
+  const [otpExpiresAt, setOtpExpiry]  = useState<number | null>(null);
+  const [remainingMs, setRemMs]       = useState(0);
+  const [shakeEmail, setShakeEmail]   = useState(false);
+  const shakeTimer  = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
   const [errors, setErrors] = useState<{
     email?: string; password?: string; agreed?: string; general?: string;
   }>({});
@@ -52,7 +53,7 @@ export function LoginPage({ onSuccess }: Props) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [otpExpiresAt]);
 
-  // ── OTP status check (best-effort on email blur) ──────────────────
+  // ── OTP status check ──────────────────────────────────────────────
   const lastCheckedEmail = useRef("");
   const otpStatusMutation = useMutation({
     mutationFn: (em: string) => getOtpStatus(em),
@@ -86,6 +87,23 @@ export function LoginPage({ onSuccess }: Props) {
     },
   });
 
+  // ── Forgot password mutation — sends OTP before opening modal ─────
+  const forgotMutation = useMutation({
+    mutationFn: () => forgotPasswordRequest(email.trim()),
+    onSuccess: (r) => {
+      setForgotExpiry(r.expiresAt);
+      setShowForgot(true);
+    },
+    onError: (err) => {
+      const e = err as AppError;
+      const msg = e.code === "EMAIL_NOT_REGISTERED"
+        ? "Your email isn't registered."
+        : (e.message ?? "Unable to send OTP. Please try again.");
+      setErrors(v => ({ ...v, email: msg }));
+      triggerEmailShake();
+    },
+  });
+
   function validateFields(): boolean {
     const e: typeof errors = {};
     if (!email.trim()) e.email = "Email is required.";
@@ -114,7 +132,6 @@ export function LoginPage({ onSuccess }: Props) {
 
   function handleSignIn() {
     if (sessionActive) {
-      // Still require valid email before showing OTP
       if (!emailValid) {
         setErrors({ email: "Enter your registered email to continue." });
         triggerEmailShake();
@@ -140,7 +157,7 @@ export function LoginPage({ onSuccess }: Props) {
       return;
     }
     setErrors({});
-    setShowForgot(true);
+    forgotMutation.mutate();
   }
 
   const pwRef    = useRef<HTMLInputElement>(null);
@@ -264,14 +281,15 @@ export function LoginPage({ onSuccess }: Props) {
       {/* Orbs */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
         {[
-          { w: "85vw", m: 580, t: "-22%", r: "-20%", g: o1, an: "orb-a" },
-          { w: "70vw", m: 440, b: "-18%", l: "-20%", g: o2, an: "orb-b" },
-          { w: "55vw", m: 360, t: "35%",  l: "22%",  g: o3, an: "orb-c" },
+          { w: "85vw", m: 580, t: "-22%", r: "-20%", g: o1 },
+          { w: "70vw", m: 440, b: "-18%", l: "-20%", g: o2 },
+          { w: "55vw", m: 360, t: "35%",  l: "22%",  g: o3 },
         ].map((orb, i) => (
-          <div key={i} className={`auth-orb-${orb.an.split("-")[1]}`} style={{
+          <div key={i} style={{
             position: "absolute",
             width: orb.w, height: orb.w, maxWidth: orb.m, maxHeight: orb.m,
-            top: orb.t, bottom: orb.b, left: orb.l, right: orb.r,
+            top: (orb as {t?:string}).t, bottom: (orb as {b?:string}).b,
+            left: (orb as {l?:string}).l, right: (orb as {r?:string}).r,
             borderRadius: "50%",
             background: `radial-gradient(circle,${orb.g} 0%,transparent 65%)`,
           }}/>
@@ -414,22 +432,29 @@ export function LoginPage({ onSuccess }: Props) {
                 <p style={{ margin: 0, fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.password}</p>
               </div>
             )}
+
             {/* Forgot password link */}
             <div style={{ textAlign: "right", marginTop: 8 }}>
               <button
                 type="button"
                 onClick={handleForgotPassword}
+                disabled={forgotMutation.isPending}
                 style={{
-                  background: "none", border: "none", cursor: "pointer",
+                  background: "none", border: "none", cursor: forgotMutation.isPending ? "default" : "pointer",
                   fontSize: 12.5, fontWeight: 600, color: linkClr,
                   fontFamily: "inherit", padding: "2px 0",
-                  letterSpacing: "-0.01em", opacity: 0.85,
+                  letterSpacing: "-0.01em",
+                  opacity: forgotMutation.isPending ? 0.6 : 0.85,
                   transition: "opacity 0.18s",
+                  display: "inline-flex", alignItems: "center", gap: 5,
                 }}
-                onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                onMouseLeave={e => (e.currentTarget.style.opacity = "0.85")}
+                onMouseEnter={e => { if (!forgotMutation.isPending) e.currentTarget.style.opacity = "1"; }}
+                onMouseLeave={e => { if (!forgotMutation.isPending) e.currentTarget.style.opacity = "0.85"; }}
               >
-                Forgot password?
+                {forgotMutation.isPending
+                  ? <><Spinner size={10} /> Sending OTP…</>
+                  : "Forgot password?"
+                }
               </button>
             </div>
           </div>
@@ -472,14 +497,24 @@ export function LoginPage({ onSuccess }: Props) {
           {/* Sign In button */}
           <div style={{ ...rise(6) }}>
             <button
-              className="auth-sign-btn"
               type="button"
               disabled={loading}
               data-off={!formValid && !sessionActive ? "" : undefined}
               onPointerDown={() => setBS(0.967)}
               onPointerUp={() => { setBS(1); handleSignIn(); }}
               onPointerLeave={() => setBS(1)}
-              style={{ transform: `scale(${btnScale})` }}
+              style={{
+                width: "100%", height: 52, borderRadius: 16, border: "none",
+                cursor: loading ? "default" : "pointer",
+                background: formValid || sessionActive ? accentBtn : dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.14)",
+                color: formValid || sessionActive ? "#fff" : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.38)",
+                fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: formValid || sessionActive ? btnShadow : "none",
+                transition: "background 0.28s, box-shadow 0.25s, color 0.22s",
+                fontFamily: "inherit",
+                transform: `scale(${btnScale})`,
+              }}
             >
               {loading ? <Spinner /> : sessionActive ? "Continue with OTP →" : "Sign In"}
             </button>
@@ -515,11 +550,13 @@ export function LoginPage({ onSuccess }: Props) {
         />
       )}
 
-      {showForgot && (
+      {showForgot && forgotExpiresAt > 0 && (
         <ForgotPasswordModal
-          email={email.trim()} dark={dark}
+          email={email.trim()}
+          initialExpiresAt={forgotExpiresAt}
+          dark={dark}
           accent={accent} accentBtn={accentBtn} btnShadow={btnShadow}
-          onClose={() => setShowForgot(false)}
+          onClose={() => { setShowForgot(false); setForgotExpiry(0); }}
           onPasswordReset={() => {
             setPw("");
             setErrors({});

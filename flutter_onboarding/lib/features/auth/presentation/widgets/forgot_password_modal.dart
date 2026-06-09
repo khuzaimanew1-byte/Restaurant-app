@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,14 +8,26 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../data/repositories/auth_repository.dart';
 
+// Mask email: jo***@example.com
+String _maskEmail(String email) {
+  final at = email.indexOf('@');
+  if (at < 0) return email;
+  final local  = email.substring(0, at);
+  final domain = email.substring(at);
+  if (local.length <= 2) return '${local}***$domain';
+  return '${local.substring(0, 2)}***$domain';
+}
+
 class ForgotPasswordModal extends StatefulWidget {
   final String email;
+  final int initialExpiresAt;
   final VoidCallback onPasswordReset;
   final VoidCallback onClose;
 
   const ForgotPasswordModal({
     super.key,
     required this.email,
+    required this.initialExpiresAt,
     required this.onPasswordReset,
     required this.onClose,
   });
@@ -32,14 +45,16 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
   late final Animation<Offset> _step0Slide;
   late final Animation<Offset> _step1Slide;
 
+  // ── OTP shake animation ───────────────────────────────────────────
+  late final AnimationController _otpShakeCtrl;
+
+  // ── Resend shake animation ────────────────────────────────────────
+  late final AnimationController _resendShakeCtrl;
+
   // ── OTP state ────────────────────────────────────────────────────
   final List<TextEditingController> _otpCtls =
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _otpFoci = List.generate(6, (_) => FocusNode());
-
-  // ── Shake animation ───────────────────────────────────────────────
-  late final AnimationController _shakeCtrl;
-  late final Animation<double> _shakeAnim;
 
   // ── Timer ─────────────────────────────────────────────────────────
   int _countdownSeconds = 0;
@@ -47,13 +62,11 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
   bool _expired = false;
 
   // ── States ────────────────────────────────────────────────────────
-  bool _step1Active  = false; // true after OTP locally confirmed
-  bool _sendingOtp   = false;
+  bool _step1Active  = false;
   bool _resending    = false;
   bool _resetting    = false;
   bool _success      = false;
   String _otpError   = '';
-  String? _sendError;
 
   // ── Password step state ───────────────────────────────────────────
   final _newPwCtrl   = TextEditingController();
@@ -64,6 +77,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
   String? _confPwErr;
   String? _generalErr;
   String _savedOtp   = '';
+  bool _verifying    = false;
 
   @override
   void initState() {
@@ -82,54 +96,32 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
       end:   Offset.zero,
     ).animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeInOutCubic));
 
-    _shakeCtrl = AnimationController(
+    _otpShakeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 450),
     );
-    _shakeAnim = Tween<double>(begin: 0, end: 1).animate(_shakeCtrl);
+    _resendShakeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
 
-    _sendOtp();
+    _initCountdown(widget.initialExpiresAt);
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (mounted) _otpFoci[0].requestFocus();
+    });
   }
 
   @override
   void dispose() {
     _slideCtrl.dispose();
-    _shakeCtrl.dispose();
+    _otpShakeCtrl.dispose();
+    _resendShakeCtrl.dispose();
     _timer?.cancel();
     for (final c in _otpCtls) c.dispose();
     for (final f in _otpFoci) f.dispose();
     _newPwCtrl.dispose();
     _confPwCtrl.dispose();
     super.dispose();
-  }
-
-  // ── Send/resend OTP ───────────────────────────────────────────────
-
-  Future<void> _sendOtp() async {
-    setState(() { _sendingOtp = true; _sendError = null; });
-    try {
-      final expiresAt = await _repo.forgotPassword(widget.email);
-      _initCountdown(expiresAt);
-      setState(() { _sendingOtp = false; });
-      Future.delayed(const Duration(milliseconds: 350), () {
-        if (mounted) _otpFoci[0].requestFocus();
-      });
-    } catch (e) {
-      if (mounted) setState(() { _sendingOtp = false; _sendError = e.toString(); });
-    }
-  }
-
-  Future<void> _resendOtp() async {
-    setState(() { _resending = true; _otpError = ''; });
-    try {
-      final expiresAt = await _repo.forgotPassword(widget.email);
-      _initCountdown(expiresAt);
-      for (final c in _otpCtls) c.clear();
-      setState(() { _resending = false; });
-      _otpFoci[0].requestFocus();
-    } catch (e) {
-      if (mounted) setState(() { _resending = false; _otpError = e.toString(); });
-    }
   }
 
   void _initCountdown(int expiresAtMs) {
@@ -147,6 +139,32 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
         if (_expired) t.cancel();
       });
     });
+  }
+
+  // ── Resend OTP ────────────────────────────────────────────────────
+
+  void _handleResendTap() {
+    if (!_expired) {
+      // Not yet expired — shake the resend/timer row
+      _resendShakeCtrl.reset();
+      _resendShakeCtrl.forward();
+      HapticFeedback.mediumImpact();
+      return;
+    }
+    _resendOtp();
+  }
+
+  Future<void> _resendOtp() async {
+    setState(() { _resending = true; _otpError = ''; });
+    try {
+      final expiresAt = await _repo.forgotPassword(widget.email);
+      _initCountdown(expiresAt);
+      for (final c in _otpCtls) c.clear();
+      setState(() { _resending = false; });
+      _otpFoci[0].requestFocus();
+    } catch (e) {
+      if (mounted) setState(() { _resending = false; _otpError = e.toString(); });
+    }
   }
 
   // ── OTP input handling ────────────────────────────────────────────
@@ -168,7 +186,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
     } else {
       FocusScope.of(context).unfocus();
     }
-    if (_otp.length == 6) _handleVerifyOtp();
+    if (_otp.length == 6 && !_expired && !_verifying) _handleVerifyOtp();
   }
 
   void _onOtpChanged(int index, String value) {
@@ -177,36 +195,29 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
     if (value.length == 1 && index < 5) {
       _otpFoci[index + 1].requestFocus();
     }
-    if (_otp.length == 6) _handleVerifyOtp();
-  }
-
-  void _triggerShake() {
-    _shakeCtrl.reset();
-    _shakeCtrl.forward();
-    HapticFeedback.heavyImpact();
+    if (_otp.length == 6 && !_expired && !_verifying) _handleVerifyOtp();
   }
 
   void _handleVerifyOtp() {
+    if (_verifying) return;
     final code = _otp;
     if (code.length < 6) {
       setState(() { _otpError = 'Please enter the full 6-digit code.'; });
-      _triggerShake();
+      _otpShakeCtrl.reset(); _otpShakeCtrl.forward();
+      HapticFeedback.heavyImpact();
       return;
     }
     if (_expired) {
-      setState(() { _otpError = 'OTP expired. Request a new code to continue.'; });
-      _triggerShake();
+      setState(() { _otpError = 'OTP expired. Request a new code.'; });
+      _otpShakeCtrl.reset(); _otpShakeCtrl.forward();
+      HapticFeedback.heavyImpact();
       return;
     }
-    // Save OTP and advance to step 1
-    setState(() { _savedOtp = code; _step1Active = true; });
-    _slideCtrl.forward();
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) FocusScope.of(context).requestFocus(FocusNode());
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) FocusScope.of(context).unfocus();
-      });
+    setState(() { _verifying = true; _savedOtp = code; _step1Active = true; });
+    _slideCtrl.forward().then((_) {
+      setState(() { _verifying = false; });
     });
+    HapticFeedback.lightImpact();
   }
 
   // ── Password validation ───────────────────────────────────────────
@@ -244,24 +255,15 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
       );
       if (!mounted) return;
       setState(() { _resetting = false; _success = true; });
+      HapticFeedback.lightImpact();
       Future.delayed(const Duration(milliseconds: 1400), () {
         if (mounted) { widget.onPasswordReset(); Navigator.of(context).pop(); }
       });
     } catch (e) {
       if (!mounted) return;
-      final msg = e.toString();
-      if (msg.contains('OTP') || msg.contains('session') || msg.contains('code')) {
-        setState(() {
-          _resetting = false;
-          _generalErr = '$msg Please go back and request a new code.';
-        });
-      } else {
-        setState(() { _resetting = false; _generalErr = msg; });
-      }
+      setState(() { _resetting = false; _generalErr = e.toString(); });
     }
   }
-
-  // ── Timer label ───────────────────────────────────────────────────
 
   String get _timerLabel {
     final m = _countdownSeconds ~/ 60;
@@ -269,78 +271,77 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  // ── Build ─────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.12),
-            blurRadius: 40,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Drag handle
-            Center(
-              child: Container(
-                width: 36, height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.15)
-                      : Colors.black.withValues(alpha: 0.1),
-                ),
-              ),
-            ),
-
-            // Sliding panels (clipped)
-            ClipRect(
-              child: SizedBox(
-                width: double.infinity,
-                child: Stack(
-                  children: [
-                    // Step 0: OTP panel
-                    SlideTransition(
-                      position: _step0Slide,
-                      child: _buildOtpPanel(isDark),
-                    ),
-                    // Step 1: Password panel — only mounts after OTP confirmed
-                    if (_step1Active)
-                      SlideTransition(
-                        position: _step1Slide,
-                        child: _buildPasswordPanel(isDark),
-                      ),
-                  ],
-                ),
-              ),
+    return PopScope(
+      canPop: false,
+      child: Container(
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.5 : 0.12),
+              blurRadius: 40,
+              offset: const Offset(0, -4),
             ),
           ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Decorative handle (no dismiss on tap)
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : Colors.black.withValues(alpha: 0.1),
+                  ),
+                ),
+              ),
+
+              // Sliding panels
+              ClipRect(
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Stack(
+                    children: [
+                      SlideTransition(
+                        position: _step0Slide,
+                        child: _buildOtpPanel(isDark),
+                      ),
+                      if (_step1Active)
+                        SlideTransition(
+                          position: _step1Slide,
+                          child: _buildPasswordPanel(isDark),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // ── Step 0: OTP ───────────────────────────────────────────────────
+  // ── Step 0: OTP panel ─────────────────────────────────────────────
 
   Widget _buildOtpPanel(bool isDark) {
     final hasError = _otpError.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 8, 28, 32),
+      padding: const EdgeInsets.fromLTRB(28, 8, 28, 28),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,31 +354,32 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            _sendingOtp
-                ? 'Sending OTP to your email…'
-                : _sendError != null
-                    ? _sendError!
-                    : 'We sent a 6-digit code to\n${widget.email}',
-            style: TextStyle(
-              fontSize: 14, height: 1.5,
-              color: _sendError != null
-                  ? AppColors.error
-                  : (isDark ? AppColors.darkSecondary : AppColors.lightSecondary),
+          RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: 14, height: 1.5,
+                color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+              ),
+              children: [
+                const TextSpan(text: 'We sent a 6-digit code to '),
+                TextSpan(
+                  text: _maskEmail(widget.email),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
           // OTP boxes with shake
           AnimatedBuilder(
-            animation: _shakeAnim,
+            animation: _otpShakeCtrl,
             builder: (context, child) {
-              final dx = ((_shakeAnim.value * 6 * 3.14159).sin() * 8)
-                  .clamp(-8.0, 8.0);
-              return Transform.translate(
-                offset: Offset(dx, 0),
-                child: child,
-              );
+              final dx = sin(_otpShakeCtrl.value * pi * 5) * 8;
+              return Transform.translate(offset: Offset(dx, 0), child: child);
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -398,67 +400,80 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
           ),
 
           if (hasError) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
               _otpError,
               style: const TextStyle(fontSize: 13, color: AppColors.error, fontWeight: FontWeight.w500),
             ),
           ],
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-          AppButton(
-            label: 'Verify OTP →',
-            onPressed: (_otp.length == 6 && !_expired) ? _handleVerifyOtp : null,
-          ),
-          const SizedBox(height: 14),
-
-          // Timer / Resend
-          Center(
-            child: _expired
-                ? TextButton(
-                    onPressed: _resending ? null : _resendOtp,
-                    child: Text(
-                      _resending ? 'Sending…' : 'Resend OTP',
-                      style: const TextStyle(fontSize: 14, color: AppColors.indigo, fontWeight: FontWeight.w500),
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.timer_outlined, size: 14,
-                        color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary),
-                      const SizedBox(width: 5),
-                      Text(
-                        'Resend in $_timerLabel',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+          // Timer / Resend row — shakes when resend tapped before expired
+          AnimatedBuilder(
+            animation: _resendShakeCtrl,
+            builder: (context, child) {
+              final dx = sin(_resendShakeCtrl.value * pi * 5) * 7;
+              return Transform.translate(offset: Offset(dx, 0), child: child);
+            },
+            child: Center(
+              child: _expired
+                  ? TextButton(
+                      onPressed: _resending ? null : _handleResendTap,
+                      child: Text(
+                        _resending ? 'Sending…' : 'Resend OTP',
+                        style: const TextStyle(
+                          fontSize: 14, color: AppColors.indigo, fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ],
-                  ),
+                    )
+                  : GestureDetector(
+                      onTap: _handleResendTap,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.timer_outlined, size: 13,
+                            color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Resend in $_timerLabel',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
+
+          // Change email — only way to close
           Center(
             child: TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Cancel',
+                '← Change email address',
                 style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+                  fontSize: 13,
+                  color: isDark
+                      ? AppColors.darkSecondary.withValues(alpha: 0.6)
+                      : AppColors.lightSecondary.withValues(alpha: 0.7),
+                  decoration: TextDecoration.underline,
                 ),
               ),
             ),
           ),
+
+          const SizedBox(height: 4),
         ],
       ),
     );
   }
 
-  // ── Step 1: New Password ───────────────────────────────────────────
+  // ── Step 1: New Password panel ─────────────────────────────────────
 
   Widget _buildPasswordPanel(bool isDark) {
     if (_success) {
@@ -502,7 +517,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 8, 28, 32),
+      padding: const EdgeInsets.fromLTRB(28, 8, 28, 28),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -515,18 +530,30 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Choose a strong password with a number and special character.',
-            style: TextStyle(
-              fontSize: 14, height: 1.5,
-              color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+          RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: 14, height: 1.5,
+                color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+              ),
+              children: [
+                const TextSpan(text: 'For '),
+                TextSpan(
+                  text: _maskEmail(widget.email),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+                  ),
+                ),
+                const TextSpan(text: ' — must include a number and special character.'),
+              ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           if (_generalErr != null) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
               decoration: BoxDecoration(
                 color:        AppColors.error.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
@@ -535,7 +562,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.error),
+                  const Icon(Icons.info_outline_rounded, size: 15, color: AppColors.error),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -546,18 +573,15 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
           ],
 
-          // New password field
           TextFormField(
             controller:      _newPwCtrl,
             obscureText:     !_showNewPw,
             textInputAction: TextInputAction.next,
-            style: TextStyle(
-              fontSize: 15,
-              color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
-            ),
+            style: TextStyle(fontSize: 15,
+              color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary),
             onChanged: (_) => setState(() { _newPwErr = null; }),
             decoration: InputDecoration(
               labelText:  'New Password',
@@ -574,18 +598,15 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-          // Confirm password field
           TextFormField(
             controller:      _confPwCtrl,
             obscureText:     !_showConfPw,
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _handleSetPassword(),
-            style: TextStyle(
-              fontSize: 15,
-              color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
-            ),
+            style: TextStyle(fontSize: 15,
+              color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary),
             onChanged: (_) => setState(() { _confPwErr = null; }),
             decoration: InputDecoration(
               labelText:  'Confirm Password',
@@ -602,7 +623,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
               ),
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
           AppButton(
             label:     'Set Password',
@@ -615,7 +636,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
   }
 }
 
-// ── OTP Box widget (identical to otp_modal.dart) ─────────────────────
+// ── OTP Box widget ────────────────────────────────────────────────────
 
 class _OtpBox extends StatelessWidget {
   final TextEditingController controller;
@@ -683,10 +704,7 @@ class _OtpBox extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: hasError ? AppColors.error : AppColors.indigo,
-                width: 1.5,
-              ),
+              borderSide: const BorderSide(color: AppColors.indigo, width: 1.5),
             ),
           ),
         ),
