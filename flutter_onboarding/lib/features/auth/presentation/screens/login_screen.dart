@@ -157,6 +157,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       final msg = e.message.toLowerCase().contains('not registered') ||
               e.message.toLowerCase().contains('not found')
           ? "Your email isn't registered."
+          : e.message.toLowerCase().contains('no password') ||
+              e.message.toLowerCase().contains('no_password_set')
+          ? "This account has no password. Use Sign In with OTP instead."
           : e.message;
 
       _formKey.currentState?.validate();
