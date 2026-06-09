@@ -34,9 +34,6 @@ export function OtpModal({
   const [error, setError]       = useState("");
   const [shake, setShake]       = useState(false);
   const [remainingMs, setMs]    = useState(() => Math.max(0, expiresAt - Date.now()));
-  const [dragging, setDragging] = useState(false);
-  const [dragY, setDragY]       = useState(0);
-  const startY     = useRef(0);
   const shakeTimer = useRef<ReturnType<typeof setTimeout>>();
   const inputRefs  = useRef<(HTMLInputElement | null)[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -63,14 +60,7 @@ export function OtpModal({
     if (sheetVisible) setTimeout(() => inputRefs.current[0]?.focus(), 320);
   }, [sheetVisible]);
 
-  function onTouchStart(e: React.TouchEvent) { startY.current = e.touches[0].clientY; setDragging(true); }
-  function onTouchMove(e: React.TouchEvent)  { setDragY(Math.max(0, e.touches[0].clientY - startY.current)); }
-  function onTouchEnd() {
-    setDragging(false);
-    if (dragY > 90) dismiss(); else setDragY(0);
-  }
-
-  function dismiss() { setSheet(false); setDragY(0); setTimeout(() => onClose(), 400); }
+  function dismiss() { setSheet(false); setTimeout(() => onClose(), 400); }
 
   function handleKey(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Backspace") {
@@ -144,19 +134,11 @@ export function OtpModal({
   const boxTxt    = dark ? "rgba(242,241,255,0.96)" : "#09071E";
   const handleClr = dark ? "rgba(255,255,255,0.14)" : "rgba(13,11,30,0.12)";
   const errClr    = dark ? "#F87171" : "#DC2626";
-  const translateY = sheetVisible ? `${dragY}px` : "100%";
+  const translateY = sheetVisible ? "0px" : "100%";
 
-  const canVerify  = filled && !loading && !expired;
-  const verifyBg   = canVerify
-    ? accentBtn
-    : filled && expired
-      ? dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.12)"
-      : dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.14)";
-  const verifyClr  = canVerify
-    ? "#fff"
-    : filled && expired
-      ? errClr
-      : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.38)";
+  const canVerify = filled && !loading && !expired;
+  const verifyBg  = canVerify ? accentBtn : dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.14)";
+  const verifyClr = canVerify ? "#fff" : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.38)";
 
   return (
     <div
@@ -165,7 +147,6 @@ export function OtpModal({
         display: "flex", alignItems: "flex-end", justifyContent: "center",
         padding: "0 0 env(safe-area-inset-bottom,0)",
       }}
-      onClick={e => e.target === e.currentTarget && dismiss()}
     >
       <div style={{
         position: "absolute", inset: 0,
@@ -173,7 +154,7 @@ export function OtpModal({
         backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
         opacity: sheetVisible ? 1 : 0,
         transition: "opacity 0.36s ease",
-      }} onClick={dismiss}/>
+      }}/>
 
       <div style={{
         position: "relative", zIndex: 1,
@@ -187,18 +168,12 @@ export function OtpModal({
           ? "0 -24px 80px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.06)"
           : "0 -24px 80px rgba(13,11,30,0.14), 0 -1px 0 rgba(255,255,255,0.9)",
         transform: `translateY(${translateY})`,
-        transition: dragging ? "none" : "transform 0.46s cubic-bezier(0.22,1,0.36,1)",
+        transition: "transform 0.46s cubic-bezier(0.22,1,0.36,1)",
         boxSizing: "border-box", willChange: "transform",
         padding: "0 clamp(24px,6vw,36px) clamp(32px,8vw,48px)",
       }}>
 
-        <div
-          onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-          style={{
-            padding: "16px 0 24px", display: "flex", justifyContent: "center",
-            cursor: "grab", userSelect: "none", margin: "0 -36px", touchAction: "none",
-          }}
-        >
+        <div style={{ padding: "16px 0 24px", display: "flex", justifyContent: "center", margin: "0 -36px" }}>
           <div style={{ width: 38, height: 5, borderRadius: 100, background: handleClr }}/>
         </div>
 
@@ -321,34 +296,22 @@ export function OtpModal({
         )}
 
         <div style={{ textAlign: "center" }}>
-          {expired ? (
-            <button
-              onClick={() => resendMutation.mutate()}
-              disabled={resending}
-              style={{
-                background: "none", border: "none",
-                cursor: resending ? "default" : "pointer",
-                fontSize: 13.5, fontWeight: 600,
-                color: accent,
-                fontFamily: "inherit", letterSpacing: "-0.01em", padding: "4px 0",
-                opacity: resending ? 0.6 : 1,
-                transition: "opacity 0.18s ease",
-              }}
-            >
-              {resending ? "Sending…" : "Resend OTP"}
-            </button>
-          ) : (
-            <span style={{
-              fontSize: 13, fontVariantNumeric: "tabular-nums",
-              color: dark ? "rgba(200,197,245,0.32)" : "rgba(13,11,30,0.28)",
-              letterSpacing: "-0.01em",
-            }}>
-              Resend in{" "}
-              <strong style={{ fontWeight: 600 }}>
-                {formatCountdown(remainingMs)}
-              </strong>
-            </span>
-          )}
+          <button
+            onClick={() => { if (!expired || resending) return; resendMutation.mutate(); }}
+            disabled={!expired || resending}
+            style={{
+              background: "none", border: "none",
+              cursor: expired && !resending ? "pointer" : "default",
+              fontSize: 13.5, fontWeight: 600,
+              color: expired && !resending
+                ? accent
+                : dark ? "rgba(200,197,245,0.26)" : "rgba(13,11,30,0.26)",
+              fontFamily: "inherit", letterSpacing: "-0.01em", padding: "4px 0",
+              transition: "color 0.28s ease",
+            }}
+          >
+            {resending ? "Sending…" : "Resend OTP"}
+          </button>
         </div>
 
         <div style={{ textAlign: "center", marginTop: 10 }}>
