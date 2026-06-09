@@ -377,11 +377,11 @@ export function LoginPage({ onSuccess }: Props) {
 
       {/* Form */}
       <div style={{
-        flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+        flex: 1, display: "flex", flexDirection: "column", justifyContent: "center",
         position: "relative", zIndex: 1, overflowY: "auto",
-        padding: "0 clamp(28px,8vw,48px) clamp(16px,4vw,32px)",
+        padding: "clamp(12px,3vw,20px) clamp(28px,8vw,48px) clamp(16px,4vw,32px)",
       }}>
-        <div style={{ width: "100%", maxWidth: 340 }}>
+        <div style={{ width: "100%", maxWidth: 340, margin: "0 auto" }}>
 
           <div style={{ marginBottom: 8, ...rise(1) }}>
             <h1 style={{
