@@ -135,3 +135,27 @@ export async function logoutSession(token: string): Promise<void> {
     });
   } catch { /* best-effort */ }
 }
+
+/* ── Forgot Password API ───────────────────────────────────── */
+
+export interface ForgotPasswordResult {
+  otpSent: boolean;
+  expiresAt: number;
+}
+
+export async function forgotPasswordRequest(email: string): Promise<ForgotPasswordResult> {
+  return post<ForgotPasswordResult>("/forgot-password", { email });
+}
+
+export interface ResetPasswordResult {
+  success: boolean;
+}
+
+export async function resetPassword(
+  email: string,
+  otp: string,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<ResetPasswordResult> {
+  return post<ResetPasswordResult>("/reset-password", { email, otp, newPassword, confirmPassword });
+}

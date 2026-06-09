@@ -142,7 +142,7 @@ export class AuthService {
       );
     }
 
-    if (!user.passwordHash && password.length >= 6) {
+    if (!user.passwordHash && password.length >= 8) {
       const pwHash = await this.otp.hashPassword(password);
       await this.users.updateUser(normalised, { passwordHash: pwHash, activated: true });
     }
@@ -203,6 +203,97 @@ export class AuthService {
     if (!active) return { active: false, remainingMs: 0 };
     const remainingMs = Math.max(0, active.expiresAt.getTime() - Date.now());
     return { active: remainingMs > 0, remainingMs, expiresAt: active.expiresAt.getTime() };
+  }
+
+  /* ── POST /api/auth/forgot-password ─────────────────────── */
+
+  async forgotPassword(email: string) {
+    const normalised = email.toLowerCase().trim();
+
+    const user = await this.users.findUserByEmail(normalised);
+    if (!user) {
+      const emp = await this.users.findEmployeeByEmail(normalised);
+      if (!emp) {
+        throw new HttpException(
+          { error: "EMAIL_NOT_REGISTERED", field: "email", message: "This email is not registered." },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+    }
+
+    const expiry = await this.issueNewOtp(normalised);
+    this.logger.log(`Forgot-password OTP sent: ${normalised}`);
+    return { otpSent: true, expiresAt: expiry.getTime() };
+  }
+
+  /* ── POST /api/auth/reset-password ──────────────────────── */
+
+  async resetPassword(email: string, otpCode: string, newPassword: string, confirmPassword: string) {
+    const normalised = email.toLowerCase().trim();
+
+    if (newPassword !== confirmPassword) {
+      throw new HttpException(
+        { error: "PASSWORD_MISMATCH", field: "confirmPassword", message: "Passwords do not match." },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const session = await this.users.findLatestOtpSession(normalised);
+    if (!session) {
+      throw new HttpException(
+        { error: "NO_SESSION", message: "No OTP session found. Please request a new code." },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (session.used) {
+      throw new HttpException(
+        { error: "OTP_USED", message: "This OTP has already been used. Please request a new code." },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (Date.now() > session.expiresAt.getTime()) {
+      throw new HttpException(
+        { error: "OTP_EXPIRED", message: "OTP expired. Request a new code to continue." },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (session.attempts >= this.users.MAX_ATTEMPTS) {
+      throw new HttpException(
+        { error: "TOO_MANY_ATTEMPTS", message: "Too many incorrect attempts. Please request a new OTP." },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const valid = await this.otp.verifyOtp(otpCode.trim(), session.otpHash);
+    if (!valid) {
+      await this.users.incrementOtpAttempts(session.id);
+      const remaining = this.users.MAX_ATTEMPTS - (session.attempts + 1);
+      throw new HttpException(
+        {
+          error:   "OTP_INCORRECT",
+          message: remaining > 0
+            ? "Incorrect code. Please try again."
+            : "Incorrect code. Too many attempts — please request a new OTP.",
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.users.markOtpUsed(session.id);
+
+    const user = await this.users.findUserByEmail(normalised);
+    if (!user) {
+      throw new HttpException(
+        { error: "USER_NOT_FOUND", message: "User not found." },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    const pwHash = await this.otp.hashPassword(newPassword);
+    await this.users.updateUser(normalised, { passwordHash: pwHash, activated: true });
+
+    this.logger.log(`Password reset via OTP: ${normalised}`);
+    return { success: true };
   }
 
   /* ── GET /api/auth/session ──────────────────────────────── */

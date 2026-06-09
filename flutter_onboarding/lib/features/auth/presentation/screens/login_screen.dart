@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../providers/auth_provider.dart';
 import '../providers/otp_provider.dart';
+import '../widgets/forgot_password_modal.dart';
 import '../widgets/otp_modal.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -19,20 +19,32 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _formKey      = GlobalKey<FormState>();
   final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  bool _obscurePassword = true;
-  bool _pendingOtp      = false;
+  bool _obscurePassword  = true;
+  bool _agreedToTerms    = false;
+  bool _agreedError      = false;
+  bool _pendingOtp       = false;
 
+  // ── Entry animation ───────────────────────────────────────────────
   late final AnimationController _entryCtrl;
   late final Animation<double> _entryOpacity;
   late final Animation<Offset>  _entrySlide;
 
+  // ── Email shake animation ─────────────────────────────────────────
+  late final AnimationController _shakeCtrl;
+  late final Animation<double>   _shakeAnim;
+
+  // ── Password regex ────────────────────────────────────────────────
+  static final _hasNum     = RegExp(r'[0-9]');
+  static final _hasSpecial = RegExp(r'[!@#$%^&*()\-_=+\[\]{};\':"\\|,.<>/?]');
+
   @override
   void initState() {
     super.initState();
+
     _entryCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 540),
@@ -43,21 +55,91 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       end:   Offset.zero,
     ).animate(CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic));
     _entryCtrl.forward();
+
+    _shakeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+    _shakeAnim = Tween<double>(begin: 0, end: 1).animate(_shakeCtrl);
   }
 
   @override
   void dispose() {
     _entryCtrl.dispose();
+    _shakeCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
   }
 
+  // ── Validation helpers ────────────────────────────────────────────
+
+  String? _validateEmail(String? v) {
+    if (v == null || v.trim().isEmpty) return 'Email is required.';
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v.trim()))
+      return 'Enter a valid email address.';
+    return null;
+  }
+
+  String? _validatePassword(String? v) {
+    if (v == null || v.isEmpty) return 'Password is required.';
+    if (v.length < 8)           return 'Password must be at least 8 characters.';
+    if (!_hasNum.hasMatch(v))     return 'Password must contain at least one number.';
+    if (!_hasSpecial.hasMatch(v)) return 'Password must contain at least one special character.';
+    return null;
+  }
+
+  bool get _emailValid {
+    final v = _emailCtrl.text.trim();
+    return v.isNotEmpty && RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v);
+  }
+
+  // ── Login ─────────────────────────────────────────────────────────
+
   void _login() {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final pwValid = _formKey.currentState?.validate() ?? false;
+    if (!_agreedToTerms) setState(() => _agreedError = true);
+    if (!pwValid || !_agreedToTerms) return;
     FocusScope.of(context).unfocus();
     ref.read(authProvider.notifier).login(_emailCtrl.text, _passwordCtrl.text);
   }
+
+  // ── Forgot Password ───────────────────────────────────────────────
+
+  void _handleForgotPassword() {
+    if (!_emailValid) {
+      _formKey.currentState?.validate();
+      _triggerEmailShake();
+      return;
+    }
+    showModalBottomSheet<void>(
+      context:            context,
+      isScrollControlled: true,
+      backgroundColor:    Colors.transparent,
+      builder: (_) => ForgotPasswordModal(
+        email:           _emailCtrl.text.trim(),
+        onPasswordReset: () {
+          _passwordCtrl.clear();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:         Text('Password updated! Please sign in.'),
+              backgroundColor: AppColors.emerald,
+              behavior:        SnackBarBehavior.floating,
+            ),
+          );
+        },
+        onClose: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
+  void _triggerEmailShake() {
+    HapticFeedback.heavyImpact();
+    _shakeCtrl.reset();
+    _shakeCtrl.forward();
+  }
+
+  // ── OTP modal ─────────────────────────────────────────────────────
 
   void _showOtpModal(String email, String password, int expiresAt) {
     ref.read(otpProvider.notifier).initCountdown(expiresAt);
@@ -135,30 +217,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               const SizedBox(height: 20),
                             ],
 
+                            // ── Email field with shake ────────────────
                             _FieldLabel('Email', isDark),
                             const SizedBox(height: 8),
-                            TextFormField(
-                              controller:      _emailCtrl,
-                              keyboardType:    TextInputType.emailAddress,
-                              autocorrect:     false,
-                              textInputAction: TextInputAction.next,
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
-                              ),
-                              decoration: const InputDecoration(
-                                hintText:   'you@company.com',
-                                prefixIcon: Icon(Icons.mail_outline_rounded, size: 18),
-                              ),
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'Email is required.';
-                                if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v.trim()))
-                                  return 'Enter a valid email address.';
-                                return null;
+                            AnimatedBuilder(
+                              animation: _shakeAnim,
+                              builder: (context, child) {
+                                final dx = ((_shakeAnim.value * 6 * 3.14159).sin() * 9)
+                                    .clamp(-9.0, 9.0);
+                                return Transform.translate(
+                                  offset: Offset(dx, 0),
+                                  child: child,
+                                );
                               },
+                              child: TextFormField(
+                                controller:      _emailCtrl,
+                                keyboardType:    TextInputType.emailAddress,
+                                autocorrect:     false,
+                                textInputAction: TextInputAction.next,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+                                ),
+                                decoration: const InputDecoration(
+                                  hintText:   'you@company.com',
+                                  prefixIcon: Icon(Icons.mail_outline_rounded, size: 18),
+                                ),
+                                validator: _validateEmail,
+                              ),
                             ),
                             const SizedBox(height: 18),
 
+                            // ── Password field ────────────────────────
                             _FieldLabel('Password', isDark),
                             const SizedBox(height: 8),
                             TextFormField(
@@ -187,12 +277,109 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       setState(() => _obscurePassword = !_obscurePassword),
                                 ),
                               ),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return 'Password is required.';
-                                if (v.length < 6) return 'Password must be at least 6 characters.';
-                                return null;
-                              },
+                              validator: _validatePassword,
                             ),
+
+                            // ── Forgot password link ──────────────────
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _handleForgotPassword,
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  'Forgot password?',
+                                  style: TextStyle(
+                                    fontSize:   12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color:      AppColors.indigo,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // ── Terms & Conditions checkbox ────────────
+                            GestureDetector(
+                              onTap: () => setState(() {
+                                _agreedToTerms = !_agreedToTerms;
+                                if (_agreedToTerms) _agreedError = false;
+                              }),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    width: 20, height: 20,
+                                    margin: const EdgeInsets.only(top: 1),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: _agreedError
+                                            ? AppColors.error
+                                            : _agreedToTerms
+                                                ? AppColors.indigo
+                                                : (isDark
+                                                    ? Colors.white.withValues(alpha: 0.2)
+                                                    : Colors.black.withValues(alpha: 0.2)),
+                                        width: 2,
+                                      ),
+                                      color: _agreedToTerms
+                                          ? AppColors.indigo
+                                          : Colors.transparent,
+                                    ),
+                                    child: _agreedToTerms
+                                        ? const Icon(Icons.check_rounded,
+                                            size: 13, color: Colors.white)
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        RichText(
+                                          text: TextSpan(
+                                            style: TextStyle(
+                                              fontSize:   13.5,
+                                              color: isDark
+                                                  ? AppColors.darkSecondary
+                                                  : AppColors.lightSecondary,
+                                              height: 1.5,
+                                            ),
+                                            children: [
+                                              const TextSpan(text: 'I agree to the '),
+                                              TextSpan(
+                                                text: 'Terms of Service',
+                                                style: const TextStyle(
+                                                  color:      AppColors.indigo,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (_agreedError)
+                                          const Padding(
+                                            padding: EdgeInsets.only(top: 4),
+                                            child: Text(
+                                              'You must agree to the Terms of Service to continue.',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color:    AppColors.error,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
                             const Spacer(),
                             const SizedBox(height: 32),
 
@@ -217,7 +404,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 }
 
-// ── Inline success view (replaces removed SuccessScreen) ──────────────
+// ── Inline success view ───────────────────────────────────────────────
 
 class _SuccessView extends StatelessWidget {
   final bool isDark;

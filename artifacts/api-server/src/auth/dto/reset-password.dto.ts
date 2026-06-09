@@ -1,8 +1,12 @@
-import { IsEmail, IsString, MinLength, Matches } from "class-validator";
+import { IsEmail, IsString, Length, MinLength, Matches } from "class-validator";
 
-export class LoginDto {
+export class ResetPasswordDto {
   @IsEmail({}, { message: "Enter a valid email address." })
   email!: string;
+
+  @IsString()
+  @Length(6, 6, { message: "OTP must be exactly 6 digits." })
+  otp!: string;
 
   @IsString()
   @MinLength(8, { message: "Password must be at least 8 characters." })
@@ -10,5 +14,9 @@ export class LoginDto {
   @Matches(/[!@#$%^&*()\-_=+\[\]{};':"\\|,.<>/?]/, {
     message: "Password must contain at least one special character.",
   })
-  password!: string;
+  newPassword!: string;
+
+  @IsString()
+  @MinLength(8, { message: "Confirm password must be at least 8 characters." })
+  confirmPassword!: string;
 }

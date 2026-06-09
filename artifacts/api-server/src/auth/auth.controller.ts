@@ -19,6 +19,8 @@ import { CustomThrottlerGuard } from "./throttler.guard.js";
 import { LoginDto }             from "./dto/login.dto.js";
 import { VerifyOtpDto }         from "./dto/verify-otp.dto.js";
 import { ResendOtpDto }         from "./dto/resend-otp.dto.js";
+import { ForgotPasswordDto }    from "./dto/forgot-password.dto.js";
+import { ResetPasswordDto }     from "./dto/reset-password.dto.js";
 
 @Controller("api/auth")
 export class AuthController {
@@ -49,6 +51,24 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   resendOtp(@Body() dto: ResendOtpDto) {
     return this.auth.resendOtp(dto.email);
+  }
+
+  /* ── POST /api/auth/forgot-password ───────────────────── */
+  @Post("forgot-password")
+  @UseGuards(CustomThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto.email);
+  }
+
+  /* ── POST /api/auth/reset-password ────────────────────── */
+  @Post("reset-password")
+  @UseGuards(CustomThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 900_000 } })
+  @HttpCode(HttpStatus.OK)
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto.email, dto.otp, dto.newPassword, dto.confirmPassword);
   }
 
   /* ── GET /api/auth/otp-status ──────────────────────────── */

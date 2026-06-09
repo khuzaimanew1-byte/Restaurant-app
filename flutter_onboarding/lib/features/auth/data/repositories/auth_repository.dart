@@ -80,6 +80,40 @@ class AuthRepository {
     return UserModel.fromJson(body);
   }
 
+  // ── POST /api/auth/forgot-password ────────────────────────────────────
+
+  Future<int> forgotPassword(String email) async {
+    final res = await http.post(
+      Uri.parse('$_base/auth/forgot-password'),
+      headers: _headers,
+      body: jsonEncode({'email': email.toLowerCase().trim()}),
+    );
+    final body = _decodeBody(res);
+    return body['expiresAt'] as int? ??
+        DateTime.now().add(const Duration(minutes: 5)).millisecondsSinceEpoch;
+  }
+
+  // ── POST /api/auth/reset-password ─────────────────────────────────────
+
+  Future<void> resetPassword({
+    required String email,
+    required String otp,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final res = await http.post(
+      Uri.parse('$_base/auth/reset-password'),
+      headers: _headers,
+      body: jsonEncode({
+        'email':           email.toLowerCase().trim(),
+        'otp':             otp,
+        'newPassword':     newPassword,
+        'confirmPassword': confirmPassword,
+      }),
+    );
+    _decodeBody(res);
+  }
+
   // ── Admin bootstrap (no-op — server handles bootstrap) ───────────────
 
   Future<void> ensureAdminEmployee() async {}

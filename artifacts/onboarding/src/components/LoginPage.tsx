@@ -2,10 +2,22 @@ import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { login, getOtpStatus, AppError } from "../lib/api";
 import { OtpModal } from "./OtpModal";
+import { ForgotPasswordModal } from "./ForgotPasswordModal";
 import { useDarkMode, Spinner, formatCountdown } from "../lib/shared";
 
 interface Props {
   onSuccess: (email: string, role: string, sessionToken: string) => void;
+}
+
+const PW_NUM     = /[0-9]/;
+const PW_SPECIAL = /[!@#$%^&*()\-_=+[\]{};':"\\|,.<>/?]/;
+
+function validatePwComplexity(pw: string): string | null {
+  if (!pw)              return "Password is required.";
+  if (pw.length < 8)    return "Password must be at least 8 characters.";
+  if (!PW_NUM.test(pw))     return "Password must contain at least one number.";
+  if (!PW_SPECIAL.test(pw)) return "Password must contain at least one special character.";
+  return null;
 }
 
 export function LoginPage({ onSuccess }: Props) {
@@ -19,8 +31,11 @@ export function LoginPage({ onSuccess }: Props) {
   const [pwF, setPwF]       = useState(false);
   const [btnScale, setBS]   = useState(1);
   const [showOtp, setShowOtp]       = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
   const [otpExpiresAt, setOtpExpiry] = useState<number | null>(null);
   const [remainingMs, setRemMs]      = useState(0);
+  const [shakeEmail, setShakeEmail]  = useState(false);
+  const shakeTimer = useRef<ReturnType<typeof setTimeout>>();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [errors, setErrors] = useState<{
     email?: string; password?: string; agreed?: string; general?: string;
@@ -75,8 +90,8 @@ export function LoginPage({ onSuccess }: Props) {
     const e: typeof errors = {};
     if (!email.trim()) e.email = "Email is required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) e.email = "Enter a valid email address.";
-    if (!password) e.password = "Password is required.";
-    else if (password.length < 6) e.password = "Password must be at least 6 characters.";
+    const pwErr = validatePwComplexity(password);
+    if (pwErr) e.password = pwErr;
     if (!agreed) e.agreed = "You must agree to the Terms of Service to continue.";
     setErrors(e);
     return !e.email && !e.password && !e.agreed;
@@ -84,13 +99,48 @@ export function LoginPage({ onSuccess }: Props) {
 
   const sessionActive = remainingMs > 0;
   const loading       = loginMutation.isPending;
-  const formValid     = !!(email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 6 && agreed);
+  const emailValid    = !!(email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()));
+  const pwValid       = !!(password.length >= 8 && PW_NUM.test(password) && PW_SPECIAL.test(password));
+  const formValid     = !!(emailValid && pwValid && agreed);
+
+  function triggerEmailShake() {
+    setShakeEmail(false);
+    clearTimeout(shakeTimer.current);
+    requestAnimationFrame(() => {
+      setShakeEmail(true);
+      shakeTimer.current = setTimeout(() => setShakeEmail(false), 500);
+    });
+  }
 
   function handleSignIn() {
-    if (sessionActive) { setShowOtp(true); return; }
+    if (sessionActive) {
+      // Still require valid email before showing OTP
+      if (!emailValid) {
+        setErrors({ email: "Enter your registered email to continue." });
+        triggerEmailShake();
+        return;
+      }
+      setShowOtp(true);
+      return;
+    }
     if (!validateFields()) return;
     setErrors({});
     loginMutation.mutate({ em: email.trim(), pw: password });
+  }
+
+  function handleForgotPassword() {
+    if (!email.trim()) {
+      setErrors(v => ({ ...v, email: "Enter your email address first." }));
+      triggerEmailShake();
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setErrors(v => ({ ...v, email: "Enter a valid email address." }));
+      triggerEmailShake();
+      return;
+    }
+    setErrors({});
+    setShowForgot(true);
   }
 
   const pwRef    = useRef<HTMLInputElement>(null);
@@ -177,28 +227,33 @@ export function LoginPage({ onSuccess }: Props) {
       fontFamily: "'Inter',-apple-system,'Helvetica Neue',sans-serif",
       WebkitFontSmoothing: "antialiased",
     }}>
+      <style>{`
+        @keyframes email-shake {
+          0%,100%{transform:translateX(0)}
+          15%,45%,75%{transform:translateX(-7px)}
+          30%,60%{transform:translateX(7px)}
+        }
+        .email-shake { animation: email-shake 0.5s cubic-bezier(0.36,0.07,0.19,0.97); }
+        .otp-shake   { animation: email-shake 0.45s cubic-bezier(0.36,0.07,0.19,0.97); }
+      `}</style>
 
       {/* ── Sticky OTP Session Banner ── */}
       {sessionActive && !showOtp && (
         <div style={{
           position: "fixed", top: 0, left: 0, right: 0, zIndex: 300,
-          background: dark
-            ? "rgba(22,18,68,0.92)"
-            : "rgba(240,238,255,0.94)",
+          background: dark ? "rgba(22,18,68,0.92)" : "rgba(240,238,255,0.94)",
           backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
           borderBottom: `1px solid ${dark ? "rgba(127,120,242,0.22)" : "rgba(79,70,229,0.16)"}`,
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "9px 20px",
-          fontFamily: "inherit",
+          padding: "9px 20px", fontFamily: "inherit",
         }}>
-          <span style={{
-            fontSize: 12.5, fontWeight: 600,
-            color: dark ? "rgba(200,197,245,0.88)" : "#4338CA",
-            letterSpacing: "-0.01em",
-          }}>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: dark ? "rgba(200,197,245,0.88)" : "#4338CA", letterSpacing: "-0.01em" }}>
             OTP session active · {formatCountdown(remainingMs)}
           </span>
-          <button onClick={() => setShowOtp(true)} style={{
+          <button onClick={() => {
+            if (!emailValid) { setErrors({ email: "Enter your registered email to continue." }); triggerEmailShake(); return; }
+            setShowOtp(true);
+          }} style={{
             background: "none", border: "none", cursor: "pointer",
             color: accent, fontWeight: 700, fontFamily: "inherit",
             fontSize: 12.5, padding: "2px 0", letterSpacing: "-0.01em",
@@ -242,8 +297,7 @@ export function LoginPage({ onSuccess }: Props) {
           {dark
             ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="5" fill={idleLbl}/>
-                <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-                  stroke={idleLbl} strokeWidth="2" strokeLinecap="round"/>
+                <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke={idleLbl} strokeWidth="2" strokeLinecap="round"/>
               </svg>
             : <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
                 <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill={idleLbl}/>
@@ -293,7 +347,10 @@ export function LoginPage({ onSuccess }: Props) {
 
           {/* Email */}
           <div style={{ marginBottom: "clamp(18px,4.5vw,24px)", ...rise(3) }}>
-            <div style={{ position: "relative", height: FIELD_H }}>
+            <div
+              className={shakeEmail ? "email-shake" : ""}
+              style={{ position: "relative", height: FIELD_H }}
+            >
               <label style={labelStyle(!!(emailF || email), emailF, !!errors.email)}>Email</label>
               <input
                 ref={emailRef} type="email" value={email} autoComplete="email"
@@ -335,20 +392,14 @@ export function LoginPage({ onSuccess }: Props) {
                 width: 18, height: 18,
                 background: "none", border: "none", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                color: idleLbl, opacity: 0.55, padding: 0,
-                transition: "color 0.22s, opacity 0.18s",
+                color: idleLbl, opacity: 0.55, padding: 0, transition: "color 0.22s, opacity 0.18s",
               }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
                 onMouseLeave={e => (e.currentTarget.style.opacity = "0.55")}
               >
                 {showPw
-                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
-                    </svg>
-                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="1.7"/>
-                      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7"/>
-                    </svg>
+                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="1.7"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7"/></svg>
                 }
               </button>
               <div style={{ ...underlineBase, background: errors.password ? errClr : baseLine }}/>
@@ -363,6 +414,24 @@ export function LoginPage({ onSuccess }: Props) {
                 <p style={{ margin: 0, fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.password}</p>
               </div>
             )}
+            {/* Forgot password link */}
+            <div style={{ textAlign: "right", marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 12.5, fontWeight: 600, color: linkClr,
+                  fontFamily: "inherit", padding: "2px 0",
+                  letterSpacing: "-0.01em", opacity: 0.85,
+                  transition: "opacity 0.18s",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "0.85")}
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
 
           {/* Terms */}
@@ -405,13 +474,14 @@ export function LoginPage({ onSuccess }: Props) {
             <button
               className="auth-sign-btn"
               type="button"
-              data-off={!formValid || loading || sessionActive ? "" : undefined}
+              disabled={loading}
+              data-off={!formValid && !sessionActive ? "" : undefined}
               onPointerDown={() => setBS(0.967)}
               onPointerUp={() => { setBS(1); handleSignIn(); }}
               onPointerLeave={() => setBS(1)}
               style={{ transform: `scale(${btnScale})` }}
             >
-              {loading ? <Spinner /> : "Sign In"}
+              {loading ? <Spinner /> : sessionActive ? "Continue with OTP →" : "Sign In"}
             </button>
           </div>
 
@@ -442,6 +512,18 @@ export function LoginPage({ onSuccess }: Props) {
           expiresAt={otpExpiresAt} onSuccess={onSuccess}
           onClose={() => setShowOtp(false)}
           onNewExpiry={setOtpExpiry}
+        />
+      )}
+
+      {showForgot && (
+        <ForgotPasswordModal
+          email={email.trim()} dark={dark}
+          accent={accent} accentBtn={accentBtn} btnShadow={btnShadow}
+          onClose={() => setShowForgot(false)}
+          onPasswordReset={() => {
+            setPw("");
+            setErrors({});
+          }}
         />
       )}
     </div>

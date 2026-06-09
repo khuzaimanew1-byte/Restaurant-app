@@ -1,4 +1,4 @@
-import { IsEmail, IsString, Length, MinLength } from "class-validator";
+import { IsEmail, IsString, Length, MinLength, Matches } from "class-validator";
 
 export class VerifyOtpDto {
   @IsEmail({}, { message: "Enter a valid email address." })
@@ -9,6 +9,10 @@ export class VerifyOtpDto {
   otp!: string;
 
   @IsString()
-  @MinLength(6, { message: "Password must be at least 6 characters." })
+  @MinLength(8, { message: "Password must be at least 8 characters." })
+  @Matches(/[0-9]/, { message: "Password must contain at least one number." })
+  @Matches(/[!@#$%^&*()\-_=+\[\]{};':"\\|,.<>/?]/, {
+    message: "Password must contain at least one special character.",
+  })
   password!: string;
 }
