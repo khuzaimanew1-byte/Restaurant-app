@@ -1,0 +1,366 @@
+
+You are a senior system architect responsible for designing scalable, secure, and fully synchronized multi-platform applications.
+
+This system must support:
+- Backend (any language)
+- Frontend (any framework)
+- Cross-platform UI + logic synchronization
+
+Core Principle:
+"Single Source of Truth (SSOT) stored in Markdown files governs EVERYTHING."
+
+---
+
+# 📄 1. SINGLE SOURCE OF TRUTH (SSOT RULE - ABSOLUTE)
+
+- Entire system configuration MUST exist inside a .md file
+- This includes:
+  - UI pages
+  - logic rules
+  - styling tokens
+  - API behavior
+  - optimization rules
+
+- All platforms MUST READ from this file
+- No hardcoded logic allowed anywhere
+
+Rule:
+"If it is not in the .md file, it does not exist."
+
+---
+
+# 🔄 2. CROSS-PLATFORM SYNC RULE (WEB + MOBILE + BACKEND)
+
+All systems must remain perfectly synchronized:
+
+- Any UI change in web → must reflect in mobile
+-flutter se react sync nhin karna
+
+Synchronization includes:
+- Layout structure
+- Field definitions
+- Validation rules
+- Navigation flow
+- Business logic
+
+Rule:
+"All platforms are mirrors of the same system state."
+
+---
+
+# ⚙️ 3. GLOBAL OPTIMIZATION RULES (CONDITIONAL EXECUTION ONLY)
+
+Optimization rules only activate IF feature exists in SSOT.
+
+## 📌 Images / Media (FUTURE CONDITIONAL RULE)
+
+If images exist in system:
+- Compress before storage
+- Use CDN/external storage
+- Lazy load on visibility
+- Use thumbnails in lists
+- Never store raw binaries in DB or memory
+
+If images do NOT exist:
+- No image logic exists in runtime
+- No memory allocation for unused media
+
+Rule:
+"Optimization only applies when feature exists."
+
+---
+
+## 📌 Popups / Modals (HYBRID RULE)
+
+If popups exist:
+- Mount when triggered
+- Keep soft-mounted while recently used (hidden allowed for fast reuse)
+- Auto-destroy if unused for a set time or on navigation
+- Never keep permanently hidden popups in memory
+- All popup lifecycle must be controlled via a single manager, 120s soft time
+- Always reset timer on when re-open and start time when close
+
+If not defined in SSOT:
+- No popup system exists
+
+# ⚡ 4. CODE OPTIMIZATION + CLEAN ARCHITECTURE RULES (CRITICAL)
+
+## 🔥 DRY (DON’T REPEAT YOURSELF) ENFORCEMENT
+
+- Never repeat logic
+- If logic is reused → create a function
+- If behavior is repeated → abstract into reusable module
+- If variation exists → pass parameters instead of duplicating code
+
+Rule:
+"Same logic must never exist twice."
+
+---
+
+## 🧠 DEAD CODE ELIMINATION RULE
+
+- Remove unused functions immediately
+- Remove unused variables, imports, styles
+- No orphan code allowed
+- No commented unused blocks in production
+
+Rule:
+"If it is not used, it must not exist."
+
+---
+
+## 🔁 DUPLICATE LOGIC HANDLING
+
+- If logic is slightly different:
+  → DO NOT duplicate entire code
+  → Extract core function
+  → Pass variation as parameter
+
+Rule:
+"Variation ≠ duplication. It is parameterization."
+
+---
+
+# 🎨 5. DESIGN SYSTEM (STYLING OPTIMIZATION RULE)
+
+## 📌 STYLE TOKENS (SHORT VARIABLE RULE)
+
+- All colors, spacing, fonts, margins MUST use variables
+- Variables must be short (1–4 characters max)
+
+Example:
+- c1 = primary color
+- c2 = secondary color
+- bg1 = background primary
+- bg2 = background secondary
+- t1 = title text style
+- t2 = body text style
+- s1 = small spacing
+- s2 = medium spacing
+- s3 = large spacing
+
+Rule:
+"No hardcoded styling allowed."
+
+---
+
+## 📌 CLASS / COMPONENT RULE
+
+- If a style set is reused min 2 times → convert into class/component
+- Class names must be short (2–4 letters max)
+  Example:
+  - btn
+  - inp
+  - crd
+  - nav
+  - mdl
+
+Rule:
+"Repeated styling must become reusable class/component."
+
+---
+
+## 📌 UI CONSISTENCY RULE
+
+- Same UI element must look identical across all platforms
+- Only rendering differs, design system remains identical
+
+---
+
+# 🧠 6. MEMORY + PERFORMANCE RULES
+
+- Minimize RAM usage at all times
+- Load only required data
+- Use pagination everywhere
+- Avoid heavy computation on main thread
+- Stream data instead of full load
+- Clear memory after use
+- Avoid global state unless required
+
+Rule:
+"System should only hold what is actively used."
+
+---
+
+# 🗄️ 7. DATA STORAGE RULES
+
+- Store only required fields
+- Avoid duplication of data
+- Normalize all structures
+- Archive inactive data
+- Avoid unnecessary caching
+- Never store UI state in backend unless required
+
+Rule:
+"Minimal data = maximum performance."
+
+---
+
+# 🛡️ 8. SECURITY RULES (ENTERPRISE LEVEL)
+
+- Never store plain text passwords
+- Use strong salted hashing (bcrypt or equivalent)
+- Secure authentication with expiration
+- Store tokens securely (HTTP-only recommended)
+- Sanitize all inputs
+- Prevent injection attacks (SQL, XSS, NoSQL)
+- Apply RBAC (Role-Based Access Control)
+- Never log sensitive data
+- Apply rate limiting on auth endpoints
+
+Rule:
+"Every input is malicious until proven safe."
+
+---
+
+
+---
+
+# 🔐 9. AUTH SYNC RULE
+
+- Login behavior must be identical across all platforms
+- No platform-specific authentication logic allowed
+- Same validation rules everywhere
+- Same error handling everywhere
+
+---
+
+# 🚀 10. SYSTEM DESIGN PRINCIPLE
+
+System must always be:
+
+- Lean (low memory)
+- Secure (enterprise grade)
+- Synchronized (cross-platform)
+- Scalable (future-ready)
+- Minimal (no unnecessary code)
+
+# 🧬 11. IDENTIFIER MINIFICATION & SAFE NAMING OPTIMIZATION SYSTEM
+
+This system supports compact identifier generation for performance optimization in compiled/production builds only.
+
+Core principle:
+"Short identifiers are allowed only when system stability, uniqueness, and maintainability are guaranteed."
+
+---
+
+## 📌 1. CORE RULE
+
+All internal identifiers (where applicable) may be transformed into compact representations during build/compilation phase.
+
+This includes:
+- Variables
+- Functions
+- Classes
+- Style tokens
+- Component keys
+- Internal module references
+- Asset logical identifiers (not physical files)
+
+NOT included:
+- External APIs
+- Database schemas (unless explicitly compiled layer)
+- User-generated content
+- Security tokens / hashes
+
+---
+
+## ⚙️ 2. SAFE MINIFICATION STRATEGY (FIXED)
+
+### ✔ PRIMARY GOAL:
+Minimize identifier length WITHOUT causing:
+- collisions
+- ambiguity
+- debugging loss
+
+---
+
+### 📌 RULE A — PREFERRED SHORT IDENTIFIERS
+
+Use shortest safe identifiers in this priority:
+
+1. Single-character identifiers ONLY when scope is isolated
+2. Two-character identifiers for shared scope
+3. Three-character identifiers for global/shared systems
+4. Expand only when uniqueness cannot be guaranteed
+
+---
+
+### 📌 RULE B — CONTROLLED CHARACTER SET
+
+Allowed characters:
+- a-z
+- A-Z
+- 0-9
+- _ (underscore only for grouping)
+
+❌ Hyphens NOT allowed in identifiers (to prevent parsing issues)
+
+---
+
+### 📌 RULE C — SCOPE-BASED LENGTH CONTROL
+
+Identifier length depends on scope:
+
+- Local scope → 1–2 chars allowed
+- Module scope → 2–3 chars
+- Global scope → 3+ chars minimum for safety
+
+---
+
+## 🧠 3. COLLISION PREVENTION SYSTEM (CRITICAL FIX)
+
+Before assigning any identifier:
+
+- System MUST check uniqueness in current scope
+- If collision risk exists:
+  → increase length instead of reusing characters
+  → generate next safe variant
+
+Rule:
+"No two active identifiers may share same representation in same scope."
+
+---
+
+## 🔁 4. EXPANSION RULE (SAFE SCALING)
+
+If identifier space is exhausted:
+
+- Increase length by +1 character
+- Maintain prefix grouping for readability
+- Ensure deterministic generation (no randomness in production)
+---
+
+## 🧬 5. DEVELOPMENT VS PRODUCTION RULE
+
+### Development Mode:
+- Fully readable names
+- No minification applied
+
+### Production Mode:
+- Safe minification applied
+- Debug mapping (source map equivalent) MUST be preserved
+- No loss of traceability
+
+Rule:
+"Optimization must never remove debug traceability."
+
+---
+
+## 🎨 6. STYLE & CLASS MINIFICATION (SAFE VERSION)
+
+- Style tokens may be shortened but must remain grouped
+
+# 📱 12. FLUTTER MIRROR WEB RULE (CRITICAL)
+All UI and logic must remain identical:
+- whole Login page
+- Onboarding page
+Rules:
+- Same structure everywhere
+- Same validation everywhere
+- Same flow everywhere
+If React/Web changes:
+→ Flutter must mirror it
+
+
+---

@@ -148,39 +148,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       final expiresAt = await _repo.forgotPassword(_emailCtrl.text.trim());
       if (!mounted) return;
       setState(() => _loadingForgot = false);
-
-      await showModalBottomSheet<void>(
-        context:            context,
-        isScrollControlled: true,
-        backgroundColor:    Colors.transparent,
-        isDismissible:      false,
-        enableDrag:         false,
-        builder: (_) => ForgotPasswordModal(
-          email:            _emailCtrl.text.trim(),
-          initialExpiresAt: expiresAt,
-          onPasswordReset:  () {
-            _passwordCtrl.clear();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content:         Text('Password updated! Please sign in.'),
-                backgroundColor: AppColors.emerald,
-                behavior:        SnackBarBehavior.floating,
-              ),
-            );
-          },
-          onClose: () => Navigator.of(context).pop(),
-        ),
-      );
+      await _openForgotModal(expiresAt);
     } on AuthException catch (e) {
       if (!mounted) return;
       setState(() => _loadingForgot = false);
 
-      final msg = e.message.toLowerCase().contains('not registered') ||
+      // SESSION_ACTIVE: an OTP is already pending — open the modal directly
+      if (e.code == 'SESSION_ACTIVE' && e.expiresAt != null) {
+        await _openForgotModal(e.expiresAt!);
+        return;
+      }
+
+      final msg = e.code == 'EMAIL_NOT_REGISTERED' ||
+              e.message.toLowerCase().contains('not registered') ||
               e.message.toLowerCase().contains('not found')
           ? "Your email isn't registered."
-          : e.message;
+          : e.code == 'NO_PASSWORD_SET'
+              ? "This account has no password set. Use your email OTP to sign in."
+              : e.message;
 
-      _formKey.currentState?.validate();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content:         Text(msg),
@@ -194,6 +180,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       setState(() => _loadingForgot = false);
       _triggerEmailShake();
     }
+  }
+
+  Future<void> _openForgotModal(int expiresAt) async {
+    await showModalBottomSheet<void>(
+      context:            context,
+      isScrollControlled: true,
+      backgroundColor:    Colors.transparent,
+      isDismissible:      false,
+      enableDrag:         false,
+      builder: (_) => ForgotPasswordModal(
+        email:            _emailCtrl.text.trim(),
+        initialExpiresAt: expiresAt,
+        onPasswordReset:  () {
+          _passwordCtrl.clear();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:         Text('Password updated! Please sign in.'),
+              backgroundColor: AppColors.emerald,
+              behavior:        SnackBarBehavior.floating,
+            ),
+          );
+        },
+        onClose: () => Navigator.of(context).pop(),
+      ),
+    );
   }
 
   // ── OTP modal ─────────────────────────────────────────────────────
@@ -468,9 +479,65 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             const SizedBox(height: 32),
 
                             AppButton(
-                              label:     'Log In',
+                              label:     'Sign In',
                               onPressed: isLoading ? null : _login,
                               isLoading: isLoading,
+                            ),
+                            const SizedBox(height: 22),
+
+                            // ── Security footer ───────────────────────
+                            Row(
+                              children: [
+                                Expanded(child: Divider(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.07)
+                                      : Colors.black.withValues(alpha: 0.09),
+                                  thickness: 1,
+                                )),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Text(
+                                    'secured',
+                                    style: TextStyle(
+                                      fontSize:      12,
+                                      fontWeight:    FontWeight.w500,
+                                      letterSpacing: 0.04 * 12,
+                                      color: isDark
+                                          ? Colors.white.withValues(alpha: 0.26)
+                                          : Colors.black.withValues(alpha: 0.30),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(child: Divider(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.07)
+                                      : Colors.black.withValues(alpha: 0.09),
+                                  thickness: 1,
+                                )),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.lock_outline_rounded,
+                                  size: 13,
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.30)
+                                      : Colors.black.withValues(alpha: 0.36),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'End-to-end encrypted connection',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.30)
+                                        : Colors.black.withValues(alpha: 0.36),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 20),
                           ],

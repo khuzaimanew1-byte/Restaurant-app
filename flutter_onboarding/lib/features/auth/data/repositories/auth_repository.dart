@@ -88,9 +88,18 @@ class AuthRepository {
       headers: _headers,
       body: jsonEncode({'email': email.toLowerCase().trim()}),
     );
-    final body = _decodeBody(res);
-    return body['expiresAt'] as int? ??
-        DateTime.now().add(const Duration(minutes: 5)).millisecondsSinceEpoch;
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      return body['expiresAt'] as int? ??
+          DateTime.now().add(const Duration(minutes: 5)).millisecondsSinceEpoch;
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    final code      = body['code'] as String?;
+    final expiresAt = body['expiresAt'] as int?;
+    final msg = (body['message'] as String?) ??
+        (body['error'] as String?) ??
+        'Request failed (${res.statusCode}).';
+    throw AuthException(msg, code: code, expiresAt: expiresAt);
   }
 
   // ── POST /api/auth/reset-password ─────────────────────────────────────
@@ -121,7 +130,9 @@ class AuthRepository {
 
 class AuthException implements Exception {
   final String message;
-  const AuthException(this.message);
+  final String? code;
+  final int? expiresAt;
+  const AuthException(this.message, {this.code, this.expiresAt});
   @override
   String toString() => message;
 }
