@@ -29,7 +29,7 @@ async function bootstrap() {
       whitelist:            true,
       transform:            true,
       forbidNonWhitelisted: false,
-      stopAtFirstError:     true,
+      stopAtFirstError:     false,
     }),
   );
 

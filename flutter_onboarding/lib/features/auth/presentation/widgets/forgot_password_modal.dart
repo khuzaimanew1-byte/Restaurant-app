@@ -233,6 +233,25 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
     return null;
   }
 
+  Widget _pwReqChip(String label, bool met) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(met ? '✓' : '✗',
+        style: TextStyle(
+          fontSize: 13, height: 1,
+          color: met ? const Color(0xFF10B981) : const Color(0xFFDC2626),
+        ),
+      ),
+      const SizedBox(width: 4),
+      Text(label,
+        style: TextStyle(
+          fontSize: 11.5, fontWeight: FontWeight.w500,
+          color: met ? const Color(0xFF10B981) : const Color(0xFFDC2626),
+        ),
+      ),
+    ],
+  );
+
   Future<void> _handleSetPassword() async {
     final newPw  = _newPwCtrl.text;
     final confPw = _confPwCtrl.text;
@@ -598,6 +617,19 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
               ),
             ),
           ),
+
+          // ── Password requirements ───────────────────────────────────
+          if (_newPwCtrl.text.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 14, runSpacing: 4,
+              children: [
+                _pwReqChip('8+ characters',         _newPwCtrl.text.length >= 8,          ),
+                _pwReqChip('One number',            _hasNum.hasMatch(_newPwCtrl.text),    ),
+                _pwReqChip('One special character', _hasSpecial.hasMatch(_newPwCtrl.text)),
+              ],
+            ),
+          ],
           const SizedBox(height: 14),
 
           TextFormField(

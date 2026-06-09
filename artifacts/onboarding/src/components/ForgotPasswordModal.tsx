@@ -528,13 +528,23 @@ export function ForgotPasswordModal({
                             transition: "width 0.38s cubic-bezier(0.22,1,0.36,1)",
                           }}/>
                         </div>
-                        {pwErrors.newPw && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                              <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
-                              <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
-                            </svg>
-                            <p style={{ margin: 0, fontSize: 12, color: errClr }}>{pwErrors.newPw}</p>
+                        {newPw && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px 16px", marginTop: 8 }}>
+                            {[
+                              { met: newPw.length >= 8,    label: "8+ characters" },
+                              { met: PW_NUM.test(newPw),    label: "One number" },
+                              { met: PW_SPECIAL.test(newPw), label: "One special character" },
+                            ].map(({ met, label }) => (
+                              <span key={label} style={{
+                                display: "flex", alignItems: "center", gap: 4,
+                                fontSize: 11.5, fontWeight: 500,
+                                color: met ? (dark ? "#34D399" : "#059669") : errClr,
+                                transition: "color 0.2s ease",
+                              }}>
+                                <span style={{ fontSize: 13, lineHeight: 1 }}>{met ? "✓" : "✗"}</span>
+                                {label}
+                              </span>
+                            ))}
                           </div>
                         )}
                       </div>

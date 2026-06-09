@@ -3,7 +3,7 @@ const BASE = "/api/auth";
 interface ApiError {
   error: string;
   field?: string;
-  message: string;
+  message: string | string[];
   retryAfterMs?: number;
   expiresAt?: number;
 }
@@ -15,7 +15,8 @@ export class AppError extends Error {
   expiresAt?: number;
 
   constructor(data: ApiError) {
-    super(data.message);
+    const msg = Array.isArray(data.message) ? data.message.join(" · ") : data.message;
+    super(msg);
     this.code = data.error;
     this.field = data.field;
     this.retryAfterMs = data.retryAfterMs;

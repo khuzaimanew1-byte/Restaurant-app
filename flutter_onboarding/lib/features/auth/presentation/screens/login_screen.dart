@@ -92,6 +92,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return null;
   }
 
+  Widget _pwReqChip(String label, bool met) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(met ? '✓' : '✗',
+        style: TextStyle(
+          fontSize: 13, height: 1,
+          color: met ? const Color(0xFF10B981) : const Color(0xFFDC2626),
+        ),
+      ),
+      const SizedBox(width: 4),
+      Text(label,
+        style: TextStyle(
+          fontSize: 11.5, fontWeight: FontWeight.w500,
+          color: met ? const Color(0xFF10B981) : const Color(0xFFDC2626),
+        ),
+      ),
+    ],
+  );
+
   bool get _emailValid {
     final v = _emailCtrl.text.trim();
     return v.isNotEmpty && RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v);
@@ -290,6 +309,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               obscureText:     _obscurePassword,
                               textInputAction: TextInputAction.done,
                               onFieldSubmitted: (_) => _login(),
+                              onChanged: (_) => setState(() {}),
                               style: TextStyle(
                                 fontSize: 15,
                                 color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
@@ -313,6 +333,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               ),
                               validator: _validatePassword,
                             ),
+
+                            // ── Password requirements ─────────────────
+                            if (_passwordCtrl.text.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 14, runSpacing: 4,
+                                children: [
+                                  _pwReqChip('8+ characters',         _passwordCtrl.text.length >= 8,          ),
+                                  _pwReqChip('One number',            _hasNum.hasMatch(_passwordCtrl.text),    ),
+                                  _pwReqChip('One special character', _hasSpecial.hasMatch(_passwordCtrl.text)),
+                                ],
+                              ),
+                            ],
 
                             // ── Forgot password link ──────────────────
                             Align(
