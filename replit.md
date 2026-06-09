@@ -55,7 +55,29 @@ flutter run \
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+### Architectural Rules (Governing Principles)
+
+**Sync direction**: React Web → Flutter only. Flutter se React sync NAHI karna.
+
+**Flutter Mirror Rule**: Login page aur Onboarding page React ka exact mirror hona chahiye — same structure, same validation, same flow. Agar React mein change ho to bina alag instruction ke Flutter mein bhi apply karo.
+
+**SSOT (Single Source of Truth)**: System configuration .md files mein store honi chahiye. Jo .md mein nahi hai woh exist nahi karta.
+
+**DRY (Don't Repeat Yourself)**: Same logic kabhi twice nahi likhna. Reuse hone wali logic ko function/module mein extract karo. Variation ko duplication nahi, parameterization samjho.
+
+**Dead Code**: Unused functions, variables, imports, styles immediately hatao. Production mein commented unused blocks allowed nahi.
+
+**Style Tokens**: Sab colors, spacing, fonts short variables mein hone chahiye (1–4 chars: c1, bg1, t1, s1 etc). Hardcoded styling allowed nahi.
+
+**Reusable Components**: Agar style/component 2+ baar repeat ho to class/component banao. Class names short rakho (2–4 chars: btn, inp, crd, mdl).
+
+**Performance**: Sirf jo actively use ho woh memory mein rakho. Pagination everywhere, lazy load, stream data instead of full load.
+
+**Security**: Plain text passwords never. bcrypt hashing. Input sanitization. RBAC. Rate limiting on auth endpoints. Sensitive data never log karo.
+
+**Popup/Modal Lifecycle**: Mount when triggered, soft-mount 120s while recently used, auto-destroy if unused. Single lifecycle manager.
+
+**Minification (Production only)**: Short identifiers allowed — local scope: 1–2 chars, module: 2–3, global: 3+. Development mein readable names.
 
 ## Gotchas
 

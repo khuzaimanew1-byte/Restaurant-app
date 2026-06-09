@@ -4,7 +4,9 @@ description: React Web ↔ Flutter synchronization policy for shared screens, in
 ---
 
 ## Rule
-React is the reference implementation. Whenever a shared screen changes in either platform, apply the equivalent change to the other **without needing to be asked**. Platform-specific UI adaptations are allowed; business logic and validation must stay identical.
+React is the reference implementation. Sync direction is **React → Flutter only**. Flutter se React sync NAHI karna (user-confirmed rule).
+
+Whenever a shared screen changes in React, apply the equivalent change to Flutter **without needing to be asked**. Platform-specific UI adaptations are allowed; business logic and validation must stay identical.
 
 ## Shared screens (auto-sync required)
 - Onboarding (3 slides)
