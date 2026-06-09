@@ -22,7 +22,6 @@ interface OtpSheetProps {
   verifying?: boolean;
   resending?: boolean;
   error?: string;
-  closeable?: boolean;
   onVerify: (code: string) => void;
   onResend: () => void;
   onClose: () => void;
@@ -33,7 +32,6 @@ export function OtpSheet({
   email, dark, accent, accentBtn, btnShadow,
   expiresAt, title, verifyLabel = "Verify & Continue",
   verifying = false, resending = false, error = "",
-  closeable = true,
   onVerify, onResend, onClose,
   footer,
 }: OtpSheetProps) {
@@ -41,9 +39,6 @@ export function OtpSheet({
   const [sheetVisible, setSheet] = useState(false);
   const [shake, setShake]       = useState(false);
   const [remainingMs, setMs]    = useState(() => Math.max(0, expiresAt - Date.now()));
-  const [dragging, setDragging] = useState(false);
-  const [dragY, setDragY]       = useState(0);
-  const startY      = useRef(0);
   const shakeTimer  = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inputRefs   = useRef<(HTMLInputElement | null)[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -71,19 +66,6 @@ export function OtpSheet({
   useEffect(() => {
     if (error) triggerShake();
   }, [error]);
-
-  function onTouchStart(e: React.TouchEvent) { if (!closeable) return; startY.current = e.touches[0].clientY; setDragging(true); }
-  function onTouchMove(e: React.TouchEvent)  { if (!closeable) return; setDragY(Math.max(0, e.touches[0].clientY - startY.current)); }
-  function onTouchEnd() {
-    if (!closeable) return;
-    setDragging(false);
-    if (dragY > 90) dismiss(); else setDragY(0);
-  }
-
-  function dismiss() {
-    if (!closeable) return;
-    setSheet(false); setDragY(0); setTimeout(() => onClose(), 400);
-  }
 
   function handleKey(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Backspace") {
@@ -126,7 +108,7 @@ export function OtpSheet({
   const boxTxt    = dark ? "rgba(242,241,255,0.96)" : "#09071E";
   const handleClr = dark ? "rgba(255,255,255,0.14)" : "rgba(13,11,30,0.12)";
   const errClr    = dark ? "#F87171" : "#DC2626";
-  const translateY = sheetVisible ? `${dragY}px` : "100%";
+  const translateY = sheetVisible ? "0px" : "100%";
 
   const verifyBg = canVerify
     ? accentBtn
@@ -146,7 +128,6 @@ export function OtpSheet({
         display: "flex", alignItems: "flex-end", justifyContent: "center",
         padding: "0 0 env(safe-area-inset-bottom,0)",
       }}
-      onClick={e => { if (closeable && e.target === e.currentTarget) dismiss(); }}
     >
       <div style={{
         position: "absolute", inset: 0,
@@ -154,7 +135,7 @@ export function OtpSheet({
         backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
         opacity: sheetVisible ? 1 : 0,
         transition: "opacity 0.36s ease",
-      }} onClick={closeable ? dismiss : undefined}/>
+      }}/>
 
       <div style={{
         position: "relative", zIndex: 1,
@@ -168,43 +149,17 @@ export function OtpSheet({
           ? "0 -24px 80px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.06)"
           : "0 -24px 80px rgba(13,11,30,0.14), 0 -1px 0 rgba(255,255,255,0.9)",
         transform: `translateY(${translateY})`,
-        transition: dragging ? "none" : "transform 0.46s cubic-bezier(0.22,1,0.36,1)",
+        transition: "transform 0.46s cubic-bezier(0.22,1,0.36,1)",
         boxSizing: "border-box", willChange: "transform",
         padding: "0 clamp(24px,6vw,36px) clamp(32px,8vw,48px)",
       }}>
 
-        <div
-          onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-          style={{
-            padding: "16px 0 24px", display: "flex", justifyContent: "center",
-            cursor: closeable ? "grab" : "default",
-            userSelect: "none", margin: "0 -36px", touchAction: "none",
-          }}
-        >
+        <div style={{
+          padding: "16px 0 24px", display: "flex", justifyContent: "center",
+          cursor: "default", userSelect: "none", margin: "0 -36px",
+        }}>
           <div style={{ width: 38, height: 5, borderRadius: 100, background: handleClr }}/>
         </div>
-
-        {!expired && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: dark ? "rgba(79,70,229,0.10)" : "rgba(79,70,229,0.06)",
-            border: `1px solid ${dark ? "rgba(127,120,242,0.28)" : "rgba(79,70,229,0.18)"}`,
-            borderRadius: 12, padding: "9px 13px", marginBottom: 20,
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <rect x="3" y="11" width="18" height="11" rx="2" stroke={dark ? "#9992F5" : "#4F46E5"} strokeWidth="2"/>
-              <path d="M7 11V7a5 5 0 0110 0v4" stroke={dark ? "#9992F5" : "#4F46E5"} strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            <span style={{
-              fontSize: 12.5, fontWeight: 600, flex: 1,
-              color: dark ? "rgba(200,197,245,0.88)" : "#3730A3",
-              letterSpacing: "-0.01em", fontVariantNumeric: "tabular-nums",
-            }}>
-              OTP active · expires in{" "}
-              <strong style={{ fontWeight: 700 }}>{formatCountdown(remainingMs)}</strong>
-            </span>
-          </div>
-        )}
 
         <h3 style={{
           fontSize: "clamp(24px,6vw,30px)", fontWeight: 800,

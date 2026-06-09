@@ -182,7 +182,6 @@ export function ForgotPasswordModal({
         verifying={false}
         resending={resending}
         error={otpError}
-        closeable={false}
         onVerify={handleVerify}
         onResend={handleResend}
         onClose={onClose}
