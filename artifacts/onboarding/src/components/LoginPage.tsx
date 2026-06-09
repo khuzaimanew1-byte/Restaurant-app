@@ -343,6 +343,30 @@ export function LoginPage({ onSuccess }: Props) {
         </div>
       )}
 
+      {/* ── Sticky OTP Session Banner ── */}
+      {sessionActive && !showOtp && (
+        <div style={{
+          position: "fixed", top: forgotBannerActive ? 40 : 0, left: 0, right: 0, zIndex: 300,
+          transition: "top 0.28s cubic-bezier(0.22,1,0.36,1)",
+          background: dark ? "rgba(22,18,68,0.92)" : "rgba(240,238,255,0.94)",
+          backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+          borderBottom: `1px solid ${dark ? "rgba(127,120,242,0.22)" : "rgba(79,70,229,0.16)"}`,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "9px 20px", fontFamily: "inherit",
+        }}>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: dark ? "rgba(200,197,245,0.88)" : "#4338CA", letterSpacing: "-0.01em" }}>
+            OTP session active · {formatCountdown(remainingMs)}
+          </span>
+          <button onClick={() => {
+            if (!emailValid) { setErrors({ email: "Enter your registered email to continue." }); triggerEmailShake(); return; }
+            setShowOtp(true);
+          }} style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: accent, fontWeight: 700, fontFamily: "inherit",
+            fontSize: 12.5, padding: "2px 0", letterSpacing: "-0.01em",
+          }}>Enter OTP →</button>
+        </div>
+      )}
 
       {/* Orbs */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
@@ -367,7 +391,8 @@ export function LoginPage({ onSuccess }: Props) {
         position: "relative", zIndex: 10, flexShrink: 0,
         display: "flex", justifyContent: "flex-end",
         padding: "clamp(16px,4vw,22px) clamp(20px,5vw,28px)",
-        marginTop: 0,
+        marginTop: sessionActive && !showOtp ? 38 : 0,
+        transition: "margin-top 0.3s ease",
         ...rise(0),
       }}>
         <button onClick={() => setDark(v => !v)} style={{
@@ -620,7 +645,7 @@ export function LoginPage({ onSuccess }: Props) {
           email={email} password={password} dark={dark}
           accent={accent} accentBtn={accentBtn} btnShadow={btnShadow}
           expiresAt={otpExpiresAt} onSuccess={onSuccess}
-          onClose={() => { setShowOtp(false); setOtpExpiry(0); setRemMs(0); }}
+          onClose={() => setShowOtp(false)}
           onNewExpiry={setOtpExpiry}
         />
       )}
