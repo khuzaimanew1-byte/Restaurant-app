@@ -187,18 +187,6 @@ class _OtpModalState extends ConsumerState<OtpModal> {
                 )),
               ),
 
-              if (errorMsg != null) ...[
-                const SizedBox(height: 14),
-                Text(
-                  errorMsg,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-
               const SizedBox(height: 28),
 
               AppButton(
