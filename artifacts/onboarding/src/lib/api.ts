@@ -24,6 +24,26 @@ export class AppError extends Error {
   }
 }
 
+async function safeJson<T>(res: Response): Promise<T & ApiError> {
+  const text = await res.text().catch(() => "");
+  if (!text.trim()) {
+    throw new AppError({
+      error: "EMPTY_RESPONSE",
+      message: res.ok
+        ? "Server returned an empty response. Please try again."
+        : `Request failed (${res.status}). Please try again.`,
+    });
+  }
+  try {
+    return JSON.parse(text) as T & ApiError;
+  } catch {
+    throw new AppError({
+      error: "PARSE_ERROR",
+      message: "Unexpected server response. Please try again.",
+    });
+  }
+}
+
 async function post<T>(path: string, body: object): Promise<T> {
   let res: Response;
   try {
@@ -38,7 +58,7 @@ async function post<T>(path: string, body: object): Promise<T> {
       message: "Unable to connect to the server.\nCheck your internet connection and try again.",
     });
   }
-  const data = await res.json() as T & ApiError;
+  const data = await safeJson<T>(res);
   if (!res.ok) throw new AppError(data as ApiError);
   return data;
 }
@@ -53,7 +73,7 @@ async function get<T>(path: string): Promise<T> {
       message: "Unable to connect to the server.\nCheck your internet connection and try again.",
     });
   }
-  const data = await res.json() as T & ApiError;
+  const data = await safeJson<T>(res);
   if (!res.ok) throw new AppError(data as ApiError);
   return data;
 }
