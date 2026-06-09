@@ -110,9 +110,16 @@ export function LoginPage({ onSuccess }: Props) {
     },
     onError: (err) => {
       const e = err as AppError;
+      if (e.code === "SESSION_ACTIVE" && e.expiresAt) {
+        setForgotExpiry(e.expiresAt);
+        setShowForgot(true);
+        return;
+      }
       const msg = e.code === "EMAIL_NOT_REGISTERED"
         ? "Your email isn't registered."
-        : (e.message ?? "Unable to send OTP. Please try again.");
+        : e.code === "NO_PASSWORD_SET"
+          ? "This account has no password set. Use your email OTP to sign in."
+          : (e.message ?? "Unable to send OTP. Please try again.");
       setErrors(v => ({ ...v, email: msg }));
       triggerEmailShake();
     },

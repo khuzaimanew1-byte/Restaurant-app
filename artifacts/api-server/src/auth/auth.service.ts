@@ -219,6 +219,29 @@ export class AuthService {
           HttpStatus.NOT_FOUND,
         );
       }
+      throw new HttpException(
+        { error: "NO_PASSWORD_SET", message: "This account has not set a password yet. Please sign in using your email OTP instead." },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!user.passwordHash) {
+      throw new HttpException(
+        { error: "NO_PASSWORD_SET", message: "This account does not have a password set. Please sign in using your email OTP instead." },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const active = await this.users.findActiveOtpSession(normalised);
+    if (active) {
+      throw new HttpException(
+        {
+          error:     "SESSION_ACTIVE",
+          message:   "A reset OTP is still active. Please check your email.",
+          expiresAt: active.expiresAt.getTime(),
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const expiry = await this.issueNewOtp(normalised);

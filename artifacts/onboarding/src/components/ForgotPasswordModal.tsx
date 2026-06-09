@@ -162,7 +162,15 @@ export function ForgotPasswordModal({
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     },
     onError: (err) => {
-      setOtpError((err as AppError).message ?? "Failed to resend. Please try again.");
+      const e = err as AppError;
+      if (e.code === "SESSION_ACTIVE" && e.expiresAt) {
+        setExpiry(e.expiresAt);
+        setMs(Math.max(0, e.expiresAt - Date.now()));
+        setOtpError("An OTP is already active. Please check your email.");
+        triggerResendShake();
+        return;
+      }
+      setOtpError(e.message ?? "Failed to resend. Please try again.");
     },
   });
 
@@ -318,10 +326,32 @@ export function ForgotPasswordModal({
                 fontSize: "clamp(20px,5vw,26px)", fontWeight: 800,
                 color: headClr, margin: "0 0 6px", letterSpacing: "-0.04em", lineHeight: 1.1,
               }}>Reset Password</h3>
-              <p style={{ fontSize: 14, color: subClr, margin: "0 0 24px", letterSpacing: "-0.01em", lineHeight: 1.6 }}>
+              <p style={{ fontSize: 14, color: subClr, margin: "0 0 16px", letterSpacing: "-0.01em", lineHeight: 1.6 }}>
                 We sent a 6-digit code to{" "}
                 <span style={{ color: headClr, fontWeight: 600 }}>{maskEmail(email)}</span>
               </p>
+
+              {!expired && (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  background: dark ? "rgba(79,70,229,0.10)" : "rgba(79,70,229,0.06)",
+                  border: `1px solid ${dark ? "rgba(127,120,242,0.28)" : "rgba(79,70,229,0.18)"}`,
+                  borderRadius: 12, padding: "9px 13px", marginBottom: 16,
+                }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                    <rect x="3" y="11" width="18" height="11" rx="2" stroke={dark ? "#9992F5" : "#4F46E5"} strokeWidth="2"/>
+                    <path d="M7 11V7a5 5 0 0110 0v4" stroke={dark ? "#9992F5" : "#4F46E5"} strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <span style={{
+                    fontSize: 12.5, fontWeight: 600, flex: 1,
+                    color: dark ? "rgba(200,197,245,0.88)" : "#3730A3",
+                    letterSpacing: "-0.01em", fontVariantNumeric: "tabular-nums",
+                  }}>
+                    Reset OTP active · expires in{" "}
+                    <strong style={{ fontWeight: 700 }}>{formatCountdown(remainingMs)}</strong>
+                  </span>
+                </div>
+              )}
 
               {/* OTP boxes */}
               <div
