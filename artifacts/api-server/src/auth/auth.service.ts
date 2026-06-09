@@ -219,18 +219,6 @@ export class AuthService {
           HttpStatus.NOT_FOUND,
         );
       }
-      /* Employee exists but no user record yet — no password to reset */
-      throw new HttpException(
-        { error: "NO_PASSWORD_SET", field: "email", message: "This account has no password set. Sign in with your OTP instead." },
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
-
-    if (!user.passwordHash) {
-      throw new HttpException(
-        { error: "NO_PASSWORD_SET", field: "email", message: "This account has no password set. Sign in with your OTP instead." },
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
     }
 
     const expiry = await this.issueNewOtp(normalised);

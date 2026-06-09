@@ -112,8 +112,6 @@ export function LoginPage({ onSuccess }: Props) {
       const e = err as AppError;
       const msg = e.code === "EMAIL_NOT_REGISTERED"
         ? "Your email isn't registered."
-        : e.code === "NO_PASSWORD_SET"
-        ? "This account has no password. Use Sign In with OTP instead."
         : (e.message ?? "Unable to send OTP. Please try again.");
       setErrors(v => ({ ...v, email: msg }));
       triggerEmailShake();
@@ -290,76 +288,45 @@ export function LoginPage({ onSuccess }: Props) {
           className={forgotBannerShake ? "banner-shake" : ""}
           style={{
             position: "fixed", top: 0, left: 0, right: 0, zIndex: 310,
-            background: dark
-              ? "linear-gradient(90deg,rgba(45,22,100,0.97) 0%,rgba(28,15,70,0.97) 100%)"
-              : "linear-gradient(90deg,rgba(238,235,255,0.98) 0%,rgba(224,220,255,0.98) 100%)",
-            backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-            borderBottom: `1px solid ${dark ? "rgba(140,130,255,0.18)" : "rgba(99,88,230,0.14)"}`,
+            background: dark ? "rgba(30,18,72,0.94)" : "rgba(237,233,255,0.96)",
+            backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+            borderBottom: `1px solid ${dark ? "rgba(127,120,242,0.28)" : "rgba(79,70,229,0.20)"}`,
             display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 20px", fontFamily: "inherit", height: 44,
-            boxShadow: dark
-              ? "0 1px 16px rgba(0,0,0,0.35)"
-              : "0 1px 12px rgba(79,70,229,0.10)",
+            padding: "9px 20px", fontFamily: "inherit",
           }}
         >
-          {/* Left: icon + label + countdown pill */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 26, height: 26, borderRadius: 8,
-              background: dark ? "rgba(120,110,255,0.18)" : "rgba(99,88,230,0.12)",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="11" width="18" height="11" rx="2" stroke={dark ? "#a49eff" : "#5046e4"} strokeWidth="2"/>
-                <path d="M7 11V7a5 5 0 0110 0v4" stroke={dark ? "#a49eff" : "#5046e4"} strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" stroke={dark ? "#9992F5" : "#4F46E5"} strokeWidth="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4" stroke={dark ? "#9992F5" : "#4F46E5"} strokeWidth="2" strokeLinecap="round"/>
+            </svg>
             <span style={{
-              fontSize: 13, fontWeight: 600,
-              color: dark ? "rgba(210,205,255,0.90)" : "#3730a3",
-              letterSpacing: "-0.015em",
+              fontSize: 12.5, fontWeight: 600,
+              color: dark ? "rgba(200,197,245,0.88)" : "#3730A3",
+              letterSpacing: "-0.01em", fontVariantNumeric: "tabular-nums",
             }}>
-              Resend OTP
-            </span>
-            <span style={{
-              fontSize: 11.5, fontWeight: 700,
-              background: dark ? "rgba(120,110,255,0.22)" : "rgba(99,88,230,0.10)",
-              color: dark ? "#a49eff" : "#5046e4",
-              borderRadius: 20, padding: "2px 8px",
-              fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em",
-              border: `1px solid ${dark ? "rgba(140,130,255,0.18)" : "rgba(99,88,230,0.14)"}`,
-            }}>
-              {formatCountdown(forgotBannerMs)}
+              Reset OTP active · {formatCountdown(forgotBannerMs)}
             </span>
           </div>
-
-          {/* Right: Enter Code + dismiss */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <button
               onClick={() => setShowForgot(true)}
               style={{
-                background: dark ? "rgba(120,110,255,0.22)" : "rgba(99,88,230,0.11)",
-                border: `1px solid ${dark ? "rgba(140,130,255,0.22)" : "rgba(99,88,230,0.18)"}`,
-                borderRadius: 8, cursor: "pointer",
-                color: dark ? "#c4bbff" : "#4338ca",
-                fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                padding: "5px 11px", letterSpacing: "-0.01em",
-                display: "flex", alignItems: "center", gap: 5,
+                background: "none", border: "none", cursor: "pointer",
+                color: dark ? "#9992F5" : "#4F46E5", fontWeight: 700,
+                fontFamily: "inherit", fontSize: 12.5, padding: "2px 0",
+                letterSpacing: "-0.01em",
               }}
             >
-              Enter Code
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              Enter Code →
             </button>
             <button
               onClick={() => { setForgotExpiry(0); setFBannerMs(0); }}
               style={{
                 background: "none", border: "none", cursor: "pointer",
-                color: dark ? "rgba(180,175,255,0.35)" : "rgba(79,70,229,0.30)",
-                fontFamily: "inherit", fontSize: 14, padding: "4px 6px",
-                lineHeight: 1, borderRadius: 6,
-                display: "flex", alignItems: "center", justifyContent: "center",
+                color: dark ? "rgba(200,197,245,0.4)" : "rgba(79,70,229,0.35)",
+                fontFamily: "inherit", fontSize: 13, padding: "2px 4px",
+                lineHeight: 1,
               }}
               title="Dismiss"
             >
