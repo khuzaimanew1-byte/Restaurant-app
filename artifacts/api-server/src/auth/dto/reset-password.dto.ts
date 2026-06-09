@@ -9,7 +9,7 @@ export class ResetPasswordDto {
   otp!: string;
 
   @IsString()
-  @MinLength(8, { message: "Password must be at least 8 characters." })
+  @MinLength(6, { message: "Password must be at least 6 characters." })
   @Matches(/[0-9]/, { message: "Password must contain at least one number." })
   @Matches(/[!@#$%^&*()\-_=+\[\]{};':"\\|,.<>/?]/, {
     message: "Password must contain at least one special character.",
@@ -17,6 +17,6 @@ export class ResetPasswordDto {
   newPassword!: string;
 
   @IsString()
-  @MinLength(8, { message: "Confirm password must be at least 8 characters." })
+  @MinLength(6, { message: "Confirm password must be at least 6 characters." })
   confirmPassword!: string;
 }

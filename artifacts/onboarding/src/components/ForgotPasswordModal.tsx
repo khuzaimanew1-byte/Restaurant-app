@@ -20,7 +20,7 @@ const PW_SPECIAL = /[!@#$%^&*()\-_=+[\]{};':"\\|,.<>/?]/;
 
 function validateNewPw(pw: string): string | null {
   if (!pw)             return "Password is required.";
-  if (pw.length < 8)   return "Password must be at least 8 characters.";
+  if (pw.length < 6)   return "Password must be at least 6 characters.";
   if (!PW_NUM.test(pw))     return "Password must contain at least one number.";
   if (!PW_SPECIAL.test(pw)) return "Password must contain at least one special character.";
   return null;

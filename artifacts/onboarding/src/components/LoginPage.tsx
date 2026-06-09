@@ -14,7 +14,7 @@ const PW_SPECIAL = /[!@#$%^&*()\-_=+[\]{};':"\\|,.<>/?]/;
 
 function validatePwComplexity(pw: string): string | null {
   if (!pw)              return "Password is required.";
-  if (pw.length < 8)    return "Password must be at least 8 characters.";
+  if (pw.length < 6)    return "Password must be at least 6 characters.";
   if (!PW_NUM.test(pw))     return "Password must contain at least one number.";
   if (!PW_SPECIAL.test(pw)) return "Password must contain at least one special character.";
   return null;
@@ -139,7 +139,7 @@ export function LoginPage({ onSuccess }: Props) {
   const sessionActive = remainingMs > 0;
   const loading       = loginMutation.isPending;
   const emailValid    = !!(email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()));
-  const pwValid       = !!(password.length >= 8 && PW_NUM.test(password) && PW_SPECIAL.test(password));
+  const pwValid       = !!(password.length >= 6 && PW_NUM.test(password) && PW_SPECIAL.test(password));
   const formValid     = !!(emailValid && pwValid && agreed);
 
   function triggerEmailShake() {
