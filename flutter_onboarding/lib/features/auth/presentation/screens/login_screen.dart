@@ -86,7 +86,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   String? _validatePassword(String? v) {
     if (v == null || v.isEmpty)   return 'Password is required.';
-    if (v.length < 6)             return 'Password must be at least 6 characters.';
+    if (v.length < 8)             return 'Password must be at least 8 characters.';
     if (!_hasNum.hasMatch(v))     return 'Password must contain at least one number.';
     if (!_hasSpecial.hasMatch(v)) return 'Password must contain at least one special character.';
     return null;

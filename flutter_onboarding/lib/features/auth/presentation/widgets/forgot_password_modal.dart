@@ -227,7 +227,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
 
   String? _validateNewPw(String pw) {
     if (pw.isEmpty)         return 'Password is required.';
-    if (pw.length < 6)      return 'Password must be at least 6 characters.';
+    if (pw.length < 8)      return 'Password must be at least 8 characters.';
     if (!_hasNum.hasMatch(pw))     return 'Password must contain at least one number.';
     if (!_hasSpecial.hasMatch(pw)) return 'Password must contain at least one special character.';
     return null;
