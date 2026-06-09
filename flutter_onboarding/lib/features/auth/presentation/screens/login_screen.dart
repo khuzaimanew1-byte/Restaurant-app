@@ -203,7 +203,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     ref.listen<AuthState>(authProvider, (_, next) {
       if (next is AuthSuccess) {
-        ref.read(authProvider.notifier).reset();
         setState(() => _pendingOtp = false);
       } else if (next is AuthOtpPending) {
         setState(() => _pendingOtp = false);

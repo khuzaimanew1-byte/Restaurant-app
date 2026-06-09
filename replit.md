@@ -15,8 +15,7 @@ A staff attendance management platform consisting of:
 cd flutter_onboarding
 flutter pub get
 flutter run \
-  --dart-define=BACK4APP_APP_ID=$BACK4APP_APP_ID \
-  --dart-define=BACK4APP_JS_KEY=$BACK4APP_JS_KEY \
+  --dart-define=API_BASE_URL=https://$REPLIT_DEV_DOMAIN/api \
   --dart-define=ADMIN_GMAIL=$ADMIN_GMAIL
 ```
 
@@ -31,9 +30,9 @@ flutter run \
 - Material 3 + Cupertino styling
 - State management: Riverpod 2
 - Navigation: go_router
-- Backend: Back4App (Parse SDK)
-- Auth: Custom password hashing (SHA-256)
-- Email OTP: Back4App Cloud Code + Gmail SMTP
+- Backend: NestJS API (`artifacts/api-server`)
+- Auth: bcryptjs password hashing
+- Email OTP: Nodemailer + Gmail SMTP (server-side)
 
 ## Where things live
 
@@ -42,16 +41,17 @@ flutter run \
 | `flutter_onboarding/lib/core/` | Shared constants, router, widgets |
 | `flutter_onboarding/lib/features/onboarding/` | 3-page onboarding flow |
 | `flutter_onboarding/lib/features/auth/` | Login, Signup, OTP, Success |
-| `flutter_onboarding/back4app_cloud_code/` | Server-side OTP email (Node.js) |
+| `artifacts/api-server/` | NestJS backend (auth, OTP, sessions) |
 | `artifacts/onboarding/` | React web preview of the onboarding UI |
+| `lib/db/` | Drizzle ORM schema + Neon/PG client |
 
 ## Architecture decisions
 
-- **Custom password hashing**: SHA-256 + app salt (not Parse's built-in User auth) for full control
-- **Cloud Code for email**: OTP emails sent server-side via Back4App Cloud Code + nodemailer — Gmail credentials never leave the server
+- **bcryptjs password hashing**: passwords hashed server-side with bcrypt (cost 12); OTPs hashed with cost 10
+- **Email OTP via Nodemailer**: sent server-side using `GMAIL` + `GMAIL_APP_PASSWORD` env vars — credentials never in the Flutter app
 - **Admin safety**: `ADMIN_GMAIL` from env; no user can ever self-assign the ADMIN role
 - **First-launch detection**: `SharedPreferences` key `onboarding_complete` — set once, never shown again
-- **Separate Employee + AppUser classes**: Employee holds pre-registered records; AppUser is created only after OTP verification
+- **Separate `employees` + `users` tables**: `employees` holds pre-registered records; a `users` row is created only after OTP verification
 
 ## User preferences
 
@@ -60,6 +60,6 @@ _Populate as you build — explicit user instructions worth remembering across s
 ## Gotchas
 
 - Pass secrets as `--dart-define` flags, not OS env vars (Flutter mobile can't read `Platform.environment` for build-time constants)
-- `GMAIL` and `GMAIL_APP_PASSWORD` go in Back4App Cloud Code env variables only — never in the Flutter app
+- `GMAIL` and `GMAIL_APP_PASSWORD` are Replit secrets on the API server — never put them in the Flutter app
 - Run `flutter pub get` after any `pubspec.yaml` change
-- Back4App class names are case-sensitive: `Employee`, `AppUser`, `OTP`
+- API server requires `NEON_DATABASE_URL` (or `DATABASE_URL`) and `PORT` env vars to start
