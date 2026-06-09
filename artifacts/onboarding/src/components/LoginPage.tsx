@@ -11,11 +11,13 @@ interface Props {
 }
 
 const PW_NUM     = /[0-9]/;
+const PW_UPPER   = /[A-Z]/;
 const PW_SPECIAL = /[!@#$%^&*()\-_=+[\]{};':"\\|,.<>/?]/;
 
 function validatePwComplexity(pw: string): string | null {
   if (!pw)              return "Password is required.";
   if (pw.length < 8)    return "Password must be at least 8 characters.";
+  if (!PW_UPPER.test(pw))   return "Password must contain at least one uppercase letter.";
   if (!PW_NUM.test(pw))     return "Password must contain at least one number.";
   if (!PW_SPECIAL.test(pw)) return "Password must contain at least one special character.";
   return null;
@@ -140,7 +142,7 @@ export function LoginPage({ onSuccess }: Props) {
   const sessionActive = remainingMs > 0;
   const loading       = loginMutation.isPending;
   const emailValid    = !!(email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()));
-  const pwValid       = !!(password.length >= 8 && PW_NUM.test(password) && PW_SPECIAL.test(password));
+  const pwValid       = !!(password.length >= 8 && PW_UPPER.test(password) && PW_NUM.test(password) && PW_SPECIAL.test(password));
   const formValid     = !!(emailValid && pwValid && agreed);
 
   const forgotBannerActive = !showForgot && forgotExpiresAt > 0 && forgotBannerMs > 0;
@@ -475,20 +477,19 @@ export function LoginPage({ onSuccess }: Props) {
               <div style={sweepLine(pwF, !!errors.password)}/>
             </div>
             {password && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "5px 16px", marginTop: 8 }}>
+              <div style={{ display: "flex", flexWrap: "nowrap", gap: "4px 10px", marginTop: 8 }}>
                 {[
-                  { met: password.length >= 8,    label: "8+ characters" },
-                  { met: PW_NUM.test(password),    label: "One number" },
-                  { met: PW_SPECIAL.test(password), label: "One special character" },
+                  { met: password.length >= 8,       label: "8+ chars" },
+                  { met: PW_UPPER.test(password),    label: "Uppercase" },
+                  { met: PW_NUM.test(password),       label: "Number" },
+                  { met: PW_SPECIAL.test(password),   label: "Special" },
                 ].map(({ met, label }) => (
                   <span key={label} style={{
                     display: "flex", alignItems: "center", gap: 4,
                     fontSize: 11.5, fontWeight: 500,
                     color: met ? (dark ? "#34D399" : "#059669") : errClr,
-                    transition: "color 0.2s ease",
                   }}>
-                    <span style={{ fontSize: 13, lineHeight: 1 }}>{met ? "✓" : "✗"}</span>
-                    {label}
+                    <span style={{ fontSize: 13 }}>{met ? "✓" : "✗"}</span>{label}
                   </span>
                 ))}
               </div>

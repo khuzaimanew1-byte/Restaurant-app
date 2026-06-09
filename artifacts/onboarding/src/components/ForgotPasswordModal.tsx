@@ -17,11 +17,13 @@ interface Props {
 }
 
 const PW_NUM     = /[0-9]/;
+const PW_UPPER   = /[A-Z]/;
 const PW_SPECIAL = /[!@#$%^&*()\-_=+[\]{};':"\\|,.<>/?]/;
 
 function validateNewPw(pw: string): string | null {
   if (!pw)             return "Password is required.";
   if (pw.length < 8)   return "Password must be at least 8 characters.";
+  if (!PW_UPPER.test(pw))   return "Password must contain at least one uppercase letter.";
   if (!PW_NUM.test(pw))     return "Password must contain at least one number.";
   if (!PW_SPECIAL.test(pw)) return "Password must contain at least one special character.";
   return null;
@@ -335,11 +337,12 @@ export function ForgotPasswordModal({
                   <div style={sweepLine(newPwF, !!pwErrors.newPw)}/>
                 </div>
                 {newPw && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 14px", marginTop: 8 }}>
+                  <div style={{ display: "flex", flexWrap: "nowrap", gap: "4px 10px", marginTop: 8 }}>
                     {[
-                      { met: newPw.length >= 8,     label: "8+ chars" },
-                      { met: PW_NUM.test(newPw),     label: "Number" },
-                      { met: PW_SPECIAL.test(newPw), label: "Special char" },
+                      { met: newPw.length >= 8,       label: "8+ chars" },
+                      { met: PW_UPPER.test(newPw),    label: "Uppercase" },
+                      { met: PW_NUM.test(newPw),       label: "Number" },
+                      { met: PW_SPECIAL.test(newPw),   label: "Special" },
                     ].map(({ met, label }) => (
                       <span key={label} style={{
                         display: "flex", alignItems: "center", gap: 4,
