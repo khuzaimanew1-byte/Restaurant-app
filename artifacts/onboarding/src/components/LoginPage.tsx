@@ -38,17 +38,20 @@ export function LoginPage({ onSuccess }: Props) {
   const [shakeEmail, setShakeEmail]   = useState(false);
   const [forgotBannerMs, setFBannerMs]     = useState(0);
   const [forgotBannerShake, setFBShake]    = useState(false);
-  const shakeTimer        = useRef<ReturnType<typeof setTimeout>>();
-  const timerRef          = useRef<ReturnType<typeof setInterval> | null>(null);
-  const forgotBannerTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const forgotBannerShakeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const [otpBannerShake, setOtpBannerShake] = useState(false);
+
+  const shakeTimer             = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const timerRef               = useRef<ReturnType<typeof setInterval> | null>(null);
+  const forgotBannerTimer      = useRef<ReturnType<typeof setInterval> | null>(null);
+  const forgotBannerShakeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const otpBannerShakeTimer    = useRef<ReturnType<typeof setTimeout>>(undefined);
+
   const [errors, setErrors] = useState<{
     email?: string; password?: string; agreed?: string; general?: string;
   }>({});
 
   useEffect(() => { const id = setTimeout(() => setMnt(true), 40); return () => clearTimeout(id); }, []);
 
-  // ── Forgot-password banner countdown ──────────────────────────────
   useEffect(() => {
     if (forgotBannerTimer.current) clearInterval(forgotBannerTimer.current);
     if (!forgotExpiresAt || showForgot) { setFBannerMs(0); return; }
@@ -67,7 +70,6 @@ export function LoginPage({ onSuccess }: Props) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [otpExpiresAt]);
 
-  // ── OTP status check ──────────────────────────────────────────────
   const lastCheckedEmail = useRef("");
   const otpStatusMutation = useMutation({
     mutationFn: (em: string) => getOtpStatus(em),
@@ -82,7 +84,6 @@ export function LoginPage({ onSuccess }: Props) {
     otpStatusMutation.mutate(em);
   }
 
-  // ── Login mutation ────────────────────────────────────────────────
   const loginMutation = useMutation({
     mutationFn: ({ em, pw }: { em: string; pw: string }) => login(em, pw),
     onSuccess: (result) => {
@@ -101,7 +102,6 @@ export function LoginPage({ onSuccess }: Props) {
     },
   });
 
-  // ── Forgot password mutation — sends OTP before opening modal ─────
   const forgotMutation = useMutation({
     mutationFn: () => forgotPasswordRequest(email.trim()),
     onSuccess: (r) => {
@@ -142,6 +142,9 @@ export function LoginPage({ onSuccess }: Props) {
   const pwValid       = !!(password.length >= 8 && PW_NUM.test(password) && PW_SPECIAL.test(password));
   const formValid     = !!(emailValid && pwValid && agreed);
 
+  const forgotBannerActive = !showForgot && forgotExpiresAt > 0 && forgotBannerMs > 0;
+  const anyOtpActive       = sessionActive || forgotBannerActive;
+
   function triggerEmailShake() {
     setShakeEmail(false);
     clearTimeout(shakeTimer.current);
@@ -160,26 +163,28 @@ export function LoginPage({ onSuccess }: Props) {
     });
   }
 
-  const forgotBannerActive = !showForgot && forgotExpiresAt > 0 && forgotBannerMs > 0;
+  function triggerOtpBannerShake() {
+    setOtpBannerShake(false);
+    clearTimeout(otpBannerShakeTimer.current);
+    requestAnimationFrame(() => {
+      setOtpBannerShake(true);
+      otpBannerShakeTimer.current = setTimeout(() => setOtpBannerShake(false), 500);
+    });
+  }
 
   function handleSignIn() {
+    // Security guard: check React state — blocks even if disabled attr was removed via DevTools
     if (forgotBannerActive) { triggerBannerShake(); return; }
-    if (sessionActive) {
-      if (!emailValid) {
-        setErrors({ email: "Enter your registered email to continue." });
-        triggerEmailShake();
-        return;
-      }
-      setShowOtp(true);
-      return;
-    }
+    if (sessionActive)      { triggerOtpBannerShake(); return; }
     if (!validateFields()) return;
     setErrors({});
     loginMutation.mutate({ em: email.trim(), pw: password });
   }
 
   function handleForgotPassword() {
+    // Security guard: check React state — blocks even if disabled attr was removed via DevTools
     if (forgotBannerActive) { triggerBannerShake(); return; }
+    if (sessionActive)      { triggerOtpBannerShake(); return; }
     if (!email.trim()) {
       setErrors(v => ({ ...v, email: "Enter your email address first." }));
       triggerEmailShake();
@@ -270,6 +275,9 @@ export function LoginPage({ onSuccess }: Props) {
     transition: "background 0.22s ease",
   };
 
+  const bannerCount = (forgotBannerActive ? 1 : 0) + (sessionActive && !showOtp ? 1 : 0);
+  const headerMt    = bannerCount * 38;
+
   return (
     <div style={{
       width: "100vw", height: "100dvh", overflow: "hidden",
@@ -289,7 +297,7 @@ export function LoginPage({ onSuccess }: Props) {
         .banner-shake { animation: email-shake 0.48s cubic-bezier(0.36,0.07,0.19,0.97); }
       `}</style>
 
-      {/* ── Forgot-Password OTP Active Banner ── */}
+      {/* ── Forgot-Password OTP Active Banner — permanent, no close ── */}
       {forgotBannerActive && (
         <div
           className={forgotBannerShake ? "banner-shake" : ""}
@@ -300,6 +308,7 @@ export function LoginPage({ onSuccess }: Props) {
             borderBottom: `1px solid ${dark ? "rgba(127,120,242,0.28)" : "rgba(79,70,229,0.20)"}`,
             display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "9px 20px", fontFamily: "inherit",
+            minHeight: 38, boxSizing: "border-box",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -315,45 +324,37 @@ export function LoginPage({ onSuccess }: Props) {
               Reset OTP active · {formatCountdown(forgotBannerMs)}
             </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <button
-              onClick={() => setShowForgot(true)}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                color: dark ? "#9992F5" : "#4F46E5", fontWeight: 700,
-                fontFamily: "inherit", fontSize: 12.5, padding: "2px 0",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              Enter Code →
-            </button>
-            <button
-              onClick={() => { setForgotExpiry(0); setFBannerMs(0); }}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                color: dark ? "rgba(200,197,245,0.4)" : "rgba(79,70,229,0.35)",
-                fontFamily: "inherit", fontSize: 13, padding: "2px 4px",
-                lineHeight: 1,
-              }}
-              title="Dismiss"
-            >
-              ✕
-            </button>
-          </div>
+          <button
+            onClick={() => setShowForgot(true)}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: dark ? "#9992F5" : "#4F46E5", fontWeight: 700,
+              fontFamily: "inherit", fontSize: 12.5, padding: "2px 0",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Enter Code →
+          </button>
         </div>
       )}
 
-      {/* ── Sticky OTP Session Banner ── */}
+      {/* ── Sticky OTP Session Banner — permanent, no close, with shake ── */}
       {sessionActive && !showOtp && (
-        <div style={{
-          position: "fixed", top: forgotBannerActive ? 40 : 0, left: 0, right: 0, zIndex: 300,
-          transition: "top 0.28s cubic-bezier(0.22,1,0.36,1)",
-          background: dark ? "rgba(22,18,68,0.92)" : "rgba(240,238,255,0.94)",
-          backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-          borderBottom: `1px solid ${dark ? "rgba(127,120,242,0.22)" : "rgba(79,70,229,0.16)"}`,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "9px 20px", fontFamily: "inherit",
-        }}>
+        <div
+          className={otpBannerShake ? "banner-shake" : ""}
+          style={{
+            position: "fixed",
+            top: forgotBannerActive ? 38 : 0,
+            left: 0, right: 0, zIndex: 300,
+            transition: "top 0.28s cubic-bezier(0.22,1,0.36,1)",
+            background: dark ? "rgba(22,18,68,0.92)" : "rgba(240,238,255,0.94)",
+            backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+            borderBottom: `1px solid ${dark ? "rgba(127,120,242,0.22)" : "rgba(79,70,229,0.16)"}`,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "9px 20px", fontFamily: "inherit",
+            minHeight: 38, boxSizing: "border-box",
+          }}
+        >
           <span style={{ fontSize: 12.5, fontWeight: 600, color: dark ? "rgba(200,197,245,0.88)" : "#4338CA", letterSpacing: "-0.01em" }}>
             OTP session active · {formatCountdown(remainingMs)}
           </span>
@@ -391,7 +392,7 @@ export function LoginPage({ onSuccess }: Props) {
         position: "relative", zIndex: 10, flexShrink: 0,
         display: "flex", justifyContent: "flex-end",
         padding: "clamp(16px,4vw,22px) clamp(20px,5vw,28px)",
-        marginTop: sessionActive && !showOtp ? 38 : 0,
+        marginTop: headerMt,
         transition: "margin-top 0.3s ease",
         ...rise(0),
       }}>
@@ -533,23 +534,24 @@ export function LoginPage({ onSuccess }: Props) {
               </div>
             )}
 
-            {/* Forgot password link */}
+            {/* Forgot password link — disabled when any OTP active */}
             <div style={{ textAlign: "right", marginTop: 8 }}>
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                disabled={forgotMutation.isPending}
+                disabled={anyOtpActive || forgotMutation.isPending}
                 style={{
-                  background: "none", border: "none", cursor: forgotMutation.isPending ? "default" : "pointer",
+                  background: "none", border: "none",
+                  cursor: (anyOtpActive || forgotMutation.isPending) ? "default" : "pointer",
                   fontSize: 12.5, fontWeight: 600, color: linkClr,
                   fontFamily: "inherit", padding: "2px 0",
                   letterSpacing: "-0.01em",
-                  opacity: forgotMutation.isPending ? 0.6 : 0.85,
+                  opacity: anyOtpActive ? 0.35 : forgotMutation.isPending ? 0.6 : 0.85,
                   transition: "opacity 0.18s",
                   display: "inline-flex", alignItems: "center", gap: 5,
                 }}
-                onMouseEnter={e => { if (!forgotMutation.isPending) e.currentTarget.style.opacity = "1"; }}
-                onMouseLeave={e => { if (!forgotMutation.isPending) e.currentTarget.style.opacity = "0.85"; }}
+                onMouseEnter={e => { if (!anyOtpActive && !forgotMutation.isPending) e.currentTarget.style.opacity = "1"; }}
+                onMouseLeave={e => { if (!anyOtpActive && !forgotMutation.isPending) e.currentTarget.style.opacity = "0.85"; }}
               >
                 {forgotMutation.isPending
                   ? <><Spinner size={10} /> Sending OTP…</>
@@ -594,29 +596,37 @@ export function LoginPage({ onSuccess }: Props) {
             )}
           </div>
 
-          {/* Sign In button */}
+          {/* Sign In button — disabled when any OTP active */}
           <div style={{ ...rise(6) }}>
             <button
               type="button"
-              disabled={loading}
-              data-off={!formValid && !sessionActive ? "" : undefined}
-              onPointerDown={() => setBS(0.967)}
-              onPointerUp={() => { setBS(1); handleSignIn(); }}
+              disabled={loading || anyOtpActive}
+              onClick={() => { setBS(1); handleSignIn(); }}
+              onPointerDown={() => { if (!anyOtpActive && !loading) setBS(0.967); }}
               onPointerLeave={() => setBS(1)}
               style={{
                 width: "100%", height: 52, borderRadius: 16, border: "none",
-                cursor: loading ? "default" : "pointer",
-                background: formValid || sessionActive ? accentBtn : dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.14)",
-                color: formValid || sessionActive ? "#fff" : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.38)",
+                cursor: (loading || anyOtpActive) ? "default" : "pointer",
+                background: anyOtpActive
+                  ? dark ? "rgba(99,92,238,0.14)" : "rgba(79,70,229,0.10)"
+                  : formValid
+                    ? accentBtn
+                    : dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.14)",
+                color: anyOtpActive
+                  ? dark ? "rgba(200,197,245,0.25)" : "rgba(79,70,229,0.28)"
+                  : formValid
+                    ? "#fff"
+                    : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.38)",
                 fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: formValid || sessionActive ? btnShadow : "none",
+                boxShadow: (!anyOtpActive && formValid) ? btnShadow : "none",
                 transition: "background 0.28s, box-shadow 0.25s, color 0.22s",
                 fontFamily: "inherit",
                 transform: `scale(${btnScale})`,
+                opacity: anyOtpActive ? 0.55 : 1,
               }}
             >
-              {loading ? <Spinner /> : sessionActive ? "Continue with OTP →" : "Sign In"}
+              {loading ? <Spinner /> : "Sign In"}
             </button>
           </div>
 

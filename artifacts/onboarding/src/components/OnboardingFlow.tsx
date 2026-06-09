@@ -255,8 +255,8 @@ export function OnboardingFlow({ onGetStarted, initialSlide = 0, onSlideChange }
   const [dir, setDir]     = useState<"fwd" | "bwd">("fwd");
   const [phase, setPhase] = useState<Phase>("idle");
   const [dark, setDark]   = useDarkMode();
-  const exitT  = useRef<ReturnType<typeof setTimeout>>();
-  const enterT = useRef<ReturnType<typeof setTimeout>>();
+  const exitT  = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const enterT = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     history.replaceState(null, "", `/onboarding/${idx}`);
