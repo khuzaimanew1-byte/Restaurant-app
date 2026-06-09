@@ -274,12 +274,6 @@ export class AuthService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    if (Date.now() > session.expiresAt.getTime()) {
-      throw new HttpException(
-        { error: "OTP_EXPIRED", message: "OTP expired. Request a new code to continue." },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
     if (session.attempts >= this.users.MAX_ATTEMPTS) {
       throw new HttpException(
         { error: "TOO_MANY_ATTEMPTS", message: "Too many incorrect attempts. Please request a new OTP." },

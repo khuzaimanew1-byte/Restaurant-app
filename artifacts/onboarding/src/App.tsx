@@ -52,8 +52,12 @@ function CheckingScreen() {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("onboarding");
-  const [slide,  setSlide]  = useState(0);
+  const [screen, setScreen] = useState<Screen>(() => {
+    if (getToken()) return "onboarding"; // checking state — session query will resolve
+    const r = parsePath();
+    return r.screen === "success" ? "onboarding" : r.screen;
+  });
+  const [slide,  setSlide]  = useState(() => parsePath().slide);
   const [auth,   setAuth]   = useState<AuthResult | null>(null);
   const queryClient = useQueryClient();
 
