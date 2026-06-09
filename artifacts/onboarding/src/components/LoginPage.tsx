@@ -357,15 +357,12 @@ export function LoginPage({ onSuccess }: Props) {
         ...rise(0),
       }}>
         <button onClick={() => setDark(v => !v)} style={{
-          width: "auto", height: "auto", borderRadius: 0,
-          border: "none", background: "none",
+          width: 36, height: 36, borderRadius: "50%",
+          border: `1px solid ${tglBorder}`, background: tglBg,
+          backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          padding: 6,
-          opacity: 0.6, transition: "opacity 0.18s",
-        }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-          onMouseLeave={e => (e.currentTarget.style.opacity = "0.6")}
-        >
+          transition: "background 0.22s",
+        }}>
           {dark
             ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="5" fill={idleLbl}/>
