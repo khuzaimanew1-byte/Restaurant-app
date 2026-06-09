@@ -3,7 +3,8 @@ import { useMutation } from "@tanstack/react-query";
 import { login, getOtpStatus, forgotPasswordRequest, AppError } from "../lib/api";
 import { OtpModal } from "./OtpModal";
 import { ForgotPasswordModal } from "./ForgotPasswordModal";
-import { useDarkMode, Spinner, formatCountdown } from "../lib/shared";
+import { OtpBanner } from "./OtpBanner";
+import { useDarkMode, Spinner } from "../lib/shared";
 
 interface Props {
   onSuccess: (email: string, role: string, sessionToken: string) => void;
@@ -297,76 +298,35 @@ export function LoginPage({ onSuccess }: Props) {
         .banner-shake { animation: email-shake 0.48s cubic-bezier(0.36,0.07,0.19,0.97); }
       `}</style>
 
-      {/* ── Forgot-Password OTP Active Banner — permanent, no close ── */}
+      {/* ── Forgot-Password OTP Active Banner ── */}
       {forgotBannerActive && (
-        <div
-          className={forgotBannerShake ? "banner-shake" : ""}
-          style={{
-            position: "fixed", top: 0, left: 0, right: 0, zIndex: 310,
-            background: dark ? "rgba(30,18,72,0.94)" : "rgba(237,233,255,0.96)",
-            backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-            borderBottom: `1px solid ${dark ? "rgba(127,120,242,0.28)" : "rgba(79,70,229,0.20)"}`,
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "9px 20px", fontFamily: "inherit",
-            minHeight: 38, boxSizing: "border-box",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-              <rect x="3" y="11" width="18" height="11" rx="2" stroke={dark ? "#9992F5" : "#4F46E5"} strokeWidth="2"/>
-              <path d="M7 11V7a5 5 0 0110 0v4" stroke={dark ? "#9992F5" : "#4F46E5"} strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            <span style={{
-              fontSize: 12.5, fontWeight: 600,
-              color: dark ? "rgba(200,197,245,0.88)" : "#3730A3",
-              letterSpacing: "-0.01em", fontVariantNumeric: "tabular-nums",
-            }}>
-              Reset OTP active · {formatCountdown(forgotBannerMs)}
-            </span>
-          </div>
-          <button
-            onClick={() => setShowForgot(true)}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              color: dark ? "#9992F5" : "#4F46E5", fontWeight: 700,
-              fontFamily: "inherit", fontSize: 12.5, padding: "2px 0",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            Enter Code →
-          </button>
-        </div>
+        <OtpBanner
+          dark={dark}
+          label="Reset OTP active"
+          remainingMs={forgotBannerMs}
+          actionLabel="Enter Code →"
+          onAction={() => setShowForgot(true)}
+          shake={forgotBannerShake}
+          top={0}
+          zIndex={310}
+        />
       )}
 
-      {/* ── Sticky OTP Session Banner — permanent, no close, with shake ── */}
+      {/* ── Login OTP Session Banner ── */}
       {sessionActive && !showOtp && (
-        <div
-          className={otpBannerShake ? "banner-shake" : ""}
-          style={{
-            position: "fixed",
-            top: forgotBannerActive ? 38 : 0,
-            left: 0, right: 0, zIndex: 300,
-            transition: "top 0.28s cubic-bezier(0.22,1,0.36,1)",
-            background: dark ? "rgba(22,18,68,0.92)" : "rgba(240,238,255,0.94)",
-            backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
-            borderBottom: `1px solid ${dark ? "rgba(127,120,242,0.22)" : "rgba(79,70,229,0.16)"}`,
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "9px 20px", fontFamily: "inherit",
-            minHeight: 38, boxSizing: "border-box",
-          }}
-        >
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: dark ? "rgba(200,197,245,0.88)" : "#4338CA", letterSpacing: "-0.01em" }}>
-            OTP session active · {formatCountdown(remainingMs)}
-          </span>
-          <button onClick={() => {
+        <OtpBanner
+          dark={dark}
+          label="OTP session active"
+          remainingMs={remainingMs}
+          actionLabel="Enter OTP →"
+          onAction={() => {
             if (!emailValid) { setErrors({ email: "Enter your registered email to continue." }); triggerEmailShake(); return; }
             setShowOtp(true);
-          }} style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: accent, fontWeight: 700, fontFamily: "inherit",
-            fontSize: 12.5, padding: "2px 0", letterSpacing: "-0.01em",
-          }}>Enter OTP →</button>
-        </div>
+          }}
+          shake={otpBannerShake}
+          top={forgotBannerActive ? 38 : 0}
+          zIndex={300}
+        />
       )}
 
       {/* Orbs */}
