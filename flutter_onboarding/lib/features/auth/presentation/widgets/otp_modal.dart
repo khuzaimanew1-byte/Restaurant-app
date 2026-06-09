@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,15 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../providers/auth_provider.dart';
 import '../providers/otp_provider.dart';
+
+String _maskEmail(String email) {
+  final at = email.indexOf('@');
+  if (at < 0) return email;
+  final local  = email.substring(0, at);
+  final domain = email.substring(at);
+  if (local.length <= 2) return '$local***$domain';
+  return '${local.substring(0, 2)}***$domain';
+}
 
 class OtpModal extends ConsumerStatefulWidget {
   final String email;
@@ -25,13 +36,24 @@ class OtpModal extends ConsumerStatefulWidget {
   ConsumerState<OtpModal> createState() => _OtpModalState();
 }
 
-class _OtpModalState extends ConsumerState<OtpModal> {
+class _OtpModalState extends ConsumerState<OtpModal> with TickerProviderStateMixin {
+  late final AnimationController _shakeCtrl;
   final List<TextEditingController> _ctls =
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _foci = List.generate(6, (_) => FocusNode());
 
   @override
+  void initState() {
+    super.initState();
+    _shakeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+  }
+
+  @override
   void dispose() {
+    _shakeCtrl.dispose();
     for (final c in _ctls) c.dispose();
     for (final f in _foci) f.dispose();
     super.dispose();
@@ -97,6 +119,7 @@ class _OtpModalState extends ConsumerState<OtpModal> {
     } else {
       for (final c in _ctls) c.clear();
       _foci[0].requestFocus();
+      _shakeCtrl.forward(from: 0);
     }
   }
 
@@ -159,35 +182,62 @@ class _OtpModalState extends ConsumerState<OtpModal> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                'We sent a 6-digit code to\n${widget.email}',
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.5,
-                  color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+              RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    fontSize: 14, height: 1.5,
+                    color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+                  ),
+                  children: [
+                    const TextSpan(text: 'We sent a 6-digit code to '),
+                    TextSpan(
+                      text: _maskEmail(widget.email),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 32),
 
-              // OTP boxes
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(6, (i) => _OtpBox(
-                  controller: _ctls[i],
-                  focusNode:  _foci[i],
-                  isDark:     isDark,
-                  hasError:   hasError,
-                  onChanged:  (v) => _onChanged(i, v),
-                  onBackspace: () {
-                    if (_ctls[i].text.isEmpty && i > 0) {
-                      _ctls[i - 1].clear();
-                      _foci[i - 1].requestFocus();
-                    }
-                  },
-                )),
+              // OTP boxes with shake
+              AnimatedBuilder(
+                animation: _shakeCtrl,
+                builder: (context, child) {
+                  final dx = sin(_shakeCtrl.value * pi * 5) * 8;
+                  return Transform.translate(offset: Offset(dx, 0), child: child);
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(6, (i) => _OtpBox(
+                    controller: _ctls[i],
+                    focusNode:  _foci[i],
+                    isDark:     isDark,
+                    hasError:   hasError,
+                    onChanged:  (v) => _onChanged(i, v),
+                    onBackspace: () {
+                      if (_ctls[i].text.isEmpty && i > 0) {
+                        _ctls[i - 1].clear();
+                        _foci[i - 1].requestFocus();
+                      }
+                    },
+                  )),
+                ),
               ),
 
-              const SizedBox(height: 28),
+              if (hasError && errorMsg != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  errorMsg,
+                  style: const TextStyle(
+                    fontSize: 13, color: AppColors.error, fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 20),
 
               AppButton(
                 label: 'Verify OTP',
@@ -230,15 +280,17 @@ class _OtpModalState extends ConsumerState<OtpModal> {
                 ],
               ),
 
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Center(
                 child: TextButton(
                   onPressed: isLoading ? null : widget.onBack,
                   child: Text(
-                    'Back',
+                    '← Change email address',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+                      fontSize: 13,
+                      color: (isDark ? AppColors.darkSecondary : AppColors.lightSecondary)
+                          .withValues(alpha: 0.65),
+                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),

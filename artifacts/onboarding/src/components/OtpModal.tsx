@@ -350,6 +350,22 @@ export function OtpModal({
             </span>
           )}
         </div>
+
+        <div style={{ textAlign: "center", marginTop: 10 }}>
+          <button
+            type="button"
+            onClick={dismiss}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 13, fontWeight: 500,
+              color: dark ? "rgba(200,197,245,0.42)" : "rgba(13,11,30,0.38)",
+              fontFamily: "inherit", letterSpacing: "-0.01em", padding: "4px 0",
+              textDecoration: "underline", textUnderlineOffset: 3,
+            }}
+          >
+            ← Change email address
+          </button>
+        </div>
       </div>
     </div>
   );
