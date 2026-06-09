@@ -214,27 +214,16 @@ export function OtpSheet({
           ))}
         </div>
 
-        <button
-          type="button"
-          disabled={!canVerify}
-          onClick={handleVerifyClick}
-          onPointerDown={e => { if (canVerify) e.currentTarget.style.transform = "scale(0.97)"; }}
-          onPointerUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
-          onPointerLeave={e => { e.currentTarget.style.transform = "scale(1)"; }}
-          style={{
-            width: "100%", height: 54, borderRadius: 16, border: "none",
-            cursor: canVerify ? "pointer" : "default",
-            background: verifyBg,
-            color: verifyClr,
-            fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em",
+        {verifying && (
+          <div style={{
+            width: "100%", height: 54, borderRadius: 16, marginBottom: 14,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            boxShadow: canVerify ? btnShadow : "none",
-            transition: "background 0.28s ease, box-shadow 0.25s ease, color 0.22s ease",
-            fontFamily: "inherit", marginBottom: 14,
-          }}
-        >
-          {verifying ? <Spinner size={18} /> : verifyLabel}
-        </button>
+            background: dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.14)",
+          }}>
+            <Spinner size={18} />
+            <span style={{ fontSize: 15, fontWeight: 600, color: dark ? "rgba(200,197,245,0.6)" : "rgba(79,70,229,0.6)" }}>Verifying…</span>
+          </div>
+        )}
 
         {(error || expired) && (
           <div style={{

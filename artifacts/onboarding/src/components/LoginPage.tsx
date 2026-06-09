@@ -318,7 +318,7 @@ export function LoginPage({ onSuccess }: Props) {
           dark={dark}
           label="OTP session active"
           remainingMs={remainingMs}
-          actionLabel="Enter OTP →"
+          actionLabel="Verify OTP"
           onAction={() => {
             if (!emailValid) { setErrors({ email: "Enter your registered email to continue." }); triggerEmailShake(); return; }
             setShowOtp(true);
