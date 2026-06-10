@@ -130,11 +130,26 @@ transition: transform 0.46s cubic-bezier(0.22,1,0.36,1)
 ```
 
 Applied to:
-- `OtpSheet` → `sheetVisible` state, delay 20ms
-- `ForgotPasswordModal` step 1 → `step1Visible` state, delay 80ms
-- `ForgotPasswordModal` step 0 → rendered via `OtpSheet` (inherits above)
+- `OtpSheet` → `sheetVisible` state (self-managed) or `externalVisible` prop (lifecycle-managed)
+- `ForgotPasswordModal` step 1 → `step1Visible` state, delay 80ms; respects `externalVisible`
+- `ForgotPasswordModal` step 0 → rendered via `OtpSheet` with `externalVisible` passed through
 
 Flutter equivalent: `showModalBottomSheet` with `isScrollControlled: true`.
+
+### Lifecycle Manager — `useSoftMount` (`lib/shared.tsx`)
+Single hook for modal mount/visible lifecycle. Replaces bare `useState(false)` for any modal that may be reopened.
+
+```ts
+const sheet = useSoftMount(120_000); // softDelay default: 120 s
+sheet.open()          // mounts → 20ms → visible (CSS transition fires)
+sheet.close()         // visible=false → stays mounted 120s → unmounts
+sheet.close(true)     // visible=false + unmount immediately
+sheet.mounted         // use as render guard: {sheet.mounted && <Modal />}
+sheet.visible         // pass as externalVisible prop to OtpSheet/modal
+```
+
+Currently applied to: `ForgotPasswordModal` in `LoginPage` (`forgotSheet`).
+`OtpModal` uses simple mount/unmount (single-use per session — soft-mount adds no value).
 
 ---
 

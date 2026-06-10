@@ -4,7 +4,7 @@ import { login, getOtpStatus, forgotPasswordRequest, AppError } from "../lib/api
 import { OtpModal } from "./OtpModal";
 import { ForgotPasswordModal } from "./ForgotPasswordModal";
 import { OtpBanner } from "./OtpBanner";
-import { useDarkMode, Spinner, PW_NUM, PW_UPPER, PW_SPECIAL, validatePwComplexity, PwRequirements, FieldError, useShake, useCountdown, formField, useFormColors, PasswordToggle, AlertBox } from "../lib/shared";
+import { useDarkMode, Spinner, PW_NUM, PW_UPPER, PW_SPECIAL, validatePwComplexity, PwRequirements, FieldError, useShake, useCountdown, formField, useFormColors, PasswordToggle, AlertBox, useSoftMount } from "../lib/shared";
 
 interface Props {
   onSuccess: (email: string, role: string, sessionToken: string) => void;
@@ -21,14 +21,14 @@ export function LoginPage({ onSuccess }: Props) {
   const [pwF, setPwF]       = useState(false);
   const [btnScale, setBS]   = useState(1);
   const [showOtp, setShowOtp]         = useState(false);
-  const [showForgot, setShowForgot]   = useState(false);
+  const forgotSheet                   = useSoftMount();
   const [forgotExpiresAt, setForgotExpiry] = useState<number>(0);
   const [otpExpiresAt, setOtpExpiry]  = useState<number | null>(null);
   const [shakeEmail,        triggerEmailShake]     = useShake();
   const [forgotBannerShake, triggerBannerShake]    = useShake();
   const [otpBannerShake,    triggerOtpBannerShake] = useShake();
   const remainingMs    = useCountdown(otpExpiresAt);
-  const forgotBannerMs = useCountdown(showForgot ? null : forgotExpiresAt || null);
+  const forgotBannerMs = useCountdown(forgotSheet.visible ? null : forgotExpiresAt || null);
 
   const [errors, setErrors] = useState<{
     email?: string; password?: string; agreed?: string; general?: string;
@@ -72,13 +72,13 @@ export function LoginPage({ onSuccess }: Props) {
     mutationFn: () => forgotPasswordRequest(email.trim()),
     onSuccess: (r) => {
       setForgotExpiry(r.expiresAt);
-      setShowForgot(true);
+      forgotSheet.open();
     },
     onError: (err) => {
       const e = err as AppError;
       if (e.code === "SESSION_ACTIVE" && e.expiresAt) {
         setForgotExpiry(e.expiresAt);
-        setShowForgot(true);
+        forgotSheet.open();
         return;
       }
       const msg = e.code === "EMAIL_NOT_REGISTERED"
@@ -108,7 +108,7 @@ export function LoginPage({ onSuccess }: Props) {
   const pwValid       = !!(password.length >= 8 && PW_UPPER.test(password) && PW_NUM.test(password) && PW_SPECIAL.test(password));
   const formValid     = !!(emailValid && pwValid && agreed);
 
-  const forgotBannerActive = !showForgot && forgotExpiresAt > 0 && forgotBannerMs > 0;
+  const forgotBannerActive = !forgotSheet.visible && forgotExpiresAt > 0 && forgotBannerMs > 0;
   const anyOtpActive       = sessionActive || forgotBannerActive;
 
   function handleSignIn() {
@@ -186,8 +186,8 @@ export function LoginPage({ onSuccess }: Props) {
           label="Resend OTP active"
           remainingMs={forgotBannerMs}
           actionLabel="Enter Code"
-          onAction={() => setShowForgot(true)}
-          onDismiss={() => setForgotExpiry(0)}
+          onAction={() => forgotSheet.open()}
+          onDismiss={() => { forgotSheet.close(true); setForgotExpiry(0); }}
           shake={forgotBannerShake}
           top={0}
           zIndex={310}
@@ -450,16 +450,17 @@ export function LoginPage({ onSuccess }: Props) {
         />
       )}
 
-      {showForgot && forgotExpiresAt > 0 && (
+      {forgotSheet.mounted && forgotExpiresAt > 0 && (
         <ForgotPasswordModal
           email={email.trim()}
           initialExpiresAt={forgotExpiresAt}
           dark={dark}
           accent={accent} accentBtn={accentBtn} btnShadow={btnShadow}
-          onClose={() => setShowForgot(false)}
+          externalVisible={forgotSheet.visible}
+          onClose={() => forgotSheet.close()}
           onNewExpiry={(exp) => setForgotExpiry(exp)}
           onPasswordReset={() => {
-            setShowForgot(false);
+            forgotSheet.close(true);
             setForgotExpiry(0);
             setPw("");
             setErrors({});

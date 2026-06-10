@@ -82,6 +82,38 @@ export function useShake(duration = 480): [boolean, () => void] {
   return [shaking, trigger];
 }
 
+/**
+ * Modal lifecycle manager — single source of mount/visible state.
+ * open()  → mounts, then animates in (20ms delay for CSS transition)
+ * close() → animates out, stays mounted for softDelay ms, then unmounts
+ * close(true) → animates out + unmounts immediately (use on permanent dismiss)
+ */
+export function useSoftMount(softDelay = 120_000) {
+  const [mounted,  setMounted]  = useState(false);
+  const [visible,  setVisible]  = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const open = useCallback(() => {
+    clearTimeout(timer.current);
+    setMounted(true);
+    setTimeout(() => setVisible(true), 20);
+  }, []);
+
+  const close = useCallback((immediate = false) => {
+    setVisible(false);
+    clearTimeout(timer.current);
+    if (immediate) {
+      setMounted(false);
+    } else {
+      timer.current = setTimeout(() => setMounted(false), softDelay);
+    }
+  }, [softDelay]);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  return { mounted, visible, open, close };
+}
+
 // ─── Form field helpers ───────────────────────────────────────────────────────
 //
 // Call once per component at render time. Returns constants, base styles,

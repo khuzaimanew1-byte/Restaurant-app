@@ -26,6 +26,7 @@ interface OtpSheetProps {
   onResend: () => void;
   onClose: () => void;
   footer?: React.ReactNode;
+  externalVisible?: boolean;
 }
 
 export function OtpSheet({
@@ -33,7 +34,7 @@ export function OtpSheet({
   expiresAt, title, verifyLabel = "Verify & Continue",
   verifying = false, resending = false, error = "",
   onVerify, onResend, onClose,
-  footer,
+  footer, externalVisible,
 }: OtpSheetProps) {
   const [otp, setOtp]            = useState(["", "", "", "", "", ""]);
   const [sheetVisible, setSheet] = useState(false);
@@ -43,10 +44,24 @@ export function OtpSheet({
   const [shake, triggerShake] = useShake();
   const { headClr, subClr }   = useFormColors(dark);
 
-  useEffect(() => { const id = setTimeout(() => setSheet(true), 20); return () => clearTimeout(id); }, []);
+  const resolvedVisible = externalVisible !== undefined ? externalVisible : sheetVisible;
+
   useEffect(() => {
-    if (sheetVisible) setTimeout(() => inputRefs.current[0]?.focus(), 320);
-  }, [sheetVisible]);
+    if (externalVisible !== undefined) return;
+    const id = setTimeout(() => setSheet(true), 20);
+    return () => clearTimeout(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const prevVis = useRef(false);
+  useEffect(() => {
+    if (resolvedVisible && !prevVis.current) {
+      setOtp(["", "", "", "", "", ""]);
+      setTimeout(() => inputRefs.current[0]?.focus(), 320);
+    }
+    prevVis.current = resolvedVisible;
+  }, [resolvedVisible]);
+
   useEffect(() => {
     if (error) triggerShake();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,7 +112,7 @@ export function OtpSheet({
       : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.38)";
 
   return (
-    <BottomSheet dark={dark} visible={sheetVisible} zIndex={200}>
+    <BottomSheet dark={dark} visible={resolvedVisible} zIndex={200}>
       <div style={{ padding: "0 clamp(24px,6vw,36px) clamp(28px,7vw,44px)", position: "relative" }}>
 
         {verifying && (

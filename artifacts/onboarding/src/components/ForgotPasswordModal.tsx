@@ -14,11 +14,13 @@ interface Props {
   onClose: () => void;
   onPasswordReset: () => void;
   onNewExpiry?: (expiresAt: number) => void;
+  externalVisible?: boolean;
 }
 
 
 export function ForgotPasswordModal({
   email, initialExpiresAt, dark, accent, accentBtn, btnShadow, onClose, onPasswordReset, onNewExpiry,
+  externalVisible,
 }: Props) {
   const [step, setStep]             = useState<0 | 1>(0);
   const [savedOtp, setSavedOtp]     = useState("");
@@ -44,6 +46,10 @@ export function ForgotPasswordModal({
     }
     return undefined;
   }, [step]);
+
+  useEffect(() => {
+    if (externalVisible === false) setStep1Vis(false);
+  }, [externalVisible]);
 
   const resendMutation = useMutation({
     mutationFn: () => forgotPasswordRequest(email),
@@ -126,6 +132,7 @@ export function ForgotPasswordModal({
         onVerify={handleVerify}
         onResend={handleResend}
         onClose={onClose}
+        externalVisible={externalVisible}
         footer={
           <button
             onClick={() => { onClose(); }}
@@ -162,7 +169,7 @@ export function ForgotPasswordModal({
   }
 
   return (
-    <BottomSheet dark={dark} visible={step1Visible} zIndex={200}>
+    <BottomSheet dark={dark} visible={step1Visible && externalVisible !== false} zIndex={200}>
       <div style={{ padding: "6px clamp(24px,6vw,36px) clamp(32px,8vw,48px)" }}>
           {pwSuccess ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0 20px" }}>
