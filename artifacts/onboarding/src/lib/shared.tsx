@@ -88,7 +88,7 @@ export function useShake(duration = 480): [boolean, () => void] {
  * close() → animates out, stays mounted for softDelay ms, then unmounts
  * close(true) → animates out + unmounts immediately (use on permanent dismiss)
  */
-export function useSoftMount(softDelay = 120_000) {
+export function useSoftMount(softDelay = 60_000) {
   const [mounted,  setMounted]  = useState(false);
   const [visible,  setVisible]  = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);

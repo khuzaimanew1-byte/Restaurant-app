@@ -193,6 +193,43 @@ Props: `email, dark, accent, accentBtn, btnShadow, expiresAt, title, verifyLabel
 
 ---
 
+## Page Load Optimization
+
+Rules: never change UI, behavior, output, or logic. Only code/technique/method changes.
+
+### Lazy loading
+- Any screen/page NOT shown on initial render → `React.lazy()` + `Suspense`
+- Always preload lazy chunks immediately (module-level `void import(...)`) so chunks are ready before user navigates — no spinner flash
+- First screen shown (Onboarding) → eager import (cannot be lazy)
+- Suspense fallback → reuse the existing loading/checking screen component
+
+```tsx
+// Pattern for lazy screen with immediate preload
+const LoginPage = lazy(() => import("./components/LoginPage").then(m => ({ default: m.LoginPage })));
+void import("./components/LoginPage"); // preload immediately
+```
+
+### Vendor chunk splitting (Vite build)
+Split stable vendor code into separate cacheable chunks via `rollupOptions.output.manualChunks`:
+```ts
+manualChunks: {
+  "react-vendor": ["react", "react-dom"],
+  "query-vendor": ["@tanstack/react-query"],
+}
+```
+App code changes often; vendor code rarely — separate chunks = better browser caching.
+
+### Font loading
+- `preconnect` to font provider origin (already in `index.html`)
+- Load font CSS non-blocking: `rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'"`
+- `<noscript>` fallback for no-JS environments
+- Always include `display=swap` in font URL
+
+### Color scheme hint
+Add `<meta name="color-scheme" content="light dark">` so browser renders scrollbars and system UI correctly before CSS loads.
+
+---
+
 ## Reuse Rules
 
 Before creating new code:

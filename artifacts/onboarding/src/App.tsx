@@ -1,10 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { OnboardingFlow } from "./components/OnboardingFlow";
-import { LoginPage } from "./components/LoginPage";
-import { SuccessPage } from "./components/SuccessPage";
 import { validateSession, logoutSession } from "./lib/api";
 import { useDarkMode } from "./lib/shared";
+
+const LoginPage   = lazy(() => import("./components/LoginPage").then(m => ({ default: m.LoginPage })));
+const SuccessPage = lazy(() => import("./components/SuccessPage").then(m => ({ default: m.SuccessPage })));
+
+// Preload both chunks immediately — they are ready before user navigates to them
+void import("./components/LoginPage");
+void import("./components/SuccessPage");
 
 type Screen = "onboarding" | "signin" | "success";
 interface AuthResult { email: string; role: string; }
@@ -149,7 +154,7 @@ export default function App() {
   if (checking) return <CheckingScreen />;
 
   return (
-    <>
+    <Suspense fallback={<CheckingScreen />}>
       {screen === "onboarding" && (
         <OnboardingFlow
           initialSlide={slide}
@@ -159,6 +164,6 @@ export default function App() {
       )}
       {screen === "signin"  && <LoginPage onSuccess={handleSuccess} />}
       {screen === "success" && <SuccessPage email={auth?.email} role={auth?.role} onLogout={handleLogout} />}
-    </>
+    </Suspense>
   );
 }
