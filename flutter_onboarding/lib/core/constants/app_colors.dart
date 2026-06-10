@@ -22,11 +22,10 @@ class AppColors {
   static const lightBorder = Color(0xFFE8E8EF);
 
   // Text
-  static const darkPrimary   = Color(0xFFF0F0F8);
+  static const darkPrimary = Color(0xFFF0F0F8);
   static const darkSecondary = Color(0xFF8888AA);
-  static const lightPrimary  = Color(0xFF0D0D1A);
+  static const lightPrimary = Color(0xFF0D0D1A);
   static const lightSecondary = Color(0xFF6B6B88);
-  static const darkBtnText   = Color(0xFF0A0A14);
 
   // Semantic
   static const error = Color(0xFFEF4444);

@@ -3,18 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/widgets/app_otp_box.dart';
 import '../providers/auth_provider.dart';
 import '../providers/otp_provider.dart';
-
-String _maskEmail(String email) {
-  final at = email.indexOf('@');
-  if (at < 0) return email;
-  final local  = email.substring(0, at);
-  final domain = email.substring(at);
-  if (local.length <= 2) return '${local}***$domain';
-  return '${local.substring(0, 2)}***$domain';
-}
 
 class OtpModal extends ConsumerStatefulWidget {
   final String email;
@@ -117,7 +107,6 @@ class _OtpModalState extends ConsumerState<OtpModal> {
     final isLoading = authState is AuthLoading;
     final hasError  = authState is AuthError;
     final errorMsg  = hasError ? (authState as AuthError).message : null;
-    final expired   = otpState.countdownSeconds == 0;
 
     final mins       = otpState.countdownSeconds ~/ 60;
     final secs       = otpState.countdownSeconds % 60;
@@ -169,23 +158,12 @@ class _OtpModalState extends ConsumerState<OtpModal> {
                 ),
               ),
               const SizedBox(height: 8),
-              RichText(
-                text: TextSpan(
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
-                  ),
-                  children: [
-                    const TextSpan(text: 'We sent a 6-digit code to '),
-                    TextSpan(
-                      text: _maskEmail(widget.email),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
-                      ),
-                    ),
-                  ],
+              Text(
+                'We sent a 6-digit code to\n${widget.email}',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
                 ),
               ),
               const SizedBox(height: 32),
@@ -193,7 +171,7 @@ class _OtpModalState extends ConsumerState<OtpModal> {
               // OTP boxes
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(6, (i) => AppOtpBox(
+                children: List.generate(6, (i) => _OtpBox(
                   controller: _ctls[i],
                   focusNode:  _foci[i],
                   isDark:     isDark,
@@ -208,37 +186,7 @@ class _OtpModalState extends ConsumerState<OtpModal> {
                 )),
               ),
 
-              const SizedBox(height: 20),
-
-              // Error / Expired banner
-              if (hasError || expired) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color:        AppColors.error.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border:       Border.all(color: AppColors.error.withValues(alpha: 0.20)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.info_outline_rounded, size: 13, color: AppColors.error),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          errorMsg ?? 'OTP expired. Request a new code to continue.',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.error,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-              ],
+              const SizedBox(height: 28),
 
               if (isLoading) ...[
                 const Center(child: CircularProgressIndicator()),
@@ -301,3 +249,84 @@ class _OtpModalState extends ConsumerState<OtpModal> {
   }
 }
 
+class _OtpBox extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool isDark;
+  final bool hasError;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onBackspace;
+
+  const _OtpBox({
+    required this.controller,
+    required this.focusNode,
+    required this.isDark,
+    required this.hasError,
+    required this.onChanged,
+    required this.onBackspace,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 56,
+      child: KeyboardListener(
+        focusNode: FocusNode(),
+        onKeyEvent: (event) {
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.backspace) {
+            onBackspace();
+          }
+        },
+        child: TextFormField(
+          controller:   controller,
+          focusNode:    focusNode,
+          textAlign:    TextAlign.center,
+          keyboardType: TextInputType.number,
+          // Allow up to 6 chars so paste is not silently truncated before
+          // reaching onChanged; the _distributePaste logic handles the rest.
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(6),
+          ],
+          onChanged: onChanged,
+          style: TextStyle(
+            fontSize:   22,
+            fontWeight: FontWeight.w700,
+            color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+          ),
+          decoration: InputDecoration(
+            counterText: '',
+            contentPadding: EdgeInsets.zero,
+            filled: true,
+            fillColor: isDark ? AppColors.darkCard : AppColors.lightBg,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: hasError
+                    ? AppColors.error
+                    : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: hasError
+                    ? AppColors.error.withValues(alpha: 0.6)
+                    : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: hasError ? AppColors.error : AppColors.indigo,
+                width: 1.5,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

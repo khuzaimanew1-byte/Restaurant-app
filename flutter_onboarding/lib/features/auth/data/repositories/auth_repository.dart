@@ -60,6 +60,10 @@ class AuthRepository {
     return LoginSession(UserModel.fromJson(body));
   }
 
+  // ── POST /api/auth/login (signup uses same endpoint) ─────────────────
+
+  Future<LoginResult> signup(String email, String password) => login(email, password);
+
   // ── POST /api/auth/verify-otp ────────────────────────────────────────
 
   Future<UserModel> verifyOtp(String email, String otp, String password) async {
@@ -119,34 +123,9 @@ class AuthRepository {
     _decodeBody(res);
   }
 
-  // ── GET /api/auth/otp-status ─────────────────────────────────────────
-
-  Future<OtpStatusResult> getOtpStatus(String email) async {
-    try {
-      final res = await http.get(
-        Uri.parse('$_base/auth/otp-status?email=${Uri.encodeComponent(email.toLowerCase().trim())}'),
-        headers: _headers,
-      );
-      if (res.statusCode == 200) {
-        final body = jsonDecode(res.body) as Map<String, dynamic>;
-        return OtpStatusResult(
-          active:    body['active']    as bool? ?? false,
-          expiresAt: body['expiresAt'] as int?,
-        );
-      }
-    } catch (_) {}
-    return const OtpStatusResult(active: false);
-  }
-
   // ── Admin bootstrap (no-op — server handles bootstrap) ───────────────
 
   Future<void> ensureAdminEmployee() async {}
-}
-
-class OtpStatusResult {
-  final bool active;
-  final int? expiresAt;
-  const OtpStatusResult({required this.active, this.expiresAt});
 }
 
 class AuthException implements Exception {

@@ -4,9 +4,7 @@ description: React Web ↔ Flutter synchronization policy for shared screens, in
 ---
 
 ## Rule
-React is the reference implementation. Sync direction is **React → Flutter only**. Flutter se React sync NAHI karna (user-confirmed rule).
-
-Whenever a shared screen changes in React, apply the equivalent change to Flutter **without needing to be asked**. Platform-specific UI adaptations are allowed; business logic and validation must stay identical.
+React is the reference implementation. Whenever a shared screen changes in either platform, apply the equivalent change to the other **without needing to be asked**. Platform-specific UI adaptations are allowed; business logic and validation must stay identical.
 
 ## Shared screens (auto-sync required)
 - Onboarding (3 slides)
@@ -47,11 +45,11 @@ Whenever a shared screen changes in React, apply the equivalent change to Flutte
 
 ## Deliberate platform differences (acceptable — do NOT sync away)
 - **Dark mode toggle**: React has it; Flutter uses system theme.
+- **OTP session banner**: React shows "OTP session active" banner. Flutter doesn't (state doesn't survive restarts).
 - **Drag-to-dismiss OTP modal**: React swipe-to-dismiss; Flutter has "Back" button.
 - **Haptic feedback**: Flutter has `HapticFeedback` calls; React doesn't.
-- **Countdown timer format**: React `"M:SS"` via `formatTimer(ms)`; Flutter OtpBanner uses same format `"M:SS"`.
+- **Countdown timer format**: React shows "1 min"/"45s"; Flutter shows "MM:SS".
 - **Onboarding skip**: Both jump to last slide (already in sync).
-- **Banner indentation in code**: Flutter's Column/Expanded structure looks visually odd (indentation mismatch) but is syntactically correct Dart.
 
 ## Terms of Service checkbox
 Both platforms now have it on the login page. Flutter: `_agreedToTerms` bool with error state `_agreedError`. React: `agreed` state. Must agree before login proceeds.
@@ -64,14 +62,5 @@ Both platforms now have it on the login page. Flutter: `_agreedToTerms` bool wit
 5. **Terms checkbox**: Now on both platforms (Flutter was missing it).
 6. **Forgot Password**: Full two-step modal now on both platforms.
 7. **Email shake on forgot-password with empty/invalid email**: Both platforms vibrate/shake.
-8. **OTP session banner**: Both platforms now show banners for active login-OTP session and active forgot-password OTP (when modal closed). Flutter uses `OtpBanner` widget in `core/widgets/otp_banner.dart`.
-14. **OTP Modal email masking**: Both now show `te***@example.com` format. Flutter `otp_modal.dart` uses `_maskEmail()` file-level helper; `forgot_password_modal.dart` uses `_maskEmail()` declared at top of its file.
-15. **OTP Modal error/expired banner**: Both now show a red info banner below OTP boxes when `hasError` or timer expired. Flutter: `if (hasError || expired)` block in `otp_modal.dart`.
-16. **ForgotPasswordModal description text**: Both now say "must include a number and special character" — "uppercase" was never a real requirement and has been removed from Flutter description.
-9. **Email blur → OTP status check**: Both call `GET /api/auth/otp-status?email=...` on email field blur. Flutter uses `FocusNode` listener calling `_checkOtpSession()`.
-10. **Sign-in guard**: Both block login when any OTP banner is active (shake the active banner instead).
-11. **Forgot-password guard**: Both disable/block forgot-password when any OTP banner is active.
-12. **ForgotPasswordModal `onNewExpiry`**: Both propagate new expiresAt to parent when OTP is resent, so parent banner timer resets.
-13. **Dead `signup` method**: Removed from `auth_repository.dart`.
 
 **Why:** User confirmed React as reference for all shared screens. Flutter must match without separate instruction.

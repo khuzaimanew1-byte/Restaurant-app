@@ -4,10 +4,23 @@ import { login, getOtpStatus, forgotPasswordRequest, AppError } from "../lib/api
 import { OtpModal } from "./OtpModal";
 import { ForgotPasswordModal } from "./ForgotPasswordModal";
 import { OtpBanner } from "./OtpBanner";
-import { useDarkMode, Spinner, PW_NUM, PW_UPPER, PW_SPECIAL, validatePwComplexity, PwRequirements } from "../lib/shared";
+import { useDarkMode, Spinner } from "../lib/shared";
 
 interface Props {
   onSuccess: (email: string, role: string, sessionToken: string) => void;
+}
+
+const PW_NUM     = /[0-9]/;
+const PW_UPPER   = /[A-Z]/;
+const PW_SPECIAL = /[!@#$%^&*()\-_=+[\]{};':"\\|,.<>/?]/;
+
+function validatePwComplexity(pw: string): string | null {
+  if (!pw)              return "Password is required.";
+  if (pw.length < 8)    return "Password must be at least 8 characters.";
+  if (!PW_UPPER.test(pw))   return "Password must contain at least one uppercase letter.";
+  if (!PW_NUM.test(pw))     return "Password must contain at least one number.";
+  if (!PW_SPECIAL.test(pw)) return "Password must contain at least one special character.";
+  return null;
 }
 
 export function LoginPage({ onSuccess }: Props) {
@@ -463,7 +476,24 @@ export function LoginPage({ onSuccess }: Props) {
               <div style={{ ...underlineBase, background: errors.password ? errClr : baseLine }}/>
               <div style={sweepLine(pwF, !!errors.password)}/>
             </div>
-            <PwRequirements pw={password} dark={dark} />
+            {password && (
+              <div style={{ display: "flex", flexWrap: "nowrap", gap: "4px 10px", marginTop: 8 }}>
+                {[
+                  { met: password.length >= 8,       label: "8+ chars" },
+                  { met: PW_UPPER.test(password),    label: "Uppercase" },
+                  { met: PW_NUM.test(password),       label: "Number" },
+                  { met: PW_SPECIAL.test(password),   label: "Special" },
+                ].map(({ met, label }) => (
+                  <span key={label} style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    fontSize: 11.5, fontWeight: 500,
+                    color: met ? (dark ? "#34D399" : "#059669") : errClr,
+                  }}>
+                    <span style={{ fontSize: 13 }}>{met ? "✓" : "✗"}</span>{label}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Forgot password link — disabled when any OTP active */}
             <div style={{ textAlign: "right", marginTop: 8 }}>
