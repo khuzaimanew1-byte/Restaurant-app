@@ -65,37 +65,6 @@ export function OtpModal({
       onVerify={handleVerify}
       onResend={() => resendMutation.mutate()}
       onClose={onClose}
-      footer={
-        <button
-          onClick={onClose}
-          style={{
-            marginTop: 12,
-            width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
-            gap: 7,
-            background: dark ? "rgba(255,255,255,0.04)" : "rgba(13,11,30,0.04)",
-            border: `1px solid ${dark ? "rgba(255,255,255,0.08)" : "rgba(13,11,30,0.08)"}`,
-            borderRadius: 12, cursor: "pointer",
-            padding: "11px 16px",
-            fontSize: 13.5, fontWeight: 500,
-            color: dark ? "rgba(200,197,245,0.55)" : "rgba(13,11,30,0.45)",
-            fontFamily: "inherit", letterSpacing: "-0.01em",
-            transition: "background 0.18s, border-color 0.18s, color 0.18s",
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = dark ? "rgba(255,255,255,0.08)" : "rgba(13,11,30,0.07)";
-            e.currentTarget.style.color = dark ? "rgba(200,197,245,0.80)" : "rgba(13,11,30,0.65)";
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = dark ? "rgba(255,255,255,0.04)" : "rgba(13,11,30,0.04)";
-            e.currentTarget.style.color = dark ? "rgba(200,197,245,0.55)" : "rgba(13,11,30,0.45)";
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-            <path d="M19 12H5M5 12l7-7M5 12l7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Change email
-        </button>
-      }
     />
   );
 }
