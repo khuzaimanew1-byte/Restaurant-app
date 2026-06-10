@@ -75,7 +75,7 @@ flutter run \
 
 **Security**: Plain text passwords never. bcrypt hashing. Input sanitization. RBAC. Rate limiting on auth endpoints. Sensitive data never log karo.
 
-**Popup/Modal Lifecycle**: Mount when triggered, soft-mount 120s while recently used, auto-destroy if unused. Single lifecycle manager.
+**Popup/Modal Lifecycle**: Mount when triggered, soft-mount 60s while recently used, auto-destroy if unused. Single lifecycle manager (`useSoftMount` in `lib/shared.tsx`).
 
 **Minification (Production only)**: Short identifiers allowed — local scope: 1–2 chars, module: 2–3, global: 3+. Development mein readable names.
 

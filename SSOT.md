@@ -195,7 +195,7 @@ Props: `email, dark, accent, accentBtn, btnShadow, expiresAt, title, verifyLabel
 
 ## Page Load Optimization
 
-Rules: never change UI, behavior, output, or logic. Only code/technique/method changes.
+Rules: only code/technique/method changes allowed. Small subtle visual side-effects are acceptable (e.g. a blur, a transition timing tweak) — but overall UI layout, UX flow, and visible behavior must stay the same.
 
 ### Lazy loading
 - Any screen/page NOT shown on initial render → `React.lazy()` + `Suspense`
