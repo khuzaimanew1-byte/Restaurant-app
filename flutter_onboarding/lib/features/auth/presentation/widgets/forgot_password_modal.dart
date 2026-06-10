@@ -540,7 +540,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
                     color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
                   ),
                 ),
-                const TextSpan(text: ' — must include uppercase, a number and special character.'),
+                const TextSpan(text: ' — must include a number and special character.'),
               ],
             ),
           ),

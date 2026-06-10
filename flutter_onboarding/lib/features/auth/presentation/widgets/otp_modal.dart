@@ -7,6 +7,15 @@ import '../../../../core/widgets/app_otp_box.dart';
 import '../providers/auth_provider.dart';
 import '../providers/otp_provider.dart';
 
+String _maskEmail(String email) {
+  final at = email.indexOf('@');
+  if (at < 0) return email;
+  final local  = email.substring(0, at);
+  final domain = email.substring(at);
+  if (local.length <= 2) return '${local}***$domain';
+  return '${local.substring(0, 2)}***$domain';
+}
+
 class OtpModal extends ConsumerStatefulWidget {
   final String email;
   final String password;
@@ -108,6 +117,7 @@ class _OtpModalState extends ConsumerState<OtpModal> {
     final isLoading = authState is AuthLoading;
     final hasError  = authState is AuthError;
     final errorMsg  = hasError ? (authState as AuthError).message : null;
+    final expired   = otpState.countdownSeconds == 0;
 
     final mins       = otpState.countdownSeconds ~/ 60;
     final secs       = otpState.countdownSeconds % 60;
@@ -159,12 +169,23 @@ class _OtpModalState extends ConsumerState<OtpModal> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                'We sent a 6-digit code to\n${widget.email}',
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.5,
-                  color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+              RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: isDark ? AppColors.darkSecondary : AppColors.lightSecondary,
+                  ),
+                  children: [
+                    const TextSpan(text: 'We sent a 6-digit code to '),
+                    TextSpan(
+                      text: _maskEmail(widget.email),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 32),
@@ -187,7 +208,37 @@ class _OtpModalState extends ConsumerState<OtpModal> {
                 )),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
+
+              // Error / Expired banner
+              if (hasError || expired) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color:        AppColors.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border:       Border.all(color: AppColors.error.withValues(alpha: 0.20)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline_rounded, size: 13, color: AppColors.error),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          errorMsg ?? 'OTP expired. Request a new code to continue.',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.error,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
 
               if (isLoading) ...[
                 const Center(child: CircularProgressIndicator()),

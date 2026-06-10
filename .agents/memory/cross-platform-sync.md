@@ -65,6 +65,9 @@ Both platforms now have it on the login page. Flutter: `_agreedToTerms` bool wit
 6. **Forgot Password**: Full two-step modal now on both platforms.
 7. **Email shake on forgot-password with empty/invalid email**: Both platforms vibrate/shake.
 8. **OTP session banner**: Both platforms now show banners for active login-OTP session and active forgot-password OTP (when modal closed). Flutter uses `OtpBanner` widget in `core/widgets/otp_banner.dart`.
+14. **OTP Modal email masking**: Both now show `te***@example.com` format. Flutter `otp_modal.dart` uses `_maskEmail()` file-level helper; `forgot_password_modal.dart` uses `_maskEmail()` declared at top of its file.
+15. **OTP Modal error/expired banner**: Both now show a red info banner below OTP boxes when `hasError` or timer expired. Flutter: `if (hasError || expired)` block in `otp_modal.dart`.
+16. **ForgotPasswordModal description text**: Both now say "must include a number and special character" — "uppercase" was never a real requirement and has been removed from Flutter description.
 9. **Email blur → OTP status check**: Both call `GET /api/auth/otp-status?email=...` on email field blur. Flutter uses `FocusNode` listener calling `_checkOtpSession()`.
 10. **Sign-in guard**: Both block login when any OTP banner is active (shake the active banner instead).
 11. **Forgot-password guard**: Both disable/block forgot-password when any OTP banner is active.
