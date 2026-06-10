@@ -4,7 +4,7 @@ import { login, getOtpStatus, forgotPasswordRequest, AppError } from "../lib/api
 import { OtpModal } from "./OtpModal";
 import { ForgotPasswordModal } from "./ForgotPasswordModal";
 import { OtpBanner } from "./OtpBanner";
-import { useDarkMode, Spinner, PW_NUM, PW_UPPER, PW_SPECIAL, validatePwComplexity, PwRequirements, FieldError, useShake, useCountdown } from "../lib/shared";
+import { useDarkMode, Spinner, PW_NUM, PW_UPPER, PW_SPECIAL, validatePwComplexity, PwRequirements, FieldError, useShake, useCountdown, formField, useFormColors, PasswordToggle, AlertBox } from "../lib/shared";
 
 interface Props {
   onSuccess: (email: string, role: string, sessionToken: string) => void;
@@ -146,28 +146,19 @@ export function LoginPage({ onSuccess }: Props) {
   const o1        = dark ? "rgba(79,70,229,0.38)"  : "rgba(79,70,229,0.28)";
   const o2        = dark ? "rgba(107,99,240,0.24)" : "rgba(107,99,240,0.20)";
   const o3        = dark ? "rgba(55,48,163,0.18)"  : "rgba(55,48,163,0.12)";
-  const headClr   = dark ? "rgba(238,237,255,0.97)" : "#09071E";
-  const subClr    = dark ? "rgba(200,197,245,0.46)" : "rgba(13,11,30,0.46)";
   const accent    = dark ? "#8078F2" : "#4F46E5";
   const accentBtn = dark ? "linear-gradient(135deg,#6E67F0 0%,#4B44C5 100%)"
                          : "linear-gradient(135deg,#635CEE 0%,#3E37BE 100%)";
   const btnShadow = dark ? "0 12px 40px rgba(79,70,229,0.58),0 4px 12px rgba(79,70,229,0.32)"
                          : "0 8px 30px rgba(79,70,229,0.40),0 2px 8px rgba(79,70,229,0.20)";
-  const baseLine  = dark ? "rgba(255,255,255,0.09)"  : "rgba(13,11,30,0.13)";
-  const idleLbl   = dark ? "rgba(200,197,245,0.36)"  : "rgba(13,11,30,0.36)";
-  const activeLbl = dark ? "rgba(200,197,245,0.60)"  : "rgba(13,11,30,0.52)";
-  const inputTxt  = dark ? "rgba(238,237,255,0.93)"  : "#09071E";
-  const errClr    = dark ? "#F87171" : "#DC2626";
-  const tglBorder = dark ? "rgba(255,255,255,0.1)"   : "rgba(13,11,30,0.13)";
-  const tglBg     = dark ? "rgba(255,255,255,0.05)"  : "rgba(255,255,255,0.6)";
+  const tglBorder = dark ? "rgba(255,255,255,0.1)"  : "rgba(13,11,30,0.13)";
+  const tglBg     = dark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.6)";
   const linkClr   = dark ? "#9992F5" : "#4F46E5";
-  const divClr    = dark ? "rgba(255,255,255,0.07)"  : "rgba(13,11,30,0.09)";
-  const divTxt    = dark ? "rgba(200,197,245,0.26)"  : "rgba(13,11,30,0.30)";
+  const divClr    = dark ? "rgba(255,255,255,0.07)" : "rgba(13,11,30,0.09)";
+  const divTxt    = dark ? "rgba(200,197,245,0.26)" : "rgba(13,11,30,0.30)";
 
-  const FIELD_H  = 58;
-  const INPUT_H  = 34;
-  const INPUT_PB = 10;
-  const IDLE_TOP = FIELD_H - (INPUT_H / 2) - (INPUT_PB / 2) - 8;
+  const { headClr, subClr }                                                    = useFormColors(dark);
+  const { errClr, idleLbl, FIELD_H, inputBase, labelStyle, sweepLine, underlineStyle } = formField(dark, accent);
 
   function rise(i: number): React.CSSProperties {
     return {
@@ -176,43 +167,6 @@ export function LoginPage({ onSuccess }: Props) {
       transition: `opacity 0.72s cubic-bezier(0.22,1,0.36,1) ${i * 0.075}s, transform 0.72s cubic-bezier(0.22,1,0.36,1) ${i * 0.075}s`,
     };
   }
-
-  function labelStyle(active: boolean, focused: boolean, err: boolean): React.CSSProperties {
-    return {
-      position: "absolute", left: 0,
-      top: active ? 2 : IDLE_TOP,
-      fontSize:      active ? 10.5 : 15.5,
-      fontWeight:    active ? 700 : 400,
-      letterSpacing: active ? "0.09em" : "-0.015em",
-      textTransform: active ? "uppercase" : "none" as const,
-      lineHeight: 1, whiteSpace: "nowrap" as const, pointerEvents: "none" as const,
-      color: err ? errClr : focused ? accent : active ? activeLbl : idleLbl,
-      transition: "top 0.28s cubic-bezier(0.22,1,0.36,1), font-size 0.28s cubic-bezier(0.22,1,0.36,1), color 0.22s ease, letter-spacing 0.28s cubic-bezier(0.22,1,0.36,1)",
-    };
-  }
-
-  function sweepLine(focused: boolean, err: boolean): React.CSSProperties {
-    return {
-      position: "absolute", bottom: 0, left: 0,
-      height: 2, borderRadius: 2,
-      width: focused ? "100%" : "0%",
-      background: err ? errClr : accent,
-      transition: "width 0.38s cubic-bezier(0.22,1,0.36,1)",
-    };
-  }
-
-  const inputBase: React.CSSProperties = {
-    position: "absolute", bottom: 0, left: 0, right: 0, height: INPUT_H,
-    background: "none", border: "none", outline: "none", borderRadius: 0,
-    fontSize: 15.5, color: inputTxt, paddingBottom: INPUT_PB,
-    fontFamily: "inherit", letterSpacing: "-0.015em",
-    WebkitAppearance: "none", boxSizing: "border-box",
-  };
-
-  const underlineBase: React.CSSProperties = {
-    position: "absolute", bottom: 0, left: 0, right: 0, height: 1.5,
-    transition: "background 0.22s ease",
-  };
 
   const bannerCount = (forgotBannerActive ? 1 : 0) + (sessionActive && !showOtp ? 1 : 0);
   const headerMt    = bannerCount * 38;
@@ -225,17 +179,6 @@ export function LoginPage({ onSuccess }: Props) {
       fontFamily: "'Inter',-apple-system,'Helvetica Neue',sans-serif",
       WebkitFontSmoothing: "antialiased",
     }}>
-      <style>{`
-        @keyframes email-shake {
-          0%,100%{transform:translateX(0)}
-          15%,45%,75%{transform:translateX(-7px)}
-          30%,60%{transform:translateX(7px)}
-        }
-        .email-shake  { animation: email-shake 0.5s cubic-bezier(0.36,0.07,0.19,0.97); }
-        .otp-shake    { animation: email-shake 0.45s cubic-bezier(0.36,0.07,0.19,0.97); }
-        .banner-shake { animation: email-shake 0.48s cubic-bezier(0.36,0.07,0.19,0.97); }
-      `}</style>
-
       {/* ── Forgot-Password OTP Active Banner ── */}
       {forgotBannerActive && (
         <OtpBanner
@@ -336,20 +279,8 @@ export function LoginPage({ onSuccess }: Props) {
           </div>
 
           {errors.general && (
-            <div style={{
-              ...rise(2),
-              display: "flex", alignItems: "flex-start", gap: 10,
-              background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
-              border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.15)"}`,
-              borderRadius: 12, padding: "11px 14px", marginBottom: 22,
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
-                <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
-                <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
-              </svg>
-              <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5, letterSpacing: "-0.01em" }}>
-                {errors.general}
-              </span>
+            <div style={rise(2)}>
+              <AlertBox message={errors.general} dark={dark} mb={22} />
             </div>
           )}
 
@@ -368,18 +299,10 @@ export function LoginPage({ onSuccess }: Props) {
                 onKeyDown={e => { if (e.key === "Enter") pwRef.current?.focus(); }}
                 style={inputBase}
               />
-              <div style={{ ...underlineBase, background: errors.email ? errClr : baseLine }}/>
+              <div style={underlineStyle(!!errors.email)}/>
               <div style={sweepLine(emailF, !!errors.email)}/>
             </div>
-            {errors.email && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                  <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
-                  <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
-                </svg>
-                <p style={{ margin: 0, fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{errors.email}</p>
-              </div>
-            )}
+            <FieldError message={errors.email} dark={dark} />
           </div>
 
           {/* Password */}
@@ -394,23 +317,8 @@ export function LoginPage({ onSuccess }: Props) {
                 onKeyDown={e => { if (e.key === "Enter") handleSignIn(); }}
                 style={{ ...inputBase, right: 34 }}
               />
-              <button type="button" onClick={() => setShowPw(s => !s)} style={{
-                position: "absolute", right: 0,
-                bottom: INPUT_PB + (INPUT_H - INPUT_PB) / 2 - 9,
-                width: 18, height: 18,
-                background: "none", border: "none", cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: idleLbl, opacity: 0.55, padding: 0, transition: "color 0.22s, opacity 0.18s",
-              }}
-                onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                onMouseLeave={e => (e.currentTarget.style.opacity = "0.55")}
-              >
-                {showPw
-                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
-                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="1.7"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7"/></svg>
-                }
-              </button>
-              <div style={{ ...underlineBase, background: errors.password ? errClr : baseLine }}/>
+              <PasswordToggle shown={showPw} onToggle={() => setShowPw(s => !s)} dark={dark} />
+              <div style={underlineStyle(!!errors.password)}/>
               <div style={sweepLine(pwF, !!errors.password)}/>
             </div>
             <PwRequirements pw={password} dark={dark} />
