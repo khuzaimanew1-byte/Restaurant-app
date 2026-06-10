@@ -2,12 +2,13 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/utils/pw_validator.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/pw_requirements_row.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
 import '../providers/otp_provider.dart';
@@ -41,10 +42,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Email shake animation ─────────────────────────────────────────
   late final AnimationController _shakeCtrl;
 
-  // ── Password regex ────────────────────────────────────────────────
-  static final _hasNum     = RegExp(r'[0-9]');
-  static final _hasUpper   = RegExp(r'[A-Z]');
-  static final _hasSpecial = RegExp(r'[!@#$%^&*()\-_=+\[\]{};\':"\\|,.<>/?]');
 
   @override
   void initState() {
@@ -85,33 +82,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     return null;
   }
 
-  String? _validatePassword(String? v) {
-    if (v == null || v.isEmpty)   return 'Password is required.';
-    if (v.length < 8)             return 'Password must be at least 8 characters.';
-    if (!_hasUpper.hasMatch(v))   return 'Password must contain at least one uppercase letter.';
-    if (!_hasNum.hasMatch(v))     return 'Password must contain at least one number.';
-    if (!_hasSpecial.hasMatch(v)) return 'Password must contain at least one special character.';
-    return null;
-  }
-
-  Widget _pwReqChip(String label, bool met) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Text(met ? '✓' : '✗',
-        style: TextStyle(
-          fontSize: 13, height: 1,
-          color: met ? const Color(0xFF10B981) : const Color(0xFFDC2626),
-        ),
-      ),
-      const SizedBox(width: 4),
-      Text(label,
-        style: TextStyle(
-          fontSize: 11.5, fontWeight: FontWeight.w500,
-          color: met ? const Color(0xFF10B981) : const Color(0xFFDC2626),
-        ),
-      ),
-    ],
-  );
+  String? _validatePassword(String? v) => PwValidator.validate(v);
 
   bool get _emailValid {
     final v = _emailCtrl.text.trim();
@@ -350,18 +321,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             // ── Password requirements ─────────────────
                             if (_passwordCtrl.text.isNotEmpty) ...[
                               const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  _pwReqChip('8+ chars',  _passwordCtrl.text.length >= 8),
-                                  const SizedBox(width: 10),
-                                  _pwReqChip('Uppercase', _hasUpper.hasMatch(_passwordCtrl.text)),
-                                  const SizedBox(width: 10),
-                                  _pwReqChip('Number',    _hasNum.hasMatch(_passwordCtrl.text)),
-                                  const SizedBox(width: 10),
-                                  _pwReqChip('Special',   _hasSpecial.hasMatch(_passwordCtrl.text)),
-                                ],
-                              ),
+                              PwRequirementsRow(password: _passwordCtrl.text),
                             ],
 
                             // ── Forgot password link ──────────────────

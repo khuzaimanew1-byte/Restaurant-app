@@ -66,8 +66,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> signup(String email, String password) => login(email, password);
-
   Future<void> verifyOtp(String email, String otp, String password) async {
     state = const AuthLoading();
     try {

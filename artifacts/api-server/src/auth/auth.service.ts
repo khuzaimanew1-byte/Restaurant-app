@@ -86,11 +86,13 @@ export class AuthService {
     return { scenario: "first-login", otpSent: true, expiresAt: expiry.getTime() };
   }
 
-  /* ── POST /api/auth/verify-otp ─────────────────────────── */
+  /* ── OTP validation helper ──────────────────────────────── */
 
-  async verifyOtp(email: string, otpCode: string, password: string) {
-    const normalised = email.toLowerCase().trim();
-
+  private async _validateAndConsumeOtp(
+    normalised: string,
+    otpCode: string,
+    opts: { checkExpiry?: boolean } = {},
+  ): Promise<void> {
     const session = await this.users.findLatestOtpSession(normalised);
     if (!session) {
       throw new HttpException(
@@ -104,7 +106,7 @@ export class AuthService {
         HttpStatus.BAD_REQUEST,
       );
     }
-    if (Date.now() > session.expiresAt.getTime()) {
+    if (opts.checkExpiry && Date.now() > session.expiresAt.getTime()) {
       throw new HttpException(
         { error: "OTP_EXPIRED", message: "OTP expired. Request a new OTP to continue." },
         HttpStatus.BAD_REQUEST,
@@ -133,6 +135,14 @@ export class AuthService {
     }
 
     await this.users.markOtpUsed(session.id);
+  }
+
+  /* ── POST /api/auth/verify-otp ─────────────────────────── */
+
+  async verifyOtp(email: string, otpCode: string, password: string) {
+    const normalised = email.toLowerCase().trim();
+
+    await this._validateAndConsumeOtp(normalised, otpCode, { checkExpiry: true });
 
     let user = await this.users.findUserByEmail(normalised);
     if (!user) {
@@ -261,42 +271,7 @@ export class AuthService {
       );
     }
 
-    const session = await this.users.findLatestOtpSession(normalised);
-    if (!session) {
-      throw new HttpException(
-        { error: "NO_SESSION", message: "No OTP session found. Please request a new code." },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    if (session.used) {
-      throw new HttpException(
-        { error: "OTP_USED", message: "This OTP has already been used. Please request a new code." },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    if (session.attempts >= this.users.MAX_ATTEMPTS) {
-      throw new HttpException(
-        { error: "TOO_MANY_ATTEMPTS", message: "Too many incorrect attempts. Please request a new OTP." },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const valid = await this.otp.verifyOtp(otpCode.trim(), session.otpHash);
-    if (!valid) {
-      await this.users.incrementOtpAttempts(session.id);
-      const remaining = this.users.MAX_ATTEMPTS - (session.attempts + 1);
-      throw new HttpException(
-        {
-          error:   "OTP_INCORRECT",
-          message: remaining > 0
-            ? "Incorrect code. Please try again."
-            : "Incorrect code. Too many attempts — please request a new OTP.",
-        },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    await this.users.markOtpUsed(session.id);
+    await this._validateAndConsumeOtp(normalised, otpCode);
 
     const user = await this.users.findUserByEmail(normalised);
     if (!user) {

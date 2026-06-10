@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../widgets/onboarding_illustration.dart';
 import '../widgets/page_indicator.dart';
 import '../../data/onboarding_data.dart';
@@ -131,8 +132,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     final isLast = _currentIndex == onboardingPages.length - 1;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF0C0C14) : const Color(0xFFF5F5F9),
+      backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         child: SafeArea(
@@ -309,7 +309,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.3,
-                  color: isDark ? const Color(0xFF0A0A14) : Colors.white,
+                  color: isDark ? AppColors.darkBtnText : Colors.white,
                 ),
               ),
               if (!isLast) ...[
@@ -317,7 +317,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 Icon(
                   Icons.arrow_forward_rounded,
                   size: 18,
-                  color: isDark ? const Color(0xFF0A0A14) : Colors.white,
+                  color: isDark ? AppColors.darkBtnText : Colors.white,
                 ),
               ],
             ],

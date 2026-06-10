@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/pw_validator.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_otp_box.dart';
+import '../../../../core/widgets/pw_requirements_row.dart';
 import '../../data/repositories/auth_repository.dart';
 
 // Mask email: jo***@example.com
@@ -222,43 +225,11 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
 
   // ── Password validation ───────────────────────────────────────────
 
-  static final _hasNum     = RegExp(r'[0-9]');
-  static final _hasUpper   = RegExp(r'[A-Z]');
-  static final _hasSpecial = RegExp(r'[!@#$%^&*()\-_=+\[\]{};\':"\\|,.<>/?]');
-
-  String? _validateNewPw(String pw) {
-    if (pw.isEmpty)         return 'Password is required.';
-    if (pw.length < 8)      return 'Password must be at least 8 characters.';
-    if (!_hasUpper.hasMatch(pw))   return 'Password must contain at least one uppercase letter.';
-    if (!_hasNum.hasMatch(pw))     return 'Password must contain at least one number.';
-    if (!_hasSpecial.hasMatch(pw)) return 'Password must contain at least one special character.';
-    return null;
-  }
-
-  Widget _pwReqChip(String label, bool met) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Text(met ? '✓' : '✗',
-        style: TextStyle(
-          fontSize: 13, height: 1,
-          color: met ? const Color(0xFF10B981) : const Color(0xFFDC2626),
-        ),
-      ),
-      const SizedBox(width: 4),
-      Text(label,
-        style: TextStyle(
-          fontSize: 11.5, fontWeight: FontWeight.w500,
-          color: met ? const Color(0xFF10B981) : const Color(0xFFDC2626),
-        ),
-      ),
-    ],
-  );
-
   Future<void> _handleSetPassword() async {
     final newPw  = _newPwCtrl.text;
     final confPw = _confPwCtrl.text;
 
-    final newPwErr  = _validateNewPw(newPw);
+    final newPwErr  = PwValidator.validate(newPw);
     final confPwErr = newPw != confPw ? 'Passwords do not match.' : null;
 
     if (newPwErr != null || confPwErr != null) {
@@ -404,7 +375,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(6, (i) => _OtpBox(
+              children: List.generate(6, (i) => AppOtpBox(
                 controller: _otpCtls[i],
                 focusNode:  _otpFoci[i],
                 isDark:     isDark,
@@ -623,18 +594,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
           // ── Password requirements ───────────────────────────────────
           if (_newPwCtrl.text.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                _pwReqChip('8+ chars',  _newPwCtrl.text.length >= 8),
-                const SizedBox(width: 10),
-                _pwReqChip('Uppercase', _hasUpper.hasMatch(_newPwCtrl.text)),
-                const SizedBox(width: 10),
-                _pwReqChip('Number',    _hasNum.hasMatch(_newPwCtrl.text)),
-                const SizedBox(width: 10),
-                _pwReqChip('Special',   _hasSpecial.hasMatch(_newPwCtrl.text)),
-              ],
-            ),
+            PwRequirementsRow(password: _newPwCtrl.text),
           ],
           const SizedBox(height: 14),
 
@@ -674,79 +634,3 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
   }
 }
 
-// ── OTP Box widget ────────────────────────────────────────────────────
-
-class _OtpBox extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final bool isDark;
-  final bool hasError;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onBackspace;
-
-  const _OtpBox({
-    required this.controller,
-    required this.focusNode,
-    required this.isDark,
-    required this.hasError,
-    required this.onChanged,
-    required this.onBackspace,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 56,
-      child: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (event) {
-          if (event is RawKeyDownEvent &&
-              event.logicalKey == LogicalKeyboardKey.backspace) {
-            onBackspace();
-          }
-        },
-        child: TextFormField(
-          controller:   controller,
-          focusNode:    focusNode,
-          textAlign:    TextAlign.center,
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(6),
-          ],
-          onChanged: onChanged,
-          style: TextStyle(
-            fontSize:   22,
-            fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
-          ),
-          decoration: InputDecoration(
-            counterText: '',
-            contentPadding: EdgeInsets.zero,
-            filled:    true,
-            fillColor: isDark ? AppColors.darkCard : AppColors.lightBg,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: hasError ? AppColors.error : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: hasError
-                    ? AppColors.error.withValues(alpha: 0.6)
-                    : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.indigo, width: 1.5),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

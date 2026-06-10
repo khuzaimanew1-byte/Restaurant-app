@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_otp_box.dart';
 import '../providers/auth_provider.dart';
 import '../providers/otp_provider.dart';
 
@@ -171,7 +172,7 @@ class _OtpModalState extends ConsumerState<OtpModal> {
               // OTP boxes
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(6, (i) => _OtpBox(
+                children: List.generate(6, (i) => AppOtpBox(
                   controller: _ctls[i],
                   focusNode:  _foci[i],
                   isDark:     isDark,
@@ -249,84 +250,3 @@ class _OtpModalState extends ConsumerState<OtpModal> {
   }
 }
 
-class _OtpBox extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final bool isDark;
-  final bool hasError;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onBackspace;
-
-  const _OtpBox({
-    required this.controller,
-    required this.focusNode,
-    required this.isDark,
-    required this.hasError,
-    required this.onChanged,
-    required this.onBackspace,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 56,
-      child: KeyboardListener(
-        focusNode: FocusNode(),
-        onKeyEvent: (event) {
-          if (event is KeyDownEvent &&
-              event.logicalKey == LogicalKeyboardKey.backspace) {
-            onBackspace();
-          }
-        },
-        child: TextFormField(
-          controller:   controller,
-          focusNode:    focusNode,
-          textAlign:    TextAlign.center,
-          keyboardType: TextInputType.number,
-          // Allow up to 6 chars so paste is not silently truncated before
-          // reaching onChanged; the _distributePaste logic handles the rest.
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(6),
-          ],
-          onChanged: onChanged,
-          style: TextStyle(
-            fontSize:   22,
-            fontWeight: FontWeight.w700,
-            color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
-          ),
-          decoration: InputDecoration(
-            counterText: '',
-            contentPadding: EdgeInsets.zero,
-            filled: true,
-            fillColor: isDark ? AppColors.darkCard : AppColors.lightBg,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: hasError
-                    ? AppColors.error
-                    : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: hasError
-                    ? AppColors.error.withValues(alpha: 0.6)
-                    : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: hasError ? AppColors.error : AppColors.indigo,
-                width: 1.5,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

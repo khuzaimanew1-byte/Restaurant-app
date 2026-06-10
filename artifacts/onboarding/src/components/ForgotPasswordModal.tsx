@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { forgotPasswordRequest, resetPassword, AppError } from "../lib/api";
-import { Spinner, formatCountdown } from "../lib/shared";
+import { Spinner, formatCountdown, validatePwComplexity, PW_NUM, PW_UPPER, PW_SPECIAL, PwRequirements } from "../lib/shared";
 import { OtpSheet, maskEmail } from "./OtpSheet";
 
 interface Props {
@@ -16,18 +16,6 @@ interface Props {
   onNewExpiry?: (expiresAt: number) => void;
 }
 
-const PW_NUM     = /[0-9]/;
-const PW_UPPER   = /[A-Z]/;
-const PW_SPECIAL = /[!@#$%^&*()\-_=+[\]{};':"\\|,.<>/?]/;
-
-function validateNewPw(pw: string): string | null {
-  if (!pw)             return "Password is required.";
-  if (pw.length < 8)   return "Password must be at least 8 characters.";
-  if (!PW_UPPER.test(pw))   return "Password must contain at least one uppercase letter.";
-  if (!PW_NUM.test(pw))     return "Password must contain at least one number.";
-  if (!PW_SPECIAL.test(pw)) return "Password must contain at least one special character.";
-  return null;
-}
 
 export function ForgotPasswordModal({
   email, initialExpiresAt, dark, accent, accentBtn, btnShadow, onClose, onPasswordReset, onNewExpiry,
@@ -109,7 +97,7 @@ export function ForgotPasswordModal({
 
   function handleSetPassword() {
     const e: typeof pwErrors = {};
-    const newPwErr = validateNewPw(newPw);
+    const newPwErr = validatePwComplexity(newPw);
     if (newPwErr) e.newPw = newPwErr;
     if (!confirmPw) e.confirmPw = "Please confirm your password.";
     else if (newPw !== confirmPw) e.confirmPw = "Passwords do not match.";
@@ -336,24 +324,7 @@ export function ForgotPasswordModal({
                   <div style={{ ...underlineBase, background: pwErrors.newPw ? errClr : baseLine }}/>
                   <div style={sweepLine(newPwF, !!pwErrors.newPw)}/>
                 </div>
-                {newPw && (
-                  <div style={{ display: "flex", flexWrap: "nowrap", gap: "4px 10px", marginTop: 8 }}>
-                    {[
-                      { met: newPw.length >= 8,       label: "8+ chars" },
-                      { met: PW_UPPER.test(newPw),    label: "Uppercase" },
-                      { met: PW_NUM.test(newPw),       label: "Number" },
-                      { met: PW_SPECIAL.test(newPw),   label: "Special" },
-                    ].map(({ met, label }) => (
-                      <span key={label} style={{
-                        display: "flex", alignItems: "center", gap: 4,
-                        fontSize: 11.5, fontWeight: 500,
-                        color: met ? (dark ? "#34D399" : "#059669") : errClr,
-                      }}>
-                        <span style={{ fontSize: 13 }}>{met ? "✓" : "✗"}</span>{label}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <PwRequirements pw={newPw} dark={dark} />
                 {pwErrors.newPw && (
                   <p style={{ margin: "6px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{pwErrors.newPw}</p>
                 )}
