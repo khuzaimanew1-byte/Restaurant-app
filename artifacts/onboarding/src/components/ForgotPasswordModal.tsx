@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { forgotPasswordRequest, resetPassword, AppError } from "../lib/api";
-import { Spinner, validatePwComplexity, PW_NUM, PW_UPPER, PW_SPECIAL, PwRequirements } from "../lib/shared";
+import { Spinner, validatePwComplexity, PW_NUM, PW_UPPER, PW_SPECIAL, PwRequirements, FieldError } from "../lib/shared";
 import { OtpSheet, maskEmail } from "./OtpSheet";
 
 interface Props {
@@ -325,9 +325,7 @@ export function ForgotPasswordModal({
                   <div style={sweepLine(newPwF, !!pwErrors.newPw)}/>
                 </div>
                 <PwRequirements pw={newPw} dark={dark} />
-                {pwErrors.newPw && (
-                  <p style={{ margin: "6px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{pwErrors.newPw}</p>
-                )}
+                <FieldError message={pwErrors.newPw} dark={dark} />
               </div>
 
               <div style={{ marginBottom: 28 }}>
@@ -361,9 +359,7 @@ export function ForgotPasswordModal({
                   <div style={{ ...underlineBase, background: pwErrors.confirmPw ? errClr : baseLine }}/>
                   <div style={sweepLine(confPwF, !!pwErrors.confirmPw)}/>
                 </div>
-                {pwErrors.confirmPw && (
-                  <p style={{ margin: "6px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{pwErrors.confirmPw}</p>
-                )}
+                <FieldError message={pwErrors.confirmPw} dark={dark} />
               </div>
 
               <button

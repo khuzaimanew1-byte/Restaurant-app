@@ -4,7 +4,7 @@ import { login, getOtpStatus, forgotPasswordRequest, AppError } from "../lib/api
 import { OtpModal } from "./OtpModal";
 import { ForgotPasswordModal } from "./ForgotPasswordModal";
 import { OtpBanner } from "./OtpBanner";
-import { useDarkMode, Spinner, PW_NUM, PW_UPPER, PW_SPECIAL, validatePwComplexity, PwRequirements, useShake, useCountdown } from "../lib/shared";
+import { useDarkMode, Spinner, PW_NUM, PW_UPPER, PW_SPECIAL, validatePwComplexity, PwRequirements, FieldError, useShake, useCountdown } from "../lib/shared";
 
 interface Props {
   onSuccess: (email: string, role: string, sessionToken: string) => void;
@@ -414,6 +414,7 @@ export function LoginPage({ onSuccess }: Props) {
               <div style={sweepLine(pwF, !!errors.password)}/>
             </div>
             <PwRequirements pw={password} dark={dark} />
+            <FieldError message={errors.password} dark={dark} />
 
             {/* Forgot password link — disabled when any OTP active */}
             <div style={{ textAlign: "right", marginTop: 8 }}>

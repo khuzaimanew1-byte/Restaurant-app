@@ -82,6 +82,14 @@ export function useShake(duration = 480): [boolean, () => void] {
   return [shaking, trigger];
 }
 
+export function FieldError({ message, dark }: { message?: string; dark: boolean }) {
+  if (!message) return null;
+  const errClr = dark ? "#F87171" : "#DC2626";
+  return (
+    <p style={{ margin: "6px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{message}</p>
+  );
+}
+
 export function Spinner({ size = 19 }: { size?: number }) {
   return (
     <span style={{
