@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Spinner, formatCountdown, useCountdown, useShake, AlertBox, BottomSheet, useFormColors } from "../lib/shared";
+import { Spinner, formatCountdown } from "../lib/shared";
 
 export function maskEmail(email: string): string {
   const atIdx = email.indexOf("@");
@@ -26,7 +26,6 @@ interface OtpSheetProps {
   onResend: () => void;
   onClose: () => void;
   footer?: React.ReactNode;
-  externalVisible?: boolean;
 }
 
 export function OtpSheet({
@@ -34,37 +33,38 @@ export function OtpSheet({
   expiresAt, title, verifyLabel = "Verify & Continue",
   verifying = false, resending = false, error = "",
   onVerify, onResend, onClose,
-  footer, externalVisible,
+  footer,
 }: OtpSheetProps) {
-  const [otp, setOtp]            = useState(["", "", "", "", "", ""]);
+  const [otp, setOtp]           = useState(["", "", "", "", "", ""]);
   const [sheetVisible, setSheet] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [shake, setShake]       = useState(false);
+  const [remainingMs, setMs]    = useState(() => Math.max(0, expiresAt - Date.now()));
+  const shakeTimer  = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const inputRefs   = useRef<(HTMLInputElement | null)[]>([]);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const remainingMs           = useCountdown(expiresAt);
-  const [shake, triggerShake] = useShake();
-  const { headClr, subClr }   = useFormColors(dark);
+  function triggerShake() {
+    setShake(false);
+    clearTimeout(shakeTimer.current);
+    requestAnimationFrame(() => {
+      setShake(true);
+      shakeTimer.current = setTimeout(() => setShake(false), 450);
+    });
+  }
 
-  const resolvedVisible = externalVisible !== undefined ? externalVisible : sheetVisible;
-
+  useEffect(() => { const id = setTimeout(() => setSheet(true), 20); return () => clearTimeout(id); }, []);
+  useEffect(() => { setMs(Math.max(0, expiresAt - Date.now())); }, [expiresAt]);
   useEffect(() => {
-    if (externalVisible !== undefined) return;
-    const id = setTimeout(() => setSheet(true), 20);
-    return () => clearTimeout(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const prevVis = useRef(false);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => setMs(Math.max(0, expiresAt - Date.now())), 1000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [expiresAt]);
   useEffect(() => {
-    if (resolvedVisible && !prevVis.current) {
-      setOtp(["", "", "", "", "", ""]);
-      setTimeout(() => inputRefs.current[0]?.focus(), 320);
-    }
-    prevVis.current = resolvedVisible;
-  }, [resolvedVisible]);
+    if (sheetVisible) setTimeout(() => inputRefs.current[0]?.focus(), 320);
+  }, [sheetVisible]);
 
   useEffect(() => {
     if (error) triggerShake();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error]);
 
   function handleKey(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
@@ -77,7 +77,9 @@ export function OtpSheet({
     const digit = val.replace(/\D/g, "").slice(-1);
     const n = [...otp]; n[i] = digit; setOtp(n);
     if (digit && i < 5) setTimeout(() => inputRefs.current[i + 1]?.focus(), 0);
-    if (digit && i === 5 && n.every(d => d !== "") && remainingMs > 0) onVerify(n.join(""));
+    if (digit && i === 5 && n.every(d => d !== "") && remainingMs > 0) {
+      onVerify(n.join(""));
+    }
   }
   function handlePaste(e: React.ClipboardEvent) {
     e.preventDefault();
@@ -86,6 +88,7 @@ export function OtpSheet({
     setTimeout(() => inputRefs.current[Math.min(digits.length, 5)]?.focus(), 0);
     if (digits.length === 6 && remainingMs > 0) onVerify(digits.join(""));
   }
+
   function handleVerifyClick() {
     const code = otp.join("");
     if (code.length < 6 || remainingMs <= 0) return;
@@ -96,31 +99,67 @@ export function OtpSheet({
   const filled    = otp.join("").length === 6;
   const canVerify = filled && !verifying && !expired;
 
+  const cardBg    = dark ? "rgba(12,10,35,0.97)"   : "rgba(255,255,255,0.98)";
+  const headClr   = dark ? "rgba(242,241,255,0.97)" : "#09071E";
+  const subClr    = dark ? "rgba(200,197,245,0.52)" : "rgba(13,11,30,0.46)";
   const boxBorder = dark ? "rgba(255,255,255,0.11)" : "rgba(13,11,30,0.12)";
   const boxBg     = dark ? "rgba(255,255,255,0.04)" : "rgba(249,248,255,0.7)";
   const boxFocBg  = dark ? "rgba(127,120,242,0.14)" : "rgba(79,70,229,0.06)";
   const boxTxt    = dark ? "rgba(242,241,255,0.96)" : "#09071E";
+  const handleClr = dark ? "rgba(255,255,255,0.14)" : "rgba(13,11,30,0.12)";
+  const errClr    = dark ? "#F87171" : "#DC2626";
+  const translateY = sheetVisible ? "0px" : "100%";
 
   const verifyBg = canVerify
     ? accentBtn
     : filled && expired
       ? dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.12)"
       : dark ? "rgba(99,92,238,0.22)" : "rgba(79,70,229,0.14)";
-  const verifyClr = canVerify ? "#fff"
+  const verifyClr = canVerify
+    ? "#fff"
     : filled && expired
-      ? dark ? "#F87171" : "#DC2626"
+      ? errClr
       : dark ? "rgba(200,197,245,0.38)" : "rgba(79,70,229,0.38)";
 
   return (
-    <BottomSheet dark={dark} visible={resolvedVisible} zIndex={200}>
-      <div style={{ padding: "0 clamp(24px,6vw,36px) clamp(28px,7vw,44px)", position: "relative" }}>
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        display: "flex", alignItems: "flex-end", justifyContent: "center",
+        padding: "0 0 env(safe-area-inset-bottom,0)",
+      }}
+    >
+      <div style={{
+        position: "absolute", inset: 0,
+        background: dark ? "rgba(4,3,20,0.76)" : "rgba(13,11,30,0.50)",
+        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+        opacity: sheetVisible ? 1 : 0,
+        transition: "opacity 0.36s ease",
+      }}/>
 
-        {verifying && (
-          <div style={{ position: "absolute", top: -4, right: "clamp(24px,6vw,36px)", display: "flex", alignItems: "center", gap: 6 }}>
-            <Spinner size={14} />
-            <span style={{ fontSize: 12, color: subClr }}>Verifying…</span>
-          </div>
-        )}
+      <div style={{
+        position: "relative", zIndex: 1,
+        width: "100%", maxWidth: 460,
+        background: cardBg,
+        borderRadius: "28px 28px 0 0",
+        backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)",
+        border: `1px solid ${dark ? "rgba(255,255,255,0.08)" : "rgba(13,11,30,0.06)"}`,
+        borderBottom: "none",
+        boxShadow: dark
+          ? "0 -24px 80px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.06)"
+          : "0 -24px 80px rgba(13,11,30,0.14), 0 -1px 0 rgba(255,255,255,0.9)",
+        transform: `translateY(${translateY})`,
+        transition: "transform 0.46s cubic-bezier(0.22,1,0.36,1)",
+        boxSizing: "border-box", willChange: "transform",
+        padding: "0 clamp(24px,6vw,36px) clamp(32px,8vw,48px)",
+      }}>
+
+        <div style={{
+          padding: "16px 0 24px", display: "flex", justifyContent: "center",
+          cursor: "default", userSelect: "none", margin: "0 -36px",
+        }}>
+          <div style={{ width: 38, height: 5, borderRadius: 100, background: handleClr }}/>
+        </div>
 
         <h3 style={{
           fontSize: "clamp(24px,6vw,30px)", fontWeight: 800,
@@ -128,14 +167,27 @@ export function OtpSheet({
         }}>
           {title}
         </h3>
-        <p style={{ fontSize: 14.5, color: subClr, margin: "0 0 28px", letterSpacing: "-0.01em", lineHeight: 1.6 }}>
+        <p style={{
+          fontSize: 14.5, color: subClr, margin: "0 0 32px",
+          letterSpacing: "-0.01em", lineHeight: 1.6,
+        }}>
           We sent a 6-digit code to{" "}
           <span style={{ color: headClr, fontWeight: 600 }}>{maskEmail(email)}</span>
         </p>
 
+        {verifying && (
+          <div style={{
+            position: "absolute", top: 20, right: 24,
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <Spinner size={14} />
+            <span style={{ fontSize: 12, color: subClr }}>Verifying…</span>
+          </div>
+        )}
+
         <div
           className={shake ? "otp-shake" : ""}
-          style={{ display: "flex", gap: "clamp(7px,2.2vw,10px)", marginBottom: 24, justifyContent: "center" }}
+          style={{ display: "flex", gap: "clamp(7px,2.2vw,10px)", marginBottom: 28, justifyContent: "center" }}
           onPaste={handlePaste}
         >
           {otp.map((val, i) => (
@@ -149,7 +201,7 @@ export function OtpSheet({
               style={{
                 width: "clamp(44px,13vw,52px)", height: "clamp(56px,16vw,64px)",
                 borderRadius: 16,
-                border: `1.5px solid ${error && !val ? (dark ? "#F87171" : "#DC2626") : val ? accent : boxBorder}`,
+                border: `1.5px solid ${error && !val ? errClr : val ? accent : boxBorder}`,
                 background: val ? boxFocBg : boxBg,
                 fontSize: 24, fontWeight: 700, textAlign: "center",
                 color: boxTxt, fontFamily: "inherit",
@@ -162,15 +214,7 @@ export function OtpSheet({
           ))}
         </div>
 
-        {(error || expired) && (
-          <AlertBox
-            message={error || "OTP expired. Request a new code to continue."}
-            dark={dark}
-            mb={14}
-          />
-        )}
-
-        {verifying ? (
+        {verifying && (
           <div style={{
             width: "100%", height: 54, borderRadius: 16, marginBottom: 14,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -179,26 +223,26 @@ export function OtpSheet({
             <Spinner size={18} />
             <span style={{ fontSize: 15, fontWeight: 600, color: dark ? "rgba(200,197,245,0.6)" : "rgba(79,70,229,0.6)" }}>Verifying…</span>
           </div>
-        ) : (
-          <button
-            onClick={handleVerifyClick}
-            disabled={!canVerify}
-            style={{
-              width: "100%", height: 54, borderRadius: 16, border: "none",
-              cursor: canVerify ? "pointer" : "default",
-              background: verifyBg, color: verifyClr,
-              fontSize: 15, fontWeight: 700, letterSpacing: "-0.02em",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: canVerify ? btnShadow : "none",
-              transition: "background 0.25s, box-shadow 0.2s, color 0.22s",
-              fontFamily: "inherit", marginBottom: 14,
-            }}
-          >
-            {verifyLabel}
-          </button>
         )}
 
-        <div style={{ textAlign: "center", marginBottom: footer ? 14 : 4 }}>
+        {(error || expired) && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
+            border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
+            borderRadius: 12, padding: "10px 14px", marginBottom: 14,
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+              <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
+            </svg>
+            <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5 }}>
+              {error || "OTP expired. Request a new code to continue."}
+            </span>
+          </div>
+        )}
+
+        <div style={{ textAlign: "center", marginBottom: footer ? 16 : 0 }}>
           {expired ? (
             <button
               onClick={onResend}
@@ -206,9 +250,11 @@ export function OtpSheet({
               style={{
                 background: "none", border: "none",
                 cursor: resending ? "default" : "pointer",
-                fontSize: 13.5, fontWeight: 600, color: accent,
+                fontSize: 13.5, fontWeight: 600,
+                color: accent,
                 fontFamily: "inherit", letterSpacing: "-0.01em", padding: "4px 0",
-                opacity: resending ? 0.6 : 1, transition: "opacity 0.18s ease",
+                opacity: resending ? 0.6 : 1,
+                transition: "opacity 0.18s ease",
               }}
             >
               {resending ? "Sending…" : "Resend OTP"}
@@ -220,13 +266,15 @@ export function OtpSheet({
               letterSpacing: "-0.01em",
             }}>
               Resend in{" "}
-              <strong style={{ fontWeight: 600 }}>{formatCountdown(remainingMs)}</strong>
+              <strong style={{ fontWeight: 600 }}>
+                {formatCountdown(remainingMs)}
+              </strong>
             </span>
           )}
         </div>
 
         {footer}
       </div>
-    </BottomSheet>
+    </div>
   );
 }

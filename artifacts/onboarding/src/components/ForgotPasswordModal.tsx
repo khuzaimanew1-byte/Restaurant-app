@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { forgotPasswordRequest, resetPassword, AppError } from "../lib/api";
-import { Spinner, validatePwComplexity, PW_NUM, PW_UPPER, PW_SPECIAL, PwRequirements, FieldError, BottomSheet, AlertBox, PasswordToggle, formField, useFormColors } from "../lib/shared";
+import { Spinner, formatCountdown, validatePwComplexity, PW_NUM, PW_UPPER, PW_SPECIAL, PwRequirements } from "../lib/shared";
 import { OtpSheet, maskEmail } from "./OtpSheet";
 
 interface Props {
@@ -14,13 +14,11 @@ interface Props {
   onClose: () => void;
   onPasswordReset: () => void;
   onNewExpiry?: (expiresAt: number) => void;
-  externalVisible?: boolean;
 }
 
 
 export function ForgotPasswordModal({
   email, initialExpiresAt, dark, accent, accentBtn, btnShadow, onClose, onPasswordReset, onNewExpiry,
-  externalVisible,
 }: Props) {
   const [step, setStep]             = useState<0 | 1>(0);
   const [savedOtp, setSavedOtp]     = useState("");
@@ -46,10 +44,6 @@ export function ForgotPasswordModal({
     }
     return undefined;
   }, [step]);
-
-  useEffect(() => {
-    if (externalVisible === false) setStep1Vis(false);
-  }, [externalVisible]);
 
   const resendMutation = useMutation({
     mutationFn: () => forgotPasswordRequest(email),
@@ -112,8 +106,57 @@ export function ForgotPasswordModal({
     resetMutation.mutate();
   }
 
-  const { headClr, subClr, successClr }                                          = useFormColors(dark);
-  const { errClr, FIELD_H, inputBase, labelStyle, sweepLine, underlineStyle } = formField(dark, accent);
+  const cardBg    = dark ? "rgba(12,10,35,0.97)"   : "rgba(255,255,255,0.98)";
+  const headClr   = dark ? "rgba(242,241,255,0.97)" : "#09071E";
+  const subClr    = dark ? "rgba(200,197,245,0.52)" : "rgba(13,11,30,0.46)";
+  const errClr    = dark ? "#F87171" : "#DC2626";
+  const baseLine  = dark ? "rgba(255,255,255,0.09)" : "rgba(13,11,30,0.13)";
+  const inputTxt  = dark ? "rgba(238,237,255,0.93)" : "#09071E";
+  const idleLbl   = dark ? "rgba(200,197,245,0.36)" : "rgba(13,11,30,0.36)";
+  const activeLbl = dark ? "rgba(200,197,245,0.60)" : "rgba(13,11,30,0.52)";
+  const successClr = dark ? "#34D399" : "#059669";
+
+  const FIELD_H  = 58;
+  const INPUT_H  = 34;
+  const INPUT_PB = 10;
+  const IDLE_TOP = FIELD_H - (INPUT_H / 2) - (INPUT_PB / 2) - 8;
+
+  function labelStyle(active: boolean, focused: boolean, err: boolean): React.CSSProperties {
+    return {
+      position: "absolute", left: 0,
+      top: active ? 2 : IDLE_TOP,
+      fontSize:      active ? 10.5 : 15.5,
+      fontWeight:    active ? 700 : 400,
+      letterSpacing: active ? "0.09em" : "-0.015em",
+      textTransform: active ? "uppercase" : "none" as const,
+      lineHeight: 1, whiteSpace: "nowrap" as const, pointerEvents: "none" as const,
+      color: err ? errClr : focused ? accent : active ? activeLbl : idleLbl,
+      transition: "top 0.28s cubic-bezier(0.22,1,0.36,1), font-size 0.28s, color 0.22s, letter-spacing 0.28s",
+    };
+  }
+
+  const inputBase: React.CSSProperties = {
+    position: "absolute", bottom: 0, left: 0, right: 0, height: INPUT_H,
+    background: "none", border: "none", outline: "none", borderRadius: 0,
+    fontSize: 15.5, color: inputTxt, paddingBottom: INPUT_PB,
+    fontFamily: "inherit", letterSpacing: "-0.015em",
+    WebkitAppearance: "none", boxSizing: "border-box",
+  };
+
+  const underlineBase: React.CSSProperties = {
+    position: "absolute", bottom: 0, left: 0, right: 0, height: 1.5,
+    transition: "background 0.22s ease",
+  };
+
+  function sweepLine(focused: boolean, err: boolean): React.CSSProperties {
+    return {
+      position: "absolute", bottom: 0, left: 0,
+      height: 2, borderRadius: 2,
+      width: focused ? "100%" : "0%",
+      background: err ? errClr : accent,
+      transition: "width 0.38s cubic-bezier(0.22,1,0.36,1)",
+    };
+  }
 
   if (step === 0) {
     return (
@@ -132,7 +175,6 @@ export function ForgotPasswordModal({
         onVerify={handleVerify}
         onResend={handleResend}
         onClose={onClose}
-        externalVisible={externalVisible}
         footer={
           <button
             onClick={() => { onClose(); }}
@@ -169,8 +211,43 @@ export function ForgotPasswordModal({
   }
 
   return (
-    <BottomSheet dark={dark} visible={step1Visible && externalVisible !== false} zIndex={200}>
-      <div style={{ padding: "6px clamp(24px,6vw,36px) clamp(32px,8vw,48px)" }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div style={{
+        position: "absolute", inset: 0,
+        background: dark ? "rgba(4,3,20,0.76)" : "rgba(13,11,30,0.50)",
+        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+        opacity: step1Visible ? 1 : 0, transition: "opacity 0.36s ease",
+      }}/>
+
+      <div style={{
+        position: "relative", zIndex: 1,
+        width: "100%", maxWidth: 460,
+        background: cardBg,
+        borderRadius: "28px 28px 0 0",
+        backdropFilter: "blur(40px)", WebkitBackdropFilter: "blur(40px)",
+        border: `1px solid ${dark ? "rgba(255,255,255,0.08)" : "rgba(13,11,30,0.06)"}`,
+        borderBottom: "none",
+        boxShadow: dark
+          ? "0 -24px 80px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.06)"
+          : "0 -24px 80px rgba(13,11,30,0.14), 0 -1px 0 rgba(255,255,255,0.9)",
+        transform: step1Visible ? "translateY(0)" : "translateY(100%)",
+        transition: "transform 0.46s cubic-bezier(0.22,1,0.36,1), opacity 0.36s ease",
+        boxSizing: "border-box", willChange: "transform",
+        overflow: "hidden",
+      }}>
+        <style>{`
+          @keyframes fp-shake {
+            0%,100%{transform:translateX(0)}
+            15%,45%,75%{transform:translateX(-6px)}
+            30%,60%{transform:translateX(6px)}
+          }
+        `}</style>
+
+        <div style={{ padding: "16px 0 0", display: "flex", justifyContent: "center" }}>
+          <div style={{ width: 38, height: 5, borderRadius: 100, background: dark ? "rgba(255,255,255,0.14)" : "rgba(13,11,30,0.12)" }}/>
+        </div>
+
+        <div style={{ padding: "20px clamp(24px,6vw,36px) clamp(32px,8vw,48px)" }}>
           {pwSuccess ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0 20px" }}>
               <div style={{
@@ -201,7 +278,20 @@ export function ForgotPasswordModal({
                 For <span style={{ color: headClr, fontWeight: 600 }}>{maskEmail(email)}</span> — must include a number and special character.
               </p>
 
-              {pwErrors.general && <AlertBox message={pwErrors.general} dark={dark} mb={20} />}
+              {pwErrors.general && (
+                <div style={{
+                  display: "flex", alignItems: "flex-start", gap: 10,
+                  background: dark ? "rgba(248,113,113,0.08)" : "rgba(220,38,38,0.06)",
+                  border: `1px solid ${dark ? "rgba(248,113,113,0.2)" : "rgba(220,38,38,0.14)"}`,
+                  borderRadius: 12, padding: "11px 14px", marginBottom: 20,
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+                    <circle cx="12" cy="12" r="9" stroke={errClr} strokeWidth="2"/>
+                    <path d="M12 8v5M12 16v.5" stroke={errClr} strokeWidth="2.2" strokeLinecap="round"/>
+                  </svg>
+                  <span style={{ fontSize: 13, color: errClr, lineHeight: 1.5 }}>{pwErrors.general}</span>
+                </div>
+              )}
 
               <div style={{ marginBottom: 24 }}>
                 <div style={{ position: "relative", height: FIELD_H }}>
@@ -215,12 +305,29 @@ export function ForgotPasswordModal({
                     onKeyDown={e => { if (e.key === "Enter") document.getElementById("fp-confirm-pw")?.focus(); }}
                     style={{ ...inputBase, right: 34 }}
                   />
-                  <PasswordToggle shown={showNewPw} onToggle={() => setShowNewPw(s => !s)} dark={dark} />
-                  <div style={underlineStyle(!!pwErrors.newPw)}/>
+                  <button type="button" onClick={() => setShowNewPw(s => !s)} style={{
+                    position: "absolute", right: 0,
+                    bottom: INPUT_PB + (INPUT_H - INPUT_PB) / 2 - 9,
+                    width: 18, height: 18,
+                    background: "none", border: "none", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: idleLbl, opacity: 0.55, padding: 0, transition: "opacity 0.18s",
+                  }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = "0.55")}
+                  >
+                    {showNewPw
+                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
+                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="1.7"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7"/></svg>
+                    }
+                  </button>
+                  <div style={{ ...underlineBase, background: pwErrors.newPw ? errClr : baseLine }}/>
                   <div style={sweepLine(newPwF, !!pwErrors.newPw)}/>
                 </div>
                 <PwRequirements pw={newPw} dark={dark} />
-                <FieldError message={pwErrors.newPw} dark={dark} />
+                {pwErrors.newPw && (
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{pwErrors.newPw}</p>
+                )}
               </div>
 
               <div style={{ marginBottom: 28 }}>
@@ -235,11 +342,28 @@ export function ForgotPasswordModal({
                     onKeyDown={e => { if (e.key === "Enter") handleSetPassword(); }}
                     style={{ ...inputBase, right: 34 }}
                   />
-                  <PasswordToggle shown={showConfPw} onToggle={() => setShowConfPw(s => !s)} dark={dark} />
-                  <div style={underlineStyle(!!pwErrors.confirmPw)}/>
+                  <button type="button" onClick={() => setShowConfPw(s => !s)} style={{
+                    position: "absolute", right: 0,
+                    bottom: INPUT_PB + (INPUT_H - INPUT_PB) / 2 - 9,
+                    width: 18, height: 18,
+                    background: "none", border: "none", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: idleLbl, opacity: 0.55, padding: 0, transition: "opacity 0.18s",
+                  }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = "0.55")}
+                  >
+                    {showConfPw
+                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
+                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 12S5 4 12 4s11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="1.7"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7"/></svg>
+                    }
+                  </button>
+                  <div style={{ ...underlineBase, background: pwErrors.confirmPw ? errClr : baseLine }}/>
                   <div style={sweepLine(confPwF, !!pwErrors.confirmPw)}/>
                 </div>
-                <FieldError message={pwErrors.confirmPw} dark={dark} />
+                {pwErrors.confirmPw && (
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: errClr, letterSpacing: "-0.01em" }}>{pwErrors.confirmPw}</p>
+                )}
               </div>
 
               <button
@@ -266,6 +390,7 @@ export function ForgotPasswordModal({
             </>
           )}
         </div>
-    </BottomSheet>
+      </div>
+    </div>
   );
 }

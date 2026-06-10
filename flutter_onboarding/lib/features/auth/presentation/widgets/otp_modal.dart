@@ -3,10 +3,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/utils/email_utils.dart';
 import '../../../../core/widgets/app_otp_box.dart';
 import '../providers/auth_provider.dart';
 import '../providers/otp_provider.dart';
+
+String _maskEmail(String email) {
+  final at = email.indexOf('@');
+  if (at < 0) return email;
+  final local  = email.substring(0, at);
+  final domain = email.substring(at);
+  if (local.length <= 2) return '${local}***$domain';
+  return '${local.substring(0, 2)}***$domain';
+}
 
 class OtpModal extends ConsumerStatefulWidget {
   final String email;
@@ -171,7 +179,7 @@ class _OtpModalState extends ConsumerState<OtpModal> {
                   children: [
                     const TextSpan(text: 'We sent a 6-digit code to '),
                     TextSpan(
-                      text: EmailUtils.maskEmail(widget.email),
+                      text: _maskEmail(widget.email),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
