@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../core/utils/pw_validator.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/otp_banner.dart';
 import '../../../../core/widgets/pw_requirements_row.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
@@ -34,6 +36,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   bool _pendingOtp       = false;
   bool _loadingForgot    = false;
 
+  // ── OTP session tracking ──────────────────────────────────────────
+  int    _otpExpiresAt    = 0;
+  int    _remainingMs     = 0;
+  int    _forgotExpiresAt = 0;
+  int    _forgotBannerMs  = 0;
+  bool   _forgotModalOpen = false;
+  Timer? _loginOtpTimer;
+  Timer? _forgotOtpTimer;
+
+  // ── Email focus node ──────────────────────────────────────────────
+  final _emailFocus = FocusNode();
+
   // ── Entry animation ───────────────────────────────────────────────
   late final AnimationController _entryCtrl;
   late final Animation<double> _entryOpacity;
@@ -42,6 +56,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Email shake animation ─────────────────────────────────────────
   late final AnimationController _shakeCtrl;
 
+  // ── OTP banner shake animations ───────────────────────────────────
+  late final AnimationController _forgotBannerShakeCtrl;
+  late final AnimationController _otpBannerShakeCtrl;
 
   @override
   void initState() {
@@ -62,12 +79,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       vsync: this,
       duration: const Duration(milliseconds: 480),
     );
+
+    _forgotBannerShakeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+    _otpBannerShakeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+
+    _emailFocus.addListener(() {
+      if (!_emailFocus.hasFocus) _checkOtpSession(_emailCtrl.text.trim());
+    });
   }
 
   @override
   void dispose() {
     _entryCtrl.dispose();
     _shakeCtrl.dispose();
+    _forgotBannerShakeCtrl.dispose();
+    _otpBannerShakeCtrl.dispose();
+    _loginOtpTimer?.cancel();
+    _forgotOtpTimer?.cancel();
+    _emailFocus.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -95,9 +130,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _shakeCtrl.forward();
   }
 
+  // ── OTP session helpers ───────────────────────────────────────────
+
+  bool get _sessionActive      => _remainingMs > 0;
+  bool get _forgotBannerActive => !_forgotModalOpen && _forgotExpiresAt > 0 && _forgotBannerMs > 0;
+  bool get _anyOtpActive       => _sessionActive || _forgotBannerActive;
+
+  void _startLoginOtpTimer(int expiresAt) {
+    _loginOtpTimer?.cancel();
+    setState(() {
+      _otpExpiresAt = expiresAt;
+      _remainingMs  = (expiresAt - DateTime.now().millisecondsSinceEpoch).clamp(0, 999999);
+    });
+    _loginOtpTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      final ms = expiresAt - DateTime.now().millisecondsSinceEpoch;
+      setState(() => _remainingMs = ms.clamp(0, 999999));
+      if (ms <= 0) { t.cancel(); if (mounted) setState(() { _otpExpiresAt = 0; }); }
+    });
+  }
+
+  void _startForgotOtpTimer(int expiresAt) {
+    _forgotOtpTimer?.cancel();
+    setState(() {
+      _forgotExpiresAt = expiresAt;
+      _forgotBannerMs  = (expiresAt - DateTime.now().millisecondsSinceEpoch).clamp(0, 999999);
+    });
+    _forgotOtpTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      final ms = expiresAt - DateTime.now().millisecondsSinceEpoch;
+      setState(() => _forgotBannerMs = ms.clamp(0, 999999));
+      if (ms <= 0) { t.cancel(); if (mounted) setState(() { _forgotExpiresAt = 0; }); }
+    });
+  }
+
+  Future<void> _checkOtpSession(String email) async {
+    if (email.isEmpty || !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) return;
+    try {
+      final status = await _repo.getOtpStatus(email);
+      if (!mounted) return;
+      if (status.active && status.expiresAt != null) _startLoginOtpTimer(status.expiresAt!);
+    } catch (_) {}
+  }
+
+  void _triggerForgotBannerShake() {
+    HapticFeedback.mediumImpact();
+    _forgotBannerShakeCtrl.reset();
+    _forgotBannerShakeCtrl.forward();
+  }
+
+  void _triggerOtpBannerShake() {
+    HapticFeedback.mediumImpact();
+    _otpBannerShakeCtrl.reset();
+    _otpBannerShakeCtrl.forward();
+  }
+
   // ── Login ─────────────────────────────────────────────────────────
 
   void _login() {
+    if (_forgotBannerActive) { _triggerForgotBannerShake(); return; }
+    if (_sessionActive)      { _triggerOtpBannerShake();    return; }
     final pwValid = _formKey.currentState?.validate() ?? false;
     if (!_agreedToTerms) setState(() => _agreedError = true);
     if (!pwValid || !_agreedToTerms) return;
@@ -108,6 +200,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   // ── Forgot Password — calls API first, then opens modal ───────────
 
   Future<void> _handleForgotPassword() async {
+    if (_forgotBannerActive) { _triggerForgotBannerShake(); return; }
+    if (_sessionActive)      { _triggerOtpBannerShake();    return; }
     if (!_emailValid) {
       _formKey.currentState?.validate();
       _triggerEmailShake();
@@ -154,6 +248,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Future<void> _openForgotModal(int expiresAt) async {
+    _startForgotOtpTimer(expiresAt);
+    setState(() => _forgotModalOpen = true);
     await showModalBottomSheet<void>(
       context:            context,
       isScrollControlled: true,
@@ -163,8 +259,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       builder: (_) => ForgotPasswordModal(
         email:            _emailCtrl.text.trim(),
         initialExpiresAt: expiresAt,
+        onNewExpiry:      (exp) => _startForgotOtpTimer(exp),
         onPasswordReset:  () {
           _passwordCtrl.clear();
+          _forgotOtpTimer?.cancel();
+          if (mounted) setState(() { _forgotExpiresAt = 0; _forgotBannerMs = 0; });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content:         Text('Password updated! Please sign in.'),
@@ -176,6 +275,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         onClose: () => Navigator.of(context).pop(),
       ),
     );
+    if (mounted) setState(() => _forgotModalOpen = false);
   }
 
   // ── OTP modal ─────────────────────────────────────────────────────
@@ -206,9 +306,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     ref.listen<AuthState>(authProvider, (_, next) {
       if (next is AuthSuccess) {
-        setState(() => _pendingOtp = false);
+        _loginOtpTimer?.cancel();
+        setState(() { _pendingOtp = false; _otpExpiresAt = 0; _remainingMs = 0; });
       } else if (next is AuthOtpPending) {
         setState(() => _pendingOtp = false);
+        _startLoginOtpTimer(next.expiresAt);
         _showOtpModal(next.email, next.pendingPassword, next.expiresAt);
       }
     });
@@ -224,12 +326,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         child: SafeArea(
-          child: FadeTransition(
-            opacity: _entryOpacity,
-            child: SlideTransition(
-              position: _entrySlide,
-              child: CustomScrollView(
-                slivers: [
+          child: Column(
+            children: [
+              if (_forgotBannerActive)
+                OtpBanner(
+                  isDark:      isDark,
+                  label:       'Reset OTP active',
+                  remainingMs: _forgotBannerMs,
+                  actionLabel: 'Enter Code →',
+                  onAction:    () => _openForgotModal(_forgotExpiresAt),
+                  shakeCtrl:   _forgotBannerShakeCtrl,
+                ),
+              if (_sessionActive)
+                OtpBanner(
+                  isDark:      isDark,
+                  label:       'OTP session active',
+                  remainingMs: _remainingMs,
+                  actionLabel: 'Verify OTP',
+                  onAction:    () {
+                    if (!_emailValid) { _triggerEmailShake(); return; }
+                    _showOtpModal(_emailCtrl.text.trim(), _passwordCtrl.text, _otpExpiresAt);
+                  },
+                  shakeCtrl:   _otpBannerShakeCtrl,
+                ),
+              Expanded(
+                child: FadeTransition(
+                  opacity: _entryOpacity,
+                  child: SlideTransition(
+                    position: _entrySlide,
+                    child: CustomScrollView(
+                      slivers: [
                   SliverFillRemaining(
                     hasScrollBody: false,
                     child: Padding(
@@ -269,6 +395,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                               },
                               child: TextFormField(
                                 controller:      _emailCtrl,
+                                focusNode:       _emailFocus,
                                 keyboardType:    TextInputType.emailAddress,
                                 autocorrect:     false,
                                 textInputAction: TextInputAction.next,
@@ -339,7 +466,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                       ),
                                     )
                                   : TextButton(
-                                      onPressed: _handleForgotPassword,
+                                      onPressed: _anyOtpActive ? null : _handleForgotPassword,
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(vertical: 4),
                                         minimumSize: Size.zero,
@@ -440,7 +567,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
                             AppButton(
                               label:     'Sign In',
-                              onPressed: isLoading ? null : _login,
+                              onPressed: (isLoading || _anyOtpActive) ? null : _login,
                               isLoading: isLoading,
                             ),
                             const SizedBox(height: 22),
@@ -509,6 +636,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
             ),
           ),
+        ),
+      ],
+    ),
         ),
       ),
     );

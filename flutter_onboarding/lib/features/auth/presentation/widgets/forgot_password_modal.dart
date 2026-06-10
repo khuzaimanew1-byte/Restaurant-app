@@ -26,6 +26,7 @@ class ForgotPasswordModal extends StatefulWidget {
   final int initialExpiresAt;
   final VoidCallback onPasswordReset;
   final VoidCallback onClose;
+  final ValueChanged<int>? onNewExpiry;
 
   const ForgotPasswordModal({
     super.key,
@@ -33,6 +34,7 @@ class ForgotPasswordModal extends StatefulWidget {
     required this.initialExpiresAt,
     required this.onPasswordReset,
     required this.onClose,
+    this.onNewExpiry,
   });
 
   @override
@@ -162,6 +164,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
     try {
       final expiresAt = await _repo.forgotPassword(widget.email);
       _initCountdown(expiresAt);
+      widget.onNewExpiry?.call(expiresAt);
       for (final c in _otpCtls) c.clear();
       setState(() { _resending = false; });
       _otpFoci[0].requestFocus();
