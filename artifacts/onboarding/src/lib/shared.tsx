@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 export const PW_NUM     = /[0-9]/;
 export const PW_UPPER   = /[A-Z]/;
@@ -47,6 +47,41 @@ export function useDarkMode(): [boolean, React.Dispatch<React.SetStateAction<boo
   return [dark, setDark];
 }
 
+/**
+ * Counts down from `expiresAt` timestamp (ms epoch).
+ * Pass `null` to pause / return 0 immediately.
+ */
+export function useCountdown(expiresAt: number | null): number {
+  const [ms, setMs] = useState(() =>
+    expiresAt ? Math.max(0, expiresAt - Date.now()) : 0
+  );
+  useEffect(() => {
+    if (!expiresAt) { setMs(0); return; }
+    setMs(Math.max(0, expiresAt - Date.now()));
+    const id = setInterval(() => setMs(Math.max(0, expiresAt - Date.now())), 1_000);
+    return () => clearInterval(id);
+  }, [expiresAt]);
+  return ms;
+}
+
+/**
+ * Returns [isShaking, triggerShake].
+ * Calling triggerShake() resets & re-triggers the CSS shake class for `duration` ms.
+ */
+export function useShake(duration = 480): [boolean, () => void] {
+  const [shaking, setShaking] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const trigger = useCallback(() => {
+    setShaking(false);
+    clearTimeout(timer.current);
+    requestAnimationFrame(() => {
+      setShaking(true);
+      timer.current = setTimeout(() => setShaking(false), duration);
+    });
+  }, [duration]);
+  return [shaking, trigger];
+}
+
 export function Spinner({ size = 19 }: { size?: number }) {
   return (
     <span style={{
@@ -65,6 +100,6 @@ export function formatTimer(ms: number): string {
 
 export function formatCountdown(ms: number): string {
   if (ms <= 0) return "0s";
-  if (ms < 60000) return `${Math.ceil(ms / 1000)}s`;
-  return `${Math.ceil(ms / 60000)} min`;
+  if (ms < 60_000) return `${Math.ceil(ms / 1000)}s`;
+  return `${Math.ceil(ms / 60_000)} min`;
 }

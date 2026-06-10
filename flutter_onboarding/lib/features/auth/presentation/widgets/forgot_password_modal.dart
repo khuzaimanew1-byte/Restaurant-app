@@ -5,21 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/email_utils.dart';
 import '../../../../core/utils/pw_validator.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_otp_box.dart';
 import '../../../../core/widgets/pw_requirements_row.dart';
 import '../../data/repositories/auth_repository.dart';
-
-// Mask email: jo***@example.com
-String _maskEmail(String email) {
-  final at = email.indexOf('@');
-  if (at < 0) return email;
-  final local  = email.substring(0, at);
-  final domain = email.substring(at);
-  if (local.length <= 2) return '${local}***$domain';
-  return '${local.substring(0, 2)}***$domain';
-}
 
 class ForgotPasswordModal extends StatefulWidget {
   final String email;
@@ -358,7 +349,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
               children: [
                 const TextSpan(text: 'We sent a 6-digit code to '),
                 TextSpan(
-                  text: _maskEmail(widget.email),
+                  text: EmailUtils.maskEmail(widget.email),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
@@ -534,7 +525,7 @@ class _ForgotPasswordModalState extends State<ForgotPasswordModal>
               children: [
                 const TextSpan(text: 'For '),
                 TextSpan(
-                  text: _maskEmail(widget.email),
+                  text: EmailUtils.maskEmail(widget.email),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,

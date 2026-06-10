@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Spinner, formatCountdown } from "../lib/shared";
+import { Spinner, formatCountdown, useCountdown, useShake } from "../lib/shared";
 
 export function maskEmail(email: string): string {
   const atIdx = email.indexOf("@");
@@ -37,34 +37,18 @@ export function OtpSheet({
 }: OtpSheetProps) {
   const [otp, setOtp]           = useState(["", "", "", "", "", ""]);
   const [sheetVisible, setSheet] = useState(false);
-  const [shake, setShake]       = useState(false);
-  const [remainingMs, setMs]    = useState(() => Math.max(0, expiresAt - Date.now()));
-  const shakeTimer  = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const inputRefs   = useRef<(HTMLInputElement | null)[]>([]);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  function triggerShake() {
-    setShake(false);
-    clearTimeout(shakeTimer.current);
-    requestAnimationFrame(() => {
-      setShake(true);
-      shakeTimer.current = setTimeout(() => setShake(false), 450);
-    });
-  }
+  const remainingMs         = useCountdown(expiresAt);
+  const [shake, triggerShake] = useShake();
 
   useEffect(() => { const id = setTimeout(() => setSheet(true), 20); return () => clearTimeout(id); }, []);
-  useEffect(() => { setMs(Math.max(0, expiresAt - Date.now())); }, [expiresAt]);
-  useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => setMs(Math.max(0, expiresAt - Date.now())), 1000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [expiresAt]);
   useEffect(() => {
     if (sheetVisible) setTimeout(() => inputRefs.current[0]?.focus(), 320);
   }, [sheetVisible]);
-
   useEffect(() => {
     if (error) triggerShake();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error]);
 
   function handleKey(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
@@ -88,7 +72,6 @@ export function OtpSheet({
     setTimeout(() => inputRefs.current[Math.min(digits.length, 5)]?.focus(), 0);
     if (digits.length === 6 && remainingMs > 0) onVerify(digits.join(""));
   }
-
   function handleVerifyClick() {
     const code = otp.join("");
     if (code.length < 6 || remainingMs <= 0) return;
@@ -108,7 +91,6 @@ export function OtpSheet({
   const boxTxt    = dark ? "rgba(242,241,255,0.96)" : "#09071E";
   const handleClr = dark ? "rgba(255,255,255,0.14)" : "rgba(13,11,30,0.12)";
   const errClr    = dark ? "#F87171" : "#DC2626";
-  const translateY = sheetVisible ? "0px" : "100%";
 
   const verifyBg = canVerify
     ? accentBtn
@@ -148,7 +130,7 @@ export function OtpSheet({
         boxShadow: dark
           ? "0 -24px 80px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.06)"
           : "0 -24px 80px rgba(13,11,30,0.14), 0 -1px 0 rgba(255,255,255,0.9)",
-        transform: `translateY(${translateY})`,
+        transform: sheetVisible ? "translateY(0px)" : "translateY(100%)",
         transition: "transform 0.46s cubic-bezier(0.22,1,0.36,1)",
         boxSizing: "border-box", willChange: "transform",
         padding: "0 clamp(24px,6vw,36px) clamp(32px,8vw,48px)",
@@ -242,6 +224,25 @@ export function OtpSheet({
           </div>
         )}
 
+        {!verifying && (
+          <button
+            onClick={handleVerifyClick}
+            disabled={!canVerify}
+            style={{
+              width: "100%", height: 54, borderRadius: 16, border: "none",
+              cursor: canVerify ? "pointer" : "default",
+              background: verifyBg, color: verifyClr,
+              fontSize: 15, fontWeight: 700, letterSpacing: "-0.02em",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: canVerify ? btnShadow : "none",
+              transition: "background 0.25s, box-shadow 0.2s, color 0.22s",
+              fontFamily: "inherit", marginBottom: 14,
+            }}
+          >
+            {verifyLabel}
+          </button>
+        )}
+
         <div style={{ textAlign: "center", marginBottom: footer ? 16 : 0 }}>
           {expired ? (
             <button
@@ -250,11 +251,9 @@ export function OtpSheet({
               style={{
                 background: "none", border: "none",
                 cursor: resending ? "default" : "pointer",
-                fontSize: 13.5, fontWeight: 600,
-                color: accent,
+                fontSize: 13.5, fontWeight: 600, color: accent,
                 fontFamily: "inherit", letterSpacing: "-0.01em", padding: "4px 0",
-                opacity: resending ? 0.6 : 1,
-                transition: "opacity 0.18s ease",
+                opacity: resending ? 0.6 : 1, transition: "opacity 0.18s ease",
               }}
             >
               {resending ? "Sending…" : "Resend OTP"}
@@ -266,9 +265,7 @@ export function OtpSheet({
               letterSpacing: "-0.01em",
             }}>
               Resend in{" "}
-              <strong style={{ fontWeight: 600 }}>
-                {formatCountdown(remainingMs)}
-              </strong>
+              <strong style={{ fontWeight: 600 }}>{formatCountdown(remainingMs)}</strong>
             </span>
           )}
         </div>

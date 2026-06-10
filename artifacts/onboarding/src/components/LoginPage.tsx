@@ -4,7 +4,7 @@ import { login, getOtpStatus, forgotPasswordRequest, AppError } from "../lib/api
 import { OtpModal } from "./OtpModal";
 import { ForgotPasswordModal } from "./ForgotPasswordModal";
 import { OtpBanner } from "./OtpBanner";
-import { useDarkMode, Spinner, PW_NUM, PW_UPPER, PW_SPECIAL, validatePwComplexity, PwRequirements } from "../lib/shared";
+import { useDarkMode, Spinner, PW_NUM, PW_UPPER, PW_SPECIAL, validatePwComplexity, PwRequirements, useShake, useCountdown } from "../lib/shared";
 
 interface Props {
   onSuccess: (email: string, role: string, sessionToken: string) => void;
@@ -24,41 +24,17 @@ export function LoginPage({ onSuccess }: Props) {
   const [showForgot, setShowForgot]   = useState(false);
   const [forgotExpiresAt, setForgotExpiry] = useState<number>(0);
   const [otpExpiresAt, setOtpExpiry]  = useState<number | null>(null);
-  const [remainingMs, setRemMs]       = useState(0);
-  const [shakeEmail, setShakeEmail]   = useState(false);
-  const [forgotBannerMs, setFBannerMs]     = useState(0);
-  const [forgotBannerShake, setFBShake]    = useState(false);
-  const [otpBannerShake, setOtpBannerShake] = useState(false);
-
-  const shakeTimer             = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const timerRef               = useRef<ReturnType<typeof setInterval> | null>(null);
-  const forgotBannerTimer      = useRef<ReturnType<typeof setInterval> | null>(null);
-  const forgotBannerShakeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const otpBannerShakeTimer    = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [shakeEmail,        triggerEmailShake]     = useShake();
+  const [forgotBannerShake, triggerBannerShake]    = useShake();
+  const [otpBannerShake,    triggerOtpBannerShake] = useShake();
+  const remainingMs    = useCountdown(otpExpiresAt);
+  const forgotBannerMs = useCountdown(showForgot ? null : forgotExpiresAt || null);
 
   const [errors, setErrors] = useState<{
     email?: string; password?: string; agreed?: string; general?: string;
   }>({});
 
   useEffect(() => { const id = setTimeout(() => setMnt(true), 40); return () => clearTimeout(id); }, []);
-
-  useEffect(() => {
-    if (forgotBannerTimer.current) clearInterval(forgotBannerTimer.current);
-    if (!forgotExpiresAt || showForgot) { setFBannerMs(0); return; }
-    const tick = () => setFBannerMs(Math.max(0, forgotExpiresAt - Date.now()));
-    tick();
-    forgotBannerTimer.current = setInterval(tick, 1_000);
-    return () => { if (forgotBannerTimer.current) clearInterval(forgotBannerTimer.current); };
-  }, [forgotExpiresAt, showForgot]);
-
-  useEffect(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (!otpExpiresAt) { setRemMs(0); return; }
-    const tick = () => setRemMs(Math.max(0, otpExpiresAt - Date.now()));
-    tick();
-    timerRef.current = setInterval(tick, 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [otpExpiresAt]);
 
   const lastCheckedEmail = useRef("");
   const otpStatusMutation = useMutation({
@@ -134,33 +110,6 @@ export function LoginPage({ onSuccess }: Props) {
 
   const forgotBannerActive = !showForgot && forgotExpiresAt > 0 && forgotBannerMs > 0;
   const anyOtpActive       = sessionActive || forgotBannerActive;
-
-  function triggerEmailShake() {
-    setShakeEmail(false);
-    clearTimeout(shakeTimer.current);
-    requestAnimationFrame(() => {
-      setShakeEmail(true);
-      shakeTimer.current = setTimeout(() => setShakeEmail(false), 500);
-    });
-  }
-
-  function triggerBannerShake() {
-    setFBShake(false);
-    clearTimeout(forgotBannerShakeTimer.current);
-    requestAnimationFrame(() => {
-      setFBShake(true);
-      forgotBannerShakeTimer.current = setTimeout(() => setFBShake(false), 500);
-    });
-  }
-
-  function triggerOtpBannerShake() {
-    setOtpBannerShake(false);
-    clearTimeout(otpBannerShakeTimer.current);
-    requestAnimationFrame(() => {
-      setOtpBannerShake(true);
-      otpBannerShakeTimer.current = setTimeout(() => setOtpBannerShake(false), 500);
-    });
-  }
 
   function handleSignIn() {
     // Security guard: check React state — blocks even if disabled attr was removed via DevTools
@@ -291,10 +240,11 @@ export function LoginPage({ onSuccess }: Props) {
       {forgotBannerActive && (
         <OtpBanner
           dark={dark}
-          label="Reset OTP active"
+          label="Resend OTP active"
           remainingMs={forgotBannerMs}
-          actionLabel="Enter Code →"
+          actionLabel="Enter Code"
           onAction={() => setShowForgot(true)}
+          onDismiss={() => setForgotExpiry(0)}
           shake={forgotBannerShake}
           top={0}
           zIndex={310}

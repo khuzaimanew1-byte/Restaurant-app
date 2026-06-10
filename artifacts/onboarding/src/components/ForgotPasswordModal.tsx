@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { forgotPasswordRequest, resetPassword, AppError } from "../lib/api";
-import { Spinner, formatCountdown, validatePwComplexity, PW_NUM, PW_UPPER, PW_SPECIAL, PwRequirements } from "../lib/shared";
+import { Spinner, validatePwComplexity, PW_NUM, PW_UPPER, PW_SPECIAL, PwRequirements } from "../lib/shared";
 import { OtpSheet, maskEmail } from "./OtpSheet";
 
 interface Props {
