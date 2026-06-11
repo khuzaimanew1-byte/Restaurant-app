@@ -1,6 +1,6 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'illustration_shared.dart';
+import '../../../../../core/constants/app_colors.dart';
 
 class AnalyticsIllustration extends StatefulWidget {
   final bool isDark;
@@ -45,9 +45,6 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
   @override
   Widget build(BuildContext context) {
     final dim = illustrationDim(context);
-    const indigo = Color(0xFF6366F1);
-    const amber = Color(0xFFF59E0B);
-    const emerald = Color(0xFF10B981);
 
     return Center(
       child: SizedBox(
@@ -56,12 +53,12 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Glow
+            // Glow — copper
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  amber.withValues(alpha: 0.07),
+                  AppColors.accent.withValues(alpha: 0.10),
                   Colors.transparent,
                 ], stops: const [0.4, 1]),
               ),
@@ -75,17 +72,17 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
                 color: widget.isDark
-                    ? Colors.white.withValues(alpha: 0.07)
-                    : Colors.white.withValues(alpha: 0.8),
+                    ? AppColors.darkSurface.withValues(alpha: 0.80)
+                    : Colors.white.withValues(alpha: 0.80),
                 border: Border.all(
                   color: widget.isDark
-                      ? Colors.white.withValues(alpha: 0.09)
-                      : Colors.black.withValues(alpha: 0.05),
+                      ? AppColors.accentBd.withValues(alpha: 0.38)
+                      : AppColors.accentBd.withValues(alpha: 0.22),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(
-                        alpha: widget.isDark ? 0.24 : 0.07),
+                    color: Colors.black
+                        .withValues(alpha: widget.isDark ? 0.24 : 0.07),
                     blurRadius: 32,
                     offset: const Offset(0, 10),
                   ),
@@ -103,8 +100,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                           fontSize: 8.5,
                           fontWeight: FontWeight.w500,
                           color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.46)
-                              : Colors.black.withValues(alpha: 0.42),
+                              ? AppColors.darkSecondary.withValues(alpha: 0.60)
+                              : AppColors.lightSecondary.withValues(alpha: 0.55),
                         ),
                       ),
                       Text(
@@ -113,14 +110,14 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.9)
-                              : Colors.black.withValues(alpha: 0.86),
+                              ? AppColors.darkPrimary
+                              : AppColors.lightPrimary,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 7),
-                  // Progress bar track + fill
+                  // Progress bar
                   ClipRRect(
                     borderRadius: BorderRadius.circular(2),
                     child: SizedBox(
@@ -134,12 +131,9 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         FractionallySizedBox(
                           widthFactor: 0.94,
                           child: Container(
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [
-                                  indigo.withValues(alpha: 0.88),
-                                  indigo.withValues(alpha: 0.44),
-                                ],
+                                colors: [AppColors.accent, AppColors.accentEnd],
                               ),
                             ),
                           ),
@@ -174,12 +168,13 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(3),
                                       color: isActive
-                                          ? indigo.withValues(alpha: 0.72)
+                                          ? AppColors.accent
+                                              .withValues(alpha: 0.80)
                                           : widget.isDark
                                               ? Colors.white
-                                                  .withValues(alpha: 0.12)
+                                                  .withValues(alpha: 0.13)
                                               : Colors.black
-                                                  .withValues(alpha: 0.1),
+                                                  .withValues(alpha: 0.10),
                                     ),
                                   ),
                                 );
@@ -192,20 +187,22 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                   ),
                   const SizedBox(height: 3),
                   Row(
-                    children: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) =>
-                      Expanded(
-                        child: Text(
-                          d,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 6,
-                            color: widget.isDark
-                                ? Colors.white.withValues(alpha: 0.22)
-                                : Colors.black.withValues(alpha: 0.22),
-                          ),
-                        ),
-                      ),
-                    ).toList(),
+                    children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                        .map((d) => Expanded(
+                              child: Text(
+                                d,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 6,
+                                  color: widget.isDark
+                                      ? AppColors.darkSecondary
+                                          .withValues(alpha: 0.35)
+                                      : AppColors.lightSecondary
+                                          .withValues(alpha: 0.35),
+                                ),
+                              ),
+                            ))
+                        .toList(),
                   ),
                 ],
               ),
@@ -225,8 +222,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                   height: 54,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
-                    color: indigo.withValues(alpha: 0.17),
-                    border: Border.all(color: indigo.withValues(alpha: 0.24)),
+                    color: AppColors.accent.withValues(alpha: 0.20),
+                    border: Border.all(color: AppColors.accentBd),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.13),
@@ -243,7 +240,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFFB4B8FF),
+                          color: AppColors.illustBadge,
                         ),
                       ),
                       Text(
@@ -251,8 +248,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         style: TextStyle(
                           fontSize: 7,
                           color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.38)
-                              : Colors.black.withValues(alpha: 0.34),
+                              ? AppColors.darkSecondary.withValues(alpha: 0.45)
+                              : AppColors.lightSecondary.withValues(alpha: 0.40),
                         ),
                       ),
                     ],
@@ -275,8 +272,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                       horizontal: 11, vertical: 7),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    color: amber.withValues(alpha: 0.11),
-                    border: Border.all(color: amber.withValues(alpha: 0.18)),
+                    color: AppColors.accent.withValues(alpha: 0.14),
+                    border: Border.all(color: AppColors.accentBd),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.10),
@@ -294,7 +291,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFFFDE68A),
+                          color: AppColors.illustBadge,
                         ),
                       ),
                       Text(
@@ -302,8 +299,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         style: TextStyle(
                           fontSize: 7,
                           color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.36)
-                              : Colors.black.withValues(alpha: 0.34),
+                              ? AppColors.darkSecondary.withValues(alpha: 0.45)
+                              : AppColors.lightSecondary.withValues(alpha: 0.42),
                         ),
                       ),
                     ],
@@ -326,9 +323,9 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                       horizontal: 10, vertical: 7),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    color: emerald.withValues(alpha: 0.11),
-                    border: Border.all(
-                        color: emerald.withValues(alpha: 0.18)),
+                    color: AppColors.accentEnd.withValues(alpha: 0.14),
+                    border:
+                        Border.all(color: AppColors.accentBd.withValues(alpha: 0.6)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.10),
@@ -345,7 +342,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         height: 6,
                         decoration: const BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xFF6EE7B7),
+                          color: AppColors.accent,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -354,7 +351,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         style: TextStyle(
                           fontSize: 8,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF6EE7B7),
+                          color: AppColors.illustBadge,
                         ),
                       ),
                     ],

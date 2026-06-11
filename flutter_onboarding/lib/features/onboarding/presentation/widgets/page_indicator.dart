@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class PageIndicator extends StatelessWidget {
   final int count;
@@ -32,12 +33,10 @@ class PageIndicator extends StatelessWidget {
               height: 6.0,
               decoration: BoxDecoration(
                 color: isActive
-                    ? (isDark
-                        ? Colors.white.withValues(alpha: 0.85)
-                        : Colors.black.withValues(alpha: 0.8))
+                    ? AppColors.accent
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.18)
-                        : Colors.black.withValues(alpha: 0.18)),
+                        ? AppColors.darkSecondary.withValues(alpha: 0.28)
+                        : AppColors.lightSecondary.withValues(alpha: 0.28)),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),

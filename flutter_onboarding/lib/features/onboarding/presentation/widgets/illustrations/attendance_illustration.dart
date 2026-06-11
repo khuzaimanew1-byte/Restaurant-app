@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'illustration_shared.dart';
+import '../../../../../core/constants/app_colors.dart';
 
 class AttendanceIllustration extends StatefulWidget {
   final bool isDark;
@@ -43,7 +44,6 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
   @override
   Widget build(BuildContext context) {
     final dim = illustrationDim(context);
-    const indigo = Color(0xFF6366F1);
 
     return Center(
       child: SizedBox(
@@ -52,13 +52,13 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Radial glow
+            // Radial glow — copper-tinted
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  indigo.withValues(alpha: 0.13),
-                  indigo.withValues(alpha: 0.04),
+                  AppColors.accent.withValues(alpha: 0.16),
+                  AppColors.accent.withValues(alpha: 0.05),
                   Colors.transparent,
                 ], stops: const [0, 0.5, 1]),
               ),
@@ -80,7 +80,7 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: indigo.withValues(alpha: 0.6),
+                          color: AppColors.accentBd,
                           width: 1.5,
                         ),
                       ),
@@ -103,12 +103,12 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
                     height: 34,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: indigo.withValues(alpha: 0.22),
+                      color: AppColors.accentLt,
                     ),
                     child: const Icon(
                       Icons.person_outline_rounded,
                       size: 19,
-                      color: Color(0xFFB4B7FF),
+                      color: AppColors.illustBadge,
                     ),
                   ),
                   const SizedBox(height: 9),
@@ -119,7 +119,7 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
                         horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      color: indigo.withValues(alpha: 0.3),
+                      color: AppColors.accent.withValues(alpha: 0.28),
                     ),
                     child: const Text(
                       'CHECK IN',
@@ -127,7 +127,7 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
                         fontSize: 7,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.7,
-                        color: Color(0xFFC8CAFF),
+                        color: AppColors.illustBadge,
                       ),
                     ),
                   ),
@@ -142,7 +142,6 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
               value: '98%',
               label: 'On-Time',
               alignment: const Alignment(-1.55, -1.05),
-              color: const Color(0xFF6366F1),
             ),
             _FloatChip(
               controller: _floats[1],
@@ -150,7 +149,6 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
               value: '12',
               label: 'Checked in',
               alignment: const Alignment(1.45, -0.55),
-              color: const Color(0xFF10B981),
             ),
             _FloatChip(
               controller: _floats[2],
@@ -158,7 +156,6 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
               value: '✓',
               label: 'Synced',
               alignment: const Alignment(-1.35, 1.15),
-              color: const Color(0xFFF59E0B),
             ),
           ],
         ),
@@ -173,7 +170,6 @@ class _FloatChip extends StatelessWidget {
   final String value;
   final String label;
   final Alignment alignment;
-  final Color color;
 
   const _FloatChip({
     required this.controller,
@@ -181,7 +177,6 @@ class _FloatChip extends StatelessWidget {
     required this.value,
     required this.label,
     required this.alignment,
-    required this.color,
   });
 
   @override
@@ -199,18 +194,16 @@ class _FloatChip extends StatelessWidget {
           width: 62,
           height: 52,
           radius: 16,
-          borderColor: color.withValues(alpha: 0.22),
+          borderColor: AppColors.accentBd,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.9)
-                      : Colors.black.withValues(alpha: 0.82),
+                  color: AppColors.illustBadge,
                 ),
               ),
               const SizedBox(height: 2),
@@ -220,8 +213,8 @@ class _FloatChip extends StatelessWidget {
                   fontSize: 7,
                   fontWeight: FontWeight.w500,
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.4)
-                      : Colors.black.withValues(alpha: 0.38),
+                      ? AppColors.darkSecondary.withValues(alpha: 0.55)
+                      : AppColors.lightSecondary.withValues(alpha: 0.55),
                 ),
               ),
             ],

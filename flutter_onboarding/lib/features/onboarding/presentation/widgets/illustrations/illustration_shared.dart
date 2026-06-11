@@ -1,16 +1,12 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../../../core/constants/app_colors.dart';
 
 /// Returns the canonical illustration square dimension for the current screen.
 double illustrationDim(BuildContext context) =>
     math.min(MediaQuery.sizeOf(context).width * 0.72, 280.0);
 
 /// Creates [count] looping float controllers with staggered initial offsets.
-///
-/// [baseMs]          — duration of the first controller in milliseconds.
-/// [stepMs]          — additional milliseconds per subsequent controller.
-/// [startOffsetStep] — how far apart the initial `.value` offsets are,
-///                     so chips don't all start at the same float position.
 List<AnimationController> buildFloatControllers({
   required TickerProvider vsync,
   required int count,
@@ -55,19 +51,18 @@ class IllusGlassCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
         color: isDark
-            ? Colors.white.withValues(alpha: 0.07)
-            : Colors.white.withValues(alpha: 0.72),
+            ? AppColors.darkSurface.withValues(alpha: 0.75)
+            : Colors.white.withValues(alpha: 0.76),
         border: Border.all(
           color: borderColor ??
               (isDark
-                  ? Colors.white.withValues(alpha: 0.10)
-                  : Colors.black.withValues(alpha: 0.055)),
+                  ? AppColors.accentBd.withValues(alpha: 0.38)
+                  : AppColors.accentBd.withValues(alpha: 0.22)),
         ),
         boxShadow: [
           BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.26)
-                : Colors.black.withValues(alpha: 0.065),
+            color: Colors.black
+                .withValues(alpha: isDark ? 0.26 : 0.065),
             blurRadius: 28,
             offset: const Offset(0, 8),
           ),

@@ -6,6 +6,7 @@ import '../widgets/onboarding_illustration.dart';
 import '../widgets/page_indicator.dart';
 import '../../data/onboarding_data.dart';
 import '../../data/onboarding_repository.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -131,8 +132,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     final isLast = _currentIndex == onboardingPages.length - 1;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF0C0C14) : const Color(0xFFF5F5F9),
+      backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         child: SafeArea(
@@ -177,16 +177,12 @@ class _OnboardingPageState extends State<OnboardingPage>
             height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.07)
-                  : Colors.black.withValues(alpha: 0.06),
+              color: AppColors.accentLt,
             ),
             child: Icon(
               Icons.schedule_rounded,
               size: 16,
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.5)
-                  : Colors.black.withValues(alpha: 0.4),
+              color: AppColors.accent.withValues(alpha: 0.8),
             ),
           ),
           if (!isLast)
@@ -194,7 +190,8 @@ class _OnboardingPageState extends State<OnboardingPage>
               onTap: _handleSkip,
               behavior: HitTestBehavior.opaque,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Text(
                   'Skip',
                   style: TextStyle(
@@ -202,8 +199,8 @@ class _OnboardingPageState extends State<OnboardingPage>
                     fontWeight: FontWeight.w400,
                     letterSpacing: -0.2,
                     color: isDark
-                        ? Colors.white.withValues(alpha: 0.35)
-                        : Colors.black.withValues(alpha: 0.35),
+                        ? AppColors.darkSecondary.withValues(alpha: 0.55)
+                        : AppColors.lightSecondary.withValues(alpha: 0.55),
                   ),
                 ),
               ),
@@ -235,12 +232,10 @@ class _OnboardingPageState extends State<OnboardingPage>
               onboardingPages[_currentIndex].headline,
               style: TextStyle(
                 fontSize: 30,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.8,
-                height: 1.15,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.92)
-                    : Colors.black.withValues(alpha: 0.88),
+                fontWeight: FontWeight.w800,
+                letterSpacing: -1.0,
+                height: 1.10,
+                color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -252,8 +247,8 @@ class _OnboardingPageState extends State<OnboardingPage>
                 letterSpacing: -0.1,
                 height: 1.55,
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.42)
-                    : Colors.black.withValues(alpha: 0.42),
+                    ? AppColors.darkSecondary.withValues(alpha: 0.72)
+                    : AppColors.lightSecondary.withValues(alpha: 0.80),
               ),
             ),
             const SizedBox(height: 28),
@@ -284,19 +279,19 @@ class _OnboardingPageState extends State<OnboardingPage>
         builder: (context, child) =>
             Transform.scale(scale: _buttonScale.value, child: child),
         child: Container(
-          height: 56,
+          height: 58,
           decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.92)
-                : Colors.black.withValues(alpha: 0.88),
+            gradient: const LinearGradient(
+              colors: [AppColors.accent, AppColors.accentEnd],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.black.withValues(alpha: 0.08),
+                color: AppColors.accentGlow,
                 blurRadius: 24,
-                offset: const Offset(0, 2),
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -305,19 +300,19 @@ class _OnboardingPageState extends State<OnboardingPage>
             children: [
               Text(
                 isLast ? 'Get Started' : 'Continue',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: -0.3,
-                  color: isDark ? const Color(0xFF0A0A14) : Colors.white,
+                  color: AppColors.accentFg,
                 ),
               ),
               if (!isLast) ...[
                 const SizedBox(width: 8),
-                Icon(
+                const Icon(
                   Icons.arrow_forward_rounded,
                   size: 18,
-                  color: isDark ? const Color(0xFF0A0A14) : Colors.white,
+                  color: AppColors.accentFg,
                 ),
               ],
             ],

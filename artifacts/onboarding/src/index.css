@@ -2,84 +2,92 @@
 
 /* ═══════════════════════════════════════════════════════════════
    DESIGN TOKENS  —  Single Source of Truth for all color values
+
+   Theme: Restaurant-Premium
+     Primary Background : #181A1F  (Graphite Black)
+     Secondary Surface  : #2B3038  (Slate Gray)
+     Accent             : #C47A3A  (Copper Bronze)
+
    Dark is the default (iOS/macOS convention).
    Light overrides via [data-dark="false"] on <html>.
 ═══════════════════════════════════════════════════════════════ */
 :root {
   /* surface */
-  --bg:          #08071A;
-  --bg-mesh:     radial-gradient(ellipse 110% 70% at 80% -10%, rgba(79,70,229,.10) 0%, transparent 55%),
-                 radial-gradient(ellipse 80%  55% at 20% 110%, rgba(120,113,238,.06) 0%, transparent 55%);
+  --bg:          #181A1F;
+  --bg-surface:  #2B3038;
+  --bg-mesh:     radial-gradient(ellipse 110% 70% at 80% -10%, rgba(196,122,58,.12) 0%, transparent 55%),
+                 radial-gradient(ellipse 80%  55% at 20% 110%, rgba(196,122,58,.07) 0%, transparent 55%);
 
-  /* text */
-  --text:        rgba(238,237,255,.93);
-  --text-sub:    rgba(200,197,245,.45);
-  --text-ter:    rgba(200,197,245,.28);
+  /* text — warm white, not cold */
+  --text:        rgba(255,248,240,.93);
+  --text-sub:    rgba(235,215,192,.46);
+  --text-ter:    rgba(235,215,192,.28);
 
-  /* accent */
-  --accent:      #7872F0;
-  --accent-end:  #5D57CC;
-  --accent-lt:   rgba(79,70,229,.18);
-  --accent-bd:   rgba(120,113,238,.35);
+  /* accent — Copper Bronze */
+  --accent:      #C47A3A;
+  --accent-end:  #9B5B26;
+  --accent-lt:   rgba(196,122,58,.18);
+  --accent-bd:   rgba(196,122,58,.36);
   --accent-fg:   #fff;
-  --accent-glow: rgba(120,113,238,.50);
+  --accent-glow: rgba(196,122,58,.52);
 
   /* interactive */
   --field:       rgba(255,255,255,.07);
-  --dot-off:     rgba(238,237,255,.15);
+  --dot-off:     rgba(235,215,192,.18);
 
   /* chips */
-  --chip-a:      rgba(79,70,229,.28);
-  --chip-b:      rgba(79,70,229,.20);
-  --chip-c:      rgba(79,70,229,.14);
+  --chip-a:      rgba(196,122,58,.28);
+  --chip-b:      rgba(196,122,58,.20);
+  --chip-c:      rgba(196,122,58,.14);
 
-  /* glass */
-  --glass:       rgba(255,255,255,.06);
-  --glass-bd:    rgba(255,255,255,.10);
-  --glass-sh:    0 8px 32px rgba(0,0,0,.30);
-  --glow-circle: radial-gradient(circle, rgba(79,70,229,.18) 0%, transparent 70%);
+  /* glass — surface-tinted frost */
+  --glass:       rgba(43,48,56,.80);
+  --glass-bd:    rgba(196,122,58,.22);
+  --glass-sh:    0 8px 32px rgba(0,0,0,.38);
+  --glow-circle: radial-gradient(circle, rgba(196,122,58,.20) 0%, transparent 70%);
 
   /* illustration */
-  --illus-text:    rgba(238,237,255,.90);
-  --illus-sub:     rgba(200,197,245,.40);
-  --illus-bar-on:  rgba(120,113,238,.72);
+  --illus-text:    rgba(255,248,240,.90);
+  --illus-sub:     rgba(235,215,192,.44);
+  --illus-bar-on:  rgba(196,122,58,.80);
   --illus-bar-off: rgba(255,255,255,.13);
-  --illus-badge:   #A8A3F8;
+  --illus-badge:   #E8A86A;
 }
 
 [data-dark="false"] {
-  --bg:          #F4F4FF;
-  --bg-mesh:     radial-gradient(ellipse 110% 70% at 80% -10%, rgba(79,70,229,.06) 0%, transparent 55%),
-                 radial-gradient(ellipse 80%  55% at 20% 110%, rgba(79,70,229,.04) 0%, transparent 55%);
+  --bg:          #F2EBE0;
+  --bg-surface:  #E8DECE;
+  --bg-mesh:     radial-gradient(ellipse 110% 70% at 80% -10%, rgba(196,122,58,.08) 0%, transparent 55%),
+                 radial-gradient(ellipse 80%  55% at 20% 110%, rgba(196,122,58,.05) 0%, transparent 55%);
 
-  --text:        #0D0B1E;
-  --text-sub:    rgba(13,11,30,.50);
-  --text-ter:    rgba(13,11,30,.30);
+  --text:        #1C1008;
+  --text-sub:    rgba(28,16,8,.52);
+  --text-ter:    rgba(28,16,8,.30);
 
-  --accent:      #4F46E5;
-  --accent-end:  #3730A3;
-  --accent-lt:   rgba(79,70,229,.07);
-  --accent-bd:   rgba(79,70,229,.18);
+  --accent:      #C47A3A;
+  --accent-end:  #9B5B26;
+  --accent-lt:   rgba(196,122,58,.10);
+  --accent-bd:   rgba(196,122,58,.24);
   --accent-fg:   #fff;
-  --accent-glow: rgba(79,70,229,.35);
+  --accent-glow: rgba(196,122,58,.30);
 
-  --field:       rgba(79,70,229,.055);
-  --dot-off:     rgba(79,70,229,.18);
+  --field:       rgba(196,122,58,.08);
+  --dot-off:     rgba(28,16,8,.20);
 
-  --chip-a:      rgba(79,70,229,.22);
-  --chip-b:      rgba(79,70,229,.14);
-  --chip-c:      rgba(79,70,229,.10);
+  --chip-a:      rgba(196,122,58,.22);
+  --chip-b:      rgba(196,122,58,.14);
+  --chip-c:      rgba(196,122,58,.09);
 
-  --glass:       rgba(255,255,255,.72);
-  --glass-bd:    rgba(79,70,229,.10);
-  --glass-sh:    0 8px 28px rgba(79,70,229,.08);
-  --glow-circle: radial-gradient(circle, rgba(79,70,229,.14) 0%, transparent 70%);
+  --glass:       rgba(255,255,255,.76);
+  --glass-bd:    rgba(196,122,58,.18);
+  --glass-sh:    0 8px 28px rgba(196,122,58,.10);
+  --glow-circle: radial-gradient(circle, rgba(196,122,58,.12) 0%, transparent 70%);
 
-  --illus-text:    rgba(13,11,30,.82);
-  --illus-sub:     rgba(13,11,30,.38);
-  --illus-bar-on:  rgba(79,70,229,.72);
-  --illus-bar-off: rgba(13,11,30,.10);
-  --illus-badge:   #4F46E5;
+  --illus-text:  rgba(28,16,8,.84);
+  --illus-sub:   rgba(28,16,8,.40);
+  --illus-bar-on:  rgba(196,122,58,.75);
+  --illus-bar-off: rgba(28,16,8,.10);
+  --illus-badge: #9B5B26;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -88,7 +96,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 *                        { -webkit-tap-highlight-color: transparent; }
-::selection              { background: rgba(127,120,242,.28); color: inherit; }
+::selection              { background: rgba(196,122,58,.28); color: inherit; }
 
 /* ═══════════════════════════════════════════════════════════════
    ONBOARDING SHELL
@@ -494,7 +502,7 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   font-size: clamp(15px,4.2vw,17px); font-weight: 700; letter-spacing: -.025em;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   font-family: inherit;
-  box-shadow: 0 4px 28px var(--accent-glow), 0 1px 4px rgba(0,0,0,.15);
+  box-shadow: 0 4px 28px var(--accent-glow), 0 1px 4px rgba(0,0,0,.18);
   transition: transform .15s cubic-bezier(.22,1,.36,1),
               box-shadow .2s ease;
   will-change: transform;

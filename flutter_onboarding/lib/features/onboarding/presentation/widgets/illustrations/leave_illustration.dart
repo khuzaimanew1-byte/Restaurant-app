@@ -1,6 +1,6 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'illustration_shared.dart';
+import '../../../../../core/constants/app_colors.dart';
 
 class LeaveIllustration extends StatefulWidget {
   final bool isDark;
@@ -19,7 +19,6 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
   @override
   void initState() {
     super.initState();
-    // Only 2 controllers needed: approval chip + pending pill.
     _floats = buildFloatControllers(
       vsync: this,
       count: 2,
@@ -38,8 +37,6 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
   @override
   Widget build(BuildContext context) {
     final dim = illustrationDim(context);
-    const emerald = Color(0xFF10B981);
-    const indigo = Color(0xFF6366F1);
 
     return Center(
       child: SizedBox(
@@ -48,12 +45,12 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Glow
+            // Glow — copper
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  emerald.withValues(alpha: 0.08),
+                  AppColors.accent.withValues(alpha: 0.10),
                   Colors.transparent,
                 ], stops: const [0.4, 1]),
               ),
@@ -66,17 +63,17 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
                 color: widget.isDark
-                    ? Colors.white.withValues(alpha: 0.07)
+                    ? AppColors.darkSurface.withValues(alpha: 0.75)
                     : Colors.white.withValues(alpha: 0.78),
                 border: Border.all(
                   color: widget.isDark
-                      ? Colors.white.withValues(alpha: 0.09)
-                      : Colors.black.withValues(alpha: 0.05),
+                      ? AppColors.accentBd.withValues(alpha: 0.4)
+                      : AppColors.accentBd.withValues(alpha: 0.28),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(
-                        alpha: widget.isDark ? 0.24 : 0.07),
+                    color: Colors.black
+                        .withValues(alpha: widget.isDark ? 0.24 : 0.07),
                     blurRadius: 32,
                     offset: const Offset(0, 10),
                   ),
@@ -95,8 +92,8 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                           fontSize: 8.5,
                           fontWeight: FontWeight.w600,
                           color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.52)
-                              : Colors.black.withValues(alpha: 0.46),
+                              ? AppColors.darkSecondary.withValues(alpha: 0.65)
+                              : AppColors.lightSecondary.withValues(alpha: 0.60),
                         ),
                       ),
                       Container(
@@ -104,14 +101,14 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
-                          color: emerald.withValues(alpha: 0.2),
+                          color: AppColors.accent.withValues(alpha: 0.22),
                         ),
                         child: const Text(
                           'Approved',
                           style: TextStyle(
                             fontSize: 7,
                             fontWeight: FontWeight.w700,
-                            color: emerald,
+                            color: AppColors.illustBadge,
                           ),
                         ),
                       ),
@@ -120,21 +117,23 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                   const SizedBox(height: 5),
                   // Day labels
                   Row(
-                    children: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) =>
-                      Expanded(
-                        child: Text(
-                          d,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 6.5,
-                            fontWeight: FontWeight.w600,
-                            color: widget.isDark
-                                ? Colors.white.withValues(alpha: 0.24)
-                                : Colors.black.withValues(alpha: 0.24),
-                          ),
-                        ),
-                      ),
-                    ).toList(),
+                    children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                        .map((d) => Expanded(
+                              child: Text(
+                                d,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 6.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: widget.isDark
+                                      ? AppColors.darkSecondary
+                                          .withValues(alpha: 0.35)
+                                      : AppColors.lightSecondary
+                                          .withValues(alpha: 0.35),
+                                ),
+                              ),
+                            ))
+                        .toList(),
                   ),
                   const SizedBox(height: 3),
                   // Grid
@@ -156,9 +155,9 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(4),
                             color: isLeave
-                                ? emerald.withValues(alpha: 0.24)
+                                ? AppColors.accent.withValues(alpha: 0.26)
                                 : isToday
-                                    ? indigo.withValues(alpha: 0.28)
+                                    ? AppColors.accent.withValues(alpha: 0.40)
                                     : Colors.transparent,
                           ),
                           child: Center(
@@ -169,14 +168,13 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                                 fontWeight: (isLeave || isToday)
                                     ? FontWeight.w700
                                     : FontWeight.w400,
-                                color: isLeave
-                                    ? Colors.greenAccent.shade200
-                                        .withValues(alpha: 0.9)
-                                    : isToday
-                                        ? const Color(0xFFB4B8FF)
-                                        : widget.isDark
-                                            ? Colors.white.withValues(alpha: 0.36)
-                                            : Colors.black.withValues(alpha: 0.36),
+                                color: (isLeave || isToday)
+                                    ? AppColors.illustBadge
+                                    : widget.isDark
+                                        ? AppColors.darkSecondary
+                                            .withValues(alpha: 0.45)
+                                        : AppColors.lightSecondary
+                                            .withValues(alpha: 0.45),
                               ),
                             ),
                           ),
@@ -203,13 +201,9 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
                     color: widget.isDark
-                        ? Colors.white.withValues(alpha: 0.07)
+                        ? AppColors.darkSurface.withValues(alpha: 0.80)
                         : Colors.white.withValues(alpha: 0.82),
-                    border: Border.all(
-                      color: widget.isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.05),
-                    ),
+                    border: Border.all(color: AppColors.accentBd),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.13),
@@ -226,12 +220,12 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                         height: 14,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: emerald.withValues(alpha: 0.22),
+                          color: AppColors.accentLt,
                         ),
                         child: const Icon(
                           Icons.check_rounded,
                           size: 9,
-                          color: emerald,
+                          color: AppColors.accent,
                         ),
                       ),
                       const SizedBox(width: 5),
@@ -241,8 +235,8 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                           fontSize: 8,
                           fontWeight: FontWeight.w600,
                           color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.78)
-                              : Colors.black.withValues(alpha: 0.72),
+                              ? AppColors.darkPrimary.withValues(alpha: 0.80)
+                              : AppColors.lightPrimary.withValues(alpha: 0.74),
                         ),
                       ),
                     ],
@@ -266,13 +260,10 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
                     color: widget.isDark
-                        ? Colors.white.withValues(alpha: 0.06)
+                        ? AppColors.darkSurface.withValues(alpha: 0.75)
                         : Colors.white.withValues(alpha: 0.78),
                     border: Border.all(
-                      color: widget.isDark
-                          ? Colors.white.withValues(alpha: 0.08)
-                          : Colors.black.withValues(alpha: 0.05),
-                    ),
+                        color: AppColors.accentBd.withValues(alpha: 0.5)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.11),
@@ -293,8 +284,8 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
-                              Color(0xFF6366F1),
-                              Color(0xFF10B981),
+                              AppColors.accent,
+                              AppColors.accentEnd,
                             ],
                           ),
                         ),
@@ -310,8 +301,10 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                               fontSize: 8,
                               fontWeight: FontWeight.w600,
                               color: widget.isDark
-                                  ? Colors.white.withValues(alpha: 0.7)
-                                  : Colors.black.withValues(alpha: 0.65),
+                                  ? AppColors.darkPrimary
+                                      .withValues(alpha: 0.75)
+                                  : AppColors.lightPrimary
+                                      .withValues(alpha: 0.70),
                             ),
                           ),
                           Text(
@@ -319,8 +312,10 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                             style: TextStyle(
                               fontSize: 7,
                               color: widget.isDark
-                                  ? Colors.white.withValues(alpha: 0.3)
-                                  : Colors.black.withValues(alpha: 0.3),
+                                  ? AppColors.darkSecondary
+                                      .withValues(alpha: 0.45)
+                                  : AppColors.lightSecondary
+                                      .withValues(alpha: 0.45),
                             ),
                           ),
                         ],

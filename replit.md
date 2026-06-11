@@ -59,10 +59,27 @@ flutter run \
 
 These rules apply to **all code in this project** automatically, without needing to mention them per task.
 
+### 0. Brand Theme — Restaurant-Premium
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| Primary Background | `#181A1F` Graphite Black | `--bg` / `AppColors.darkBg` |
+| Secondary Surface  | `#2B3038` Slate Gray      | `--bg-surface` / `AppColors.darkSurface` |
+| Accent             | `#C47A3A` Copper Bronze   | `--accent` / `AppColors.accent` |
+| Accent Dark        | `#9B5B26` Deep Copper     | `--accent-end` / `AppColors.accentEnd` |
+| Accent Highlight   | `#E8A86A` Light Gold      | `--illus-badge` / `AppColors.illustBadge` |
+
+**Rules:**
+- All colors live in CSS custom properties (React) or `AppColors` constants (Flutter). Never hardcode hex values outside these two SSOTs.
+- React SSOT: `artifacts/onboarding/src/index.css` `:root` block.
+- Flutter SSOT: `flutter_onboarding/lib/core/constants/app_colors.dart`.
+- Light mode for React: `[data-dark="false"]` override uses warm parchment bg (`#F2EBE0`) and same Copper Bronze accent.
+- Light mode for Flutter: `AppColors.lightBg` = `#F2EBE0`, same accent.
+
 ### 1. Styling
 
 - **CSS classes first.** Always use CSS class names for styling. Inline `style` only for truly dynamic values: positions (`top`, `left`), computed heights, or CSS custom properties (e.g. `--bar-h`, `--ring-size`).
-- **CSS variables for every color.** No hardcoded color values in components or Flutter widgets. Every color comes from a design token variable (`var(--accent)`, `--chip-a`, etc.).
+- **CSS variables for every color.** No hardcoded color values in components or Flutter widgets. Every color comes from a design token variable (`var(--accent)`, `--chip-a`, etc.) or `AppColors.*`.
 - **Short, semantic variable names.** Prefer `--bg`, `--text-sub`, `--chip-a` over long descriptive names.
 - **Dark mode via attribute.** Web: `:root` = dark default, `[data-dark="false"]` = light override, toggled by `data-dark` on `<html>`. Flutter: `ThemeData` pair driven by `Riverpod` state.
 - **No dead CSS.** Remove any class, variable, or keyframe not referenced by a live component.
