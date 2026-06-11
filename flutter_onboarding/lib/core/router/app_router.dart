@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/onboarding/data/onboarding_repository.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
-import '../../features/auth/presentation/screens/login_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -22,15 +21,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           transitionsBuilder: _fadeTransition,
         ),
       ),
-      GoRoute(
-        path: '/login',
-        pageBuilder: (_, state) => CustomTransitionPage(
-          key:                state.pageKey,
-          child:              const LoginScreen(),
-          transitionsBuilder: _slideTransition,
-        ),
-      ),
-
     ],
   );
 });
@@ -49,8 +39,8 @@ class _InitGateState extends State<_InitGate> {
   }
 
   Future<void> _route() async {
-    final seen = await OnboardingRepository().hasCompletedOnboarding();
-    if (mounted) context.go(seen ? '/login' : '/onboarding');
+    await OnboardingRepository().hasCompletedOnboarding();
+    if (mounted) context.go('/onboarding');
   }
 
   @override
@@ -72,19 +62,5 @@ Widget _fadeTransition(_, Animation<double> animation,
   return FadeTransition(
     opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
     child:   child,
-  );
-}
-
-Widget _slideTransition(BuildContext context, Animation<double> animation,
-    Animation<double> secondary, Widget child) {
-  return SlideTransition(
-    position: Tween<Offset>(
-      begin: const Offset(0.06, 0),
-      end:   Offset.zero,
-    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-    child: FadeTransition(
-      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-      child:   child,
-    ),
   );
 }

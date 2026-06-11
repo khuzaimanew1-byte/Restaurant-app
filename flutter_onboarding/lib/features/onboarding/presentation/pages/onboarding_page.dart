@@ -117,7 +117,6 @@ class _OnboardingPageState extends State<OnboardingPage>
   Future<void> _handleGetStarted() async {
     HapticFeedback.mediumImpact();
     await OnboardingRepository().markOnboardingComplete();
-    if (mounted) context.go('/login');
   }
 
   void _handleSkip() {
