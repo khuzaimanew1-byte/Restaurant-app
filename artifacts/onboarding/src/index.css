@@ -1,31 +1,47 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap');
 
 /* ═══════════════════════════════════════════════════════════════
-   DESIGN TOKENS — Restaurant Premium  |  Infinity Castle
+   DESIGN TOKENS — SSOT  |  Slate + Amber Premium
    ──────────────────────────────────────────────────────────────
-   Charred Oak    #0D0907   primary background
-   Dark Walnut    #1C1409   secondary surface
-   Rich Mahogany  #261C0E   cards / elevated surfaces
-   Amber Gold     #C4820A   accent
-   Deep Amber     #8A5B08   accent dark end
+   Charred Oak    #20242B   primary background
+   Walnut Slate   #313842   secondary surface
+   Elevated Card  #3A424D   cards / elevated surfaces
+   Amber Gold     #C4820A   primary accent
+   Deep Amber     #8A5B08   secondary accent
    Warm Cream     #F5E6C8   primary text
+   Muted Cream    F5E6C8 @ .50  secondary text
+═══════════════════════════════════════════════════════════════
+
+   APPLE-LEVEL RULES (auto-apply on every future change):
+   • Surfaces: always cool-slate layered — bg → surface → card, each ~8–10 pts lighter.
+   • Accent: Amber Gold on cool slate = maximum perceptual contrast. Never swap for cool accent.
+   • Glass: backdrop-filter blur(24px) + 1px amber border at .20 opacity on every floating card.
+   • Text: only two weights used for body — 400 (desc) and 700+ (headline). No 300 in body copy.
+   • Animations: spring enter cubic-bezier(.16,1,.3,1) ~500ms | snap exit cubic-bezier(.4,0,1,1) ~220ms | micro cubic-bezier(.22,1,.36,1) ~150ms.
+   • Spacing: clamp() on every font-size and padding. No fixed px for layout.
+   • Tap: scale(.96) on active, never opacity alone. will-change: transform on animated elements.
+   • Mesh: two ambient radial glows (top-right + bottom-left) at amber rgba(.13/.08). Dark fill at center.
+   • Light mode: DOES NOT EXIST — dark-only, permanently. Do not add [data-dark] toggle.
+   • Psychology: Large bold headline first → supporting micro-copy → progress dots (user sees
+     "almost there") → full-width CTA at bottom. Finger-reachable zone on mobile.
+   • Glow CTA: box-shadow with accent-glow for perceived "premium energy" on button.
 ═══════════════════════════════════════════════════════════════ */
 :root {
   /* ── surfaces ─────────────────────────────────────────────── */
-  --bg:          #0D0907;
-  --bg-surface:  #1C1409;
-  --bg-card:     #261C0E;
+  --bg:          #20242B;
+  --bg-surface:  #313842;
+  --bg-card:     #3A424D;
 
-  /* subtle layered mesh — warm ember in two corners */
+  /* ambient mesh — amber ember top-right + bottom-left, dark vignette center */
   --bg-mesh:
-    radial-gradient(ellipse 100% 65% at 85% -8%,  rgba(196,130,10,.13) 0%, transparent 55%),
-    radial-gradient(ellipse  75% 50% at 18% 105%, rgba(196,130,10,.08) 0%, transparent 55%),
-    radial-gradient(ellipse 120% 80% at 50%  50%, rgba(26,20,9,.60)   0%, transparent 100%);
+    radial-gradient(ellipse 100% 65% at 88% -6%,  rgba(196,130,10,.13) 0%, transparent 55%),
+    radial-gradient(ellipse  75% 50% at 12% 108%, rgba(196,130,10,.08) 0%, transparent 55%),
+    radial-gradient(ellipse 120% 80% at 50%  50%, rgba(20,24,30,.55)   0%, transparent 100%);
 
-  /* ── text — warm cream, not pure white ─────────────────────── */
+  /* ── text — warm cream on cool slate ──────────────────────── */
   --text:        rgba(245,230,200,.93);
-  --text-sub:    rgba(196,168,120,.48);
-  --text-ter:    rgba(196,168,120,.26);
+  --text-sub:    rgba(245,230,200,.50);
+  --text-ter:    rgba(245,230,200,.28);
 
   /* ── accent — Amber Gold ──────────────────────────────────── */
   --accent:      #C4820A;
@@ -33,28 +49,28 @@
   --accent-lt:   rgba(196,130,10,.16);
   --accent-bd:   rgba(196,130,10,.32);
   --accent-fg:   #FFF8F0;
-  --accent-glow: rgba(196,130,10,.40);
+  --accent-glow: rgba(196,130,10,.42);
 
-  /* ── chip backgrounds ─────────────────────────────────────── */
-  --chip-a: rgba(196,130,10,.22);
-  --chip-b: rgba(196,130,10,.15);
+  /* ── chip backgrounds — amber tints, slightly richer on slate */
+  --chip-a: rgba(196,130,10,.24);
+  --chip-b: rgba(196,130,10,.16);
   --chip-c: rgba(196,130,10,.10);
 
   /* ── glass / card ─────────────────────────────────────────── */
-  --glass:    rgba(30,20,9,.82);
-  --glass-bd: rgba(196,130,10,.20);
-  --glass-sh: 0 10px 40px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.30);
+  --glass:    rgba(32,36,43,.88);
+  --glass-bd: rgba(196,130,10,.22);
+  --glass-sh: 0 10px 40px rgba(0,0,0,.50), 0 2px 8px rgba(0,0,0,.28);
 
   /* ── illustration tokens ──────────────────────────────────── */
-  --glow-circle:   radial-gradient(circle, rgba(196,130,10,.18) 0%, transparent 68%);
+  --glow-circle:   radial-gradient(circle, rgba(196,130,10,.20) 0%, transparent 68%);
   --illus-text:    rgba(245,230,200,.92);
-  --illus-sub:     rgba(196,168,120,.44);
-  --illus-bar-on:  rgba(196,130,10,.78);
+  --illus-sub:     rgba(245,230,200,.44);
+  --illus-bar-on:  rgba(196,130,10,.80);
   --illus-bar-off: rgba(245,230,200,.10);
   --illus-badge:   #E8B060;
 
   /* ── misc interactive ─────────────────────────────────────── */
-  --dot-off: rgba(196,168,120,.18);
+  --dot-off: rgba(245,230,200,.16);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -63,7 +79,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 *                        { -webkit-tap-highlight-color: transparent; }
-::selection              { background: rgba(196,130,10,.26); color: inherit; }
+::selection              { background: rgba(196,130,10,.28); color: inherit; }
 
 /* ═══════════════════════════════════════════════════════════════
    ONBOARDING SHELL
@@ -85,14 +101,14 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   pointer-events: none;
 }
 
-/* top radial spotlight — warm amber from top */
+/* top radial spotlight — warm amber crown from top */
 .ob__bg-glow {
   position: absolute; inset: 0;
   background:
     radial-gradient(ellipse 90% 52% at 50% -5%,
-      rgba(196,130,10,.10) 0%, transparent 65%),
+      rgba(196,130,10,.11) 0%, transparent 65%),
     radial-gradient(ellipse 60% 38% at 50%  0%,
-      rgba(232,176,96,.06) 0%, transparent 55%);
+      rgba(232,176,96,.07) 0%, transparent 55%);
   pointer-events: none;
 }
 
