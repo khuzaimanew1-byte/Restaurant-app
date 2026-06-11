@@ -39,7 +39,7 @@ description: CSS variable SSOT, class-first styling rules, Apple-level design co
 
 - **Surfaces:** Cool-slate layered — `bg` → `bg-surface` → `bg-card`, each ~8–10 pts lighter.
 - **Accent:** Amber Gold on cool slate = maximum perceptual contrast. Never swap accent for cool color.
-- **Glass:** `backdrop-filter: blur(24px)` + 1px amber border at `.20-.22` opacity on every floating card.
+- **Glass (CRITICAL RULE — never break):** `--glass` must always be `rgba` of `--bg-card` at `.96` or higher opacity. NEVER use `--bg` color for glass. `backdrop-filter: blur()` bleeds the background into the card — if opacity is low and the glass color matches `--bg`, the card becomes invisible. Always verify: `--glass` rgb values ≠ `--bg` rgb values. Add `inset 0 1px 0 rgba(255,255,255,.07)` in `box-shadow` for Apple-style top-edge light source depth.
 - **Typography:** Only two weights for body — `400` (desc) and `700+` (headline). No `300` in body copy.
 - **Spacing:** `clamp()` on every `font-size` and `padding`. No fixed px for layout dimensions.
 - **Tap feedback:** `scale(.96)` on `:active`, never opacity alone. `will-change: transform` on animated elements.

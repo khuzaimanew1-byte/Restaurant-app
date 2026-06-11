@@ -57,9 +57,13 @@
   --chip-c: rgba(196,130,10,.10);
 
   /* ── glass / card ─────────────────────────────────────────── */
-  --glass:    rgba(58,66,77,.90);
-  --glass-bd: rgba(196,130,10,.30);
-  --glass-sh: 0 12px 44px rgba(0,0,0,.60), 0 2px 10px rgba(0,0,0,.36);
+  /* RULE: glass must be near-opaque --bg-card color (.96+) so backdrop-filter
+     does NOT bleed bg into the card. Lighter = more distinct from --bg.       */
+  --glass:    rgba(58,66,77,.97);
+  --glass-bd: rgba(196,130,10,.35);
+  --glass-hi: rgba(255,255,255,.07);
+  --glass-sh: 0 12px 44px rgba(0,0,0,.62), 0 2px 10px rgba(0,0,0,.38),
+              inset 0 1px 0 var(--glass-hi);
 
   /* ── illustration tokens ──────────────────────────────────── */
   --glow-circle:   radial-gradient(circle, rgba(196,130,10,.20) 0%, transparent 68%);
