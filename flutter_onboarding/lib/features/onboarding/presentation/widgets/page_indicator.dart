@@ -4,14 +4,12 @@ import '../../../../core/constants/app_colors.dart';
 class PageIndicator extends StatelessWidget {
   final int count;
   final int current;
-  final bool isDark;
   final ValueChanged<int> onTap;
 
   const PageIndicator({
     super.key,
     required this.count,
     required this.current,
-    required this.isDark,
     required this.onTap,
   });
 
@@ -34,9 +32,7 @@ class PageIndicator extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isActive
                     ? AppColors.accent
-                    : (isDark
-                        ? AppColors.darkSecondary.withValues(alpha: 0.28)
-                        : AppColors.lightSecondary.withValues(alpha: 0.28)),
+                    : AppColors.darkSecondary.withValues(alpha: 0.28),
                 borderRadius: BorderRadius.circular(3),
               ),
             ),

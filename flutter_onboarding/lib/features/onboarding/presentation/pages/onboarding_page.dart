@@ -127,38 +127,65 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final page = onboardingPages[_currentIndex];
+    final page   = onboardingPages[_currentIndex];
     final isLast = _currentIndex == onboardingPages.length - 1;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBg : AppColors.lightBg,
+      backgroundColor: AppColors.darkBg,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        value: SystemUiOverlayStyle.light,
         child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Stack(
             children: [
-              _buildTopBar(isDark, isLast),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: AnimatedBuilder(
-                    animation: _illustrationController,
-                    builder: (context, child) => Opacity(
-                      opacity: _illustrationOpacity.value,
-                      child: Transform.scale(
-                        scale: _illustrationScale.value,
-                        child: OnboardingIllustration(
-                          type: page.illustrationType,
-                          isDark: isDark,
+              // Main content column
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: AnimatedBuilder(
+                        animation: _illustrationController,
+                        builder: (context, child) => Opacity(
+                          opacity: _illustrationOpacity.value,
+                          child: Transform.scale(
+                            scale: _illustrationScale.value,
+                            child: OnboardingIllustration(
+                              type: page.illustrationType,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildBottomContent(isLast),
+                ],
+              ),
+
+              // Floating skip — top-right, no header
+              if (!isLast)
+                Positioned(
+                  top: 12,
+                  right: 24,
+                  child: GestureDetector(
+                    onTap: _handleSkip,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 8),
+                      child: Text(
+                        'Skip',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -0.2,
+                          color: AppColors.darkSecondary
+                              .withValues(alpha: 0.45),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              _buildBottomContent(isDark, isLast),
             ],
           ),
         ),
@@ -166,51 +193,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     );
   }
 
-  Widget _buildTopBar(bool isDark, bool isLast) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.accentLt,
-            ),
-            child: Icon(
-              Icons.schedule_rounded,
-              size: 16,
-              color: AppColors.accent.withValues(alpha: 0.8),
-            ),
-          ),
-          if (!isLast)
-            GestureDetector(
-              onTap: _handleSkip,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Text(
-                  'Skip',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: -0.2,
-                    color: isDark
-                        ? AppColors.darkSecondary.withValues(alpha: 0.55)
-                        : AppColors.lightSecondary.withValues(alpha: 0.55),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomContent(bool isDark, bool isLast) {
+  Widget _buildBottomContent(bool isLast) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         28,
@@ -230,12 +213,12 @@ class _OnboardingPageState extends State<OnboardingPage>
           children: [
             Text(
               onboardingPages[_currentIndex].headline,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 30,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -1.0,
                 height: 1.10,
-                color: isDark ? AppColors.darkPrimary : AppColors.lightPrimary,
+                color: AppColors.darkPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -246,27 +229,24 @@ class _OnboardingPageState extends State<OnboardingPage>
                 fontWeight: FontWeight.w400,
                 letterSpacing: -0.1,
                 height: 1.55,
-                color: isDark
-                    ? AppColors.darkSecondary.withValues(alpha: 0.72)
-                    : AppColors.lightSecondary.withValues(alpha: 0.80),
+                color: AppColors.darkSecondary.withValues(alpha: 0.72),
               ),
             ),
             const SizedBox(height: 28),
             PageIndicator(
               count: onboardingPages.length,
               current: _currentIndex,
-              isDark: isDark,
               onTap: _goToPage,
             ),
             const SizedBox(height: 28),
-            _buildButton(isDark, isLast),
+            _buildButton(isLast),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildButton(bool isDark, bool isLast) {
+  Widget _buildButton(bool isLast) {
     return GestureDetector(
       onTapDown: (_) => _buttonController.forward(),
       onTapUp: (_) {

@@ -12,6 +12,8 @@ void main() async {
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
+    statusBarBrightness: Brightness.dark,
+    statusBarIconBrightness: Brightness.light,
   ));
 
   runApp(const ProviderScope(child: AttendanceApp()));
@@ -26,9 +28,8 @@ class AttendanceApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Attendance App',
       debugShowCheckedModeBanner: false,
-      theme: AppColors.lightTheme,
-      darkTheme: AppColors.darkTheme,
-      themeMode: ThemeMode.system,
+      theme: AppColors.darkTheme,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
     );
   }

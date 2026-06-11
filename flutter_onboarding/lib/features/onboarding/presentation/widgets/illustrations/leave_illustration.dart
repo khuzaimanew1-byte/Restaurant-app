@@ -3,8 +3,7 @@ import 'illustration_shared.dart';
 import '../../../../../core/constants/app_colors.dart';
 
 class LeaveIllustration extends StatefulWidget {
-  final bool isDark;
-  const LeaveIllustration({super.key, required this.isDark});
+  const LeaveIllustration({super.key});
 
   @override
   State<LeaveIllustration> createState() => _LeaveIllustrationState();
@@ -45,7 +44,7 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Glow — copper
+            // Glow
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -62,18 +61,12 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
               height: dim * 0.58,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
-                color: widget.isDark
-                    ? AppColors.darkSurface.withValues(alpha: 0.75)
-                    : Colors.white.withValues(alpha: 0.78),
+                color: AppColors.darkSurface.withValues(alpha: 0.75),
                 border: Border.all(
-                  color: widget.isDark
-                      ? AppColors.accentBd.withValues(alpha: 0.4)
-                      : AppColors.accentBd.withValues(alpha: 0.28),
-                ),
+                    color: AppColors.accentBd.withValues(alpha: 0.40)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black
-                        .withValues(alpha: widget.isDark ? 0.24 : 0.07),
+                    color: Colors.black.withValues(alpha: 0.24),
                     blurRadius: 32,
                     offset: const Offset(0, 10),
                   ),
@@ -91,9 +84,8 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                         style: TextStyle(
                           fontSize: 8.5,
                           fontWeight: FontWeight.w600,
-                          color: widget.isDark
-                              ? AppColors.darkSecondary.withValues(alpha: 0.65)
-                              : AppColors.lightSecondary.withValues(alpha: 0.60),
+                          color: AppColors.darkSecondary
+                              .withValues(alpha: 0.65),
                         ),
                       ),
                       Container(
@@ -125,11 +117,8 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                                 style: TextStyle(
                                   fontSize: 6.5,
                                   fontWeight: FontWeight.w600,
-                                  color: widget.isDark
-                                      ? AppColors.darkSecondary
-                                          .withValues(alpha: 0.35)
-                                      : AppColors.lightSecondary
-                                          .withValues(alpha: 0.35),
+                                  color: AppColors.darkSecondary
+                                      .withValues(alpha: 0.35),
                                 ),
                               ),
                             ))
@@ -148,7 +137,7 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                       ),
                       itemCount: 30,
                       itemBuilder: (_, i) {
-                        final day = i + 1;
+                        final day     = i + 1;
                         final isLeave = _leaveDays.contains(day);
                         final isToday = day == 6;
                         return Container(
@@ -170,11 +159,8 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                                     : FontWeight.w400,
                                 color: (isLeave || isToday)
                                     ? AppColors.illustBadge
-                                    : widget.isDark
-                                        ? AppColors.darkSecondary
-                                            .withValues(alpha: 0.45)
-                                        : AppColors.lightSecondary
-                                            .withValues(alpha: 0.45),
+                                    : AppColors.darkSecondary
+                                        .withValues(alpha: 0.45),
                               ),
                             ),
                           ),
@@ -200,9 +186,7 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                       horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    color: widget.isDark
-                        ? AppColors.darkSurface.withValues(alpha: 0.80)
-                        : Colors.white.withValues(alpha: 0.82),
+                    color: AppColors.darkSurface.withValues(alpha: 0.80),
                     border: Border.all(color: AppColors.accentBd),
                     boxShadow: [
                       BoxShadow(
@@ -222,11 +206,8 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                           shape: BoxShape.circle,
                           color: AppColors.accentLt,
                         ),
-                        child: const Icon(
-                          Icons.check_rounded,
-                          size: 9,
-                          color: AppColors.accent,
-                        ),
+                        child: const Icon(Icons.check_rounded,
+                            size: 9, color: AppColors.accent),
                       ),
                       const SizedBox(width: 5),
                       Text(
@@ -234,9 +215,8 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                         style: TextStyle(
                           fontSize: 8,
                           fontWeight: FontWeight.w600,
-                          color: widget.isDark
-                              ? AppColors.darkPrimary.withValues(alpha: 0.80)
-                              : AppColors.lightPrimary.withValues(alpha: 0.74),
+                          color:
+                              AppColors.darkPrimary.withValues(alpha: 0.80),
                         ),
                       ),
                     ],
@@ -259,11 +239,9 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                       horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
-                    color: widget.isDark
-                        ? AppColors.darkSurface.withValues(alpha: 0.75)
-                        : Colors.white.withValues(alpha: 0.78),
+                    color: AppColors.darkSurface.withValues(alpha: 0.75),
                     border: Border.all(
-                        color: AppColors.accentBd.withValues(alpha: 0.5)),
+                        color: AppColors.accentBd.withValues(alpha: 0.50)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.11),
@@ -283,10 +261,7 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                           gradient: const LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [
-                              AppColors.accent,
-                              AppColors.accentEnd,
-                            ],
+                            colors: [AppColors.accent, AppColors.accentEnd],
                           ),
                         ),
                       ),
@@ -300,22 +275,16 @@ class _LeaveIllustrationState extends State<LeaveIllustration>
                             style: TextStyle(
                               fontSize: 8,
                               fontWeight: FontWeight.w600,
-                              color: widget.isDark
-                                  ? AppColors.darkPrimary
-                                      .withValues(alpha: 0.75)
-                                  : AppColors.lightPrimary
-                                      .withValues(alpha: 0.70),
+                              color: AppColors.darkPrimary
+                                  .withValues(alpha: 0.75),
                             ),
                           ),
                           Text(
                             'pending review',
                             style: TextStyle(
                               fontSize: 7,
-                              color: widget.isDark
-                                  ? AppColors.darkSecondary
-                                      .withValues(alpha: 0.45)
-                                  : AppColors.lightSecondary
-                                      .withValues(alpha: 0.45),
+                              color: AppColors.darkSecondary
+                                  .withValues(alpha: 0.45),
                             ),
                           ),
                         ],

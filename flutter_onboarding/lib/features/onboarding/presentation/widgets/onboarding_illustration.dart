@@ -6,20 +6,15 @@ import 'illustrations/analytics_illustration.dart';
 
 class OnboardingIllustration extends StatelessWidget {
   final IllustrationType type;
-  final bool isDark;
 
-  const OnboardingIllustration({
-    super.key,
-    required this.type,
-    required this.isDark,
-  });
+  const OnboardingIllustration({super.key, required this.type});
 
   @override
   Widget build(BuildContext context) {
     return switch (type) {
-      IllustrationType.attendance => AttendanceIllustration(isDark: isDark),
-      IllustrationType.leave => LeaveIllustration(isDark: isDark),
-      IllustrationType.analytics => AnalyticsIllustration(isDark: isDark),
+      IllustrationType.attendance => const AttendanceIllustration(),
+      IllustrationType.leave      => const LeaveIllustration(),
+      IllustrationType.analytics  => const AnalyticsIllustration(),
     };
   }
 }

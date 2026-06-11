@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useDarkMode } from "../lib/shared";
 
 /* ── Types ─────────────────────────────────────────────────── */
 type ChipVariant = "a" | "b" | "c";
@@ -99,7 +98,6 @@ function LeaveIllus() {
         </div>
       </div>
 
-      {/* Leave Approved toast */}
       <div className="notif-bubble notif-bubble--top-right glass-card">
         <div className="notif-icon">
           <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
@@ -109,7 +107,6 @@ function LeaveIllus() {
         <span className="notif-title">Leave Approved</span>
       </div>
 
-      {/* Pending requests toast */}
       <div className="notif-bubble notif-bubble--bottom-left glass-card">
         <div className="notif-bar" />
         <div>
@@ -204,7 +201,6 @@ export function OnboardingFlow({ onGetStarted, initialSlide = 0, onSlideChange }
   const [idx,   setIdx]   = useState(() => Math.max(0, Math.min(initialSlide, PAGES.length - 1)));
   const [dir,   setDir]   = useState<Dir>("fwd");
   const [phase, setPhase] = useState<Phase>("idle");
-  const [dark,  setDark]  = useDarkMode();
   const exitT  = useRef<ReturnType<typeof setTimeout>>(undefined);
   const enterT = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -244,33 +240,11 @@ export function OnboardingFlow({ onGetStarted, initialSlide = 0, onSlideChange }
     <div className="ob">
       <div className="ob__bg-glow" />
 
-      <header className="ob__header top-enter">
-        <button
-          className="theme-toggle"
-          onClick={() => setDark(d => !d)}
-          aria-label="Toggle dark mode"
-        >
-          {dark ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="5" fill="currentColor" />
-              <path
-                d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-              />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="currentColor" />
-            </svg>
-          )}
+      {!isLast && (
+        <button className="skip-btn top-enter" onClick={() => goTo(PAGES.length - 1)}>
+          Skip
         </button>
-
-        {!isLast && (
-          <button className="skip-btn" onClick={() => goTo(PAGES.length - 1)}>
-            Skip
-          </button>
-        )}
-      </header>
+      )}
 
       <div className="ob__illus-wrap">
         <div key={idx} className={`ob__illus ${illusCls}`}>

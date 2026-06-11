@@ -24,9 +24,8 @@ List<AnimationController> buildFloatControllers({
   });
 }
 
-/// Shared glassmorphism card used by all three illustrations.
+/// Shared glassmorphism card — always dark.
 class IllusGlassCard extends StatelessWidget {
-  final bool isDark;
   final double width;
   final double height;
   final double radius;
@@ -35,7 +34,6 @@ class IllusGlassCard extends StatelessWidget {
 
   const IllusGlassCard({
     super.key,
-    required this.isDark,
     required this.width,
     required this.height,
     required this.radius,
@@ -50,19 +48,13 @@ class IllusGlassCard extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        color: isDark
-            ? AppColors.darkSurface.withValues(alpha: 0.75)
-            : Colors.white.withValues(alpha: 0.76),
+        color: AppColors.darkSurface.withValues(alpha: 0.75),
         border: Border.all(
-          color: borderColor ??
-              (isDark
-                  ? AppColors.accentBd.withValues(alpha: 0.38)
-                  : AppColors.accentBd.withValues(alpha: 0.22)),
+          color: borderColor ?? AppColors.accentBd.withValues(alpha: 0.38),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black
-                .withValues(alpha: isDark ? 0.26 : 0.065),
+            color: Colors.black.withValues(alpha: 0.26),
             blurRadius: 28,
             offset: const Offset(0, 8),
           ),

@@ -3,8 +3,7 @@ import 'illustration_shared.dart';
 import '../../../../../core/constants/app_colors.dart';
 
 class AnalyticsIllustration extends StatefulWidget {
-  final bool isDark;
-  const AnalyticsIllustration({super.key, required this.isDark});
+  const AnalyticsIllustration({super.key});
 
   @override
   State<AnalyticsIllustration> createState() =>
@@ -53,7 +52,7 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Glow — copper
+            // Glow
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -71,18 +70,12 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
               padding: const EdgeInsets.fromLTRB(14, 13, 14, 9),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
-                color: widget.isDark
-                    ? AppColors.darkSurface.withValues(alpha: 0.80)
-                    : Colors.white.withValues(alpha: 0.80),
+                color: AppColors.darkSurface.withValues(alpha: 0.80),
                 border: Border.all(
-                  color: widget.isDark
-                      ? AppColors.accentBd.withValues(alpha: 0.38)
-                      : AppColors.accentBd.withValues(alpha: 0.22),
-                ),
+                    color: AppColors.accentBd.withValues(alpha: 0.38)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black
-                        .withValues(alpha: widget.isDark ? 0.24 : 0.07),
+                    color: Colors.black.withValues(alpha: 0.24),
                     blurRadius: 32,
                     offset: const Offset(0, 10),
                   ),
@@ -99,19 +92,16 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         style: TextStyle(
                           fontSize: 8.5,
                           fontWeight: FontWeight.w500,
-                          color: widget.isDark
-                              ? AppColors.darkSecondary.withValues(alpha: 0.60)
-                              : AppColors.lightSecondary.withValues(alpha: 0.55),
+                          color: AppColors.darkSecondary
+                              .withValues(alpha: 0.60),
                         ),
                       ),
-                      Text(
+                      const Text(
                         '94%',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: widget.isDark
-                              ? AppColors.darkPrimary
-                              : AppColors.lightPrimary,
+                          color: AppColors.darkPrimary,
                         ),
                       ),
                     ],
@@ -124,16 +114,16 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                       height: 3,
                       child: Stack(children: [
                         Container(
-                          color: widget.isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.06),
-                        ),
+                            color: Colors.white.withValues(alpha: 0.08)),
                         FractionallySizedBox(
                           widthFactor: 0.94,
                           child: Container(
                             decoration: const BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [AppColors.accent, AppColors.accentEnd],
+                                colors: [
+                                  AppColors.accent,
+                                  AppColors.accentEnd
+                                ],
                               ),
                             ),
                           ),
@@ -147,19 +137,20 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: _barData.asMap().entries.map((e) {
-                        final i = e.key;
-                        final h = e.value;
+                        final i        = e.key;
+                        final h        = e.value;
                         final isActive = i == _barData.length - 1;
                         return Expanded(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 1.5),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 1.5),
                             child: AnimatedBuilder(
                               animation: _bars,
                               builder: (_, __) {
                                 final animH = h *
                                     Curves.easeOutCubic.transform(
-                                      (_bars.value - i * 0.08).clamp(0.0, 1.0),
+                                      (_bars.value - i * 0.08)
+                                          .clamp(0.0, 1.0),
                                     );
                                 return FractionallySizedBox(
                                   alignment: Alignment.bottomCenter,
@@ -170,11 +161,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                                       color: isActive
                                           ? AppColors.accent
                                               .withValues(alpha: 0.80)
-                                          : widget.isDark
-                                              ? Colors.white
-                                                  .withValues(alpha: 0.13)
-                                              : Colors.black
-                                                  .withValues(alpha: 0.10),
+                                          : Colors.white
+                                              .withValues(alpha: 0.13),
                                     ),
                                   ),
                                 );
@@ -194,11 +182,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 6,
-                                  color: widget.isDark
-                                      ? AppColors.darkSecondary
-                                          .withValues(alpha: 0.35)
-                                      : AppColors.lightSecondary
-                                          .withValues(alpha: 0.35),
+                                  color: AppColors.darkSecondary
+                                      .withValues(alpha: 0.35),
                                 ),
                               ),
                             ))
@@ -247,9 +232,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         'Rating',
                         style: TextStyle(
                           fontSize: 7,
-                          color: widget.isDark
-                              ? AppColors.darkSecondary.withValues(alpha: 0.45)
-                              : AppColors.lightSecondary.withValues(alpha: 0.40),
+                          color: AppColors.darkSecondary
+                              .withValues(alpha: 0.45),
                         ),
                       ),
                     ],
@@ -298,9 +282,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                         'This week',
                         style: TextStyle(
                           fontSize: 7,
-                          color: widget.isDark
-                              ? AppColors.darkSecondary.withValues(alpha: 0.45)
-                              : AppColors.lightSecondary.withValues(alpha: 0.42),
+                          color: AppColors.darkSecondary
+                              .withValues(alpha: 0.45),
                         ),
                       ),
                     ],
@@ -324,8 +307,8 @@ class _AnalyticsIllustrationState extends State<AnalyticsIllustration>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
                     color: AppColors.accentEnd.withValues(alpha: 0.14),
-                    border:
-                        Border.all(color: AppColors.accentBd.withValues(alpha: 0.6)),
+                    border: Border.all(
+                        color: AppColors.accentBd.withValues(alpha: 0.6)),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.10),

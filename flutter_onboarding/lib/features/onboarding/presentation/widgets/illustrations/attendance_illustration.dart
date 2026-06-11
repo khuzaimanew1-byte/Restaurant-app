@@ -4,8 +4,7 @@ import 'illustration_shared.dart';
 import '../../../../../core/constants/app_colors.dart';
 
 class AttendanceIllustration extends StatefulWidget {
-  final bool isDark;
-  const AttendanceIllustration({super.key, required this.isDark});
+  const AttendanceIllustration({super.key});
 
   @override
   State<AttendanceIllustration> createState() =>
@@ -52,7 +51,7 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Radial glow — copper-tinted
+            // Radial glow
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -91,7 +90,6 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
 
             // Center glass card
             IllusGlassCard(
-              isDark: widget.isDark,
               width: dim * 0.39,
               height: dim * 0.52,
               radius: 22,
@@ -112,7 +110,7 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
                     ),
                   ),
                   const SizedBox(height: 9),
-                  _ShimmerLines(isDark: widget.isDark),
+                  const _ShimmerLines(),
                   const SizedBox(height: 9),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -138,21 +136,18 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
             // Float chips
             _FloatChip(
               controller: _floats[0],
-              isDark: widget.isDark,
               value: '98%',
               label: 'On-Time',
               alignment: const Alignment(-1.55, -1.05),
             ),
             _FloatChip(
               controller: _floats[1],
-              isDark: widget.isDark,
               value: '12',
               label: 'Checked in',
               alignment: const Alignment(1.45, -0.55),
             ),
             _FloatChip(
               controller: _floats[2],
-              isDark: widget.isDark,
               value: '✓',
               label: 'Synced',
               alignment: const Alignment(-1.35, 1.15),
@@ -166,14 +161,12 @@ class _AttendanceIllustrationState extends State<AttendanceIllustration>
 
 class _FloatChip extends StatelessWidget {
   final AnimationController controller;
-  final bool isDark;
   final String value;
   final String label;
   final Alignment alignment;
 
   const _FloatChip({
     required this.controller,
-    required this.isDark,
     required this.value,
     required this.label,
     required this.alignment,
@@ -190,7 +183,6 @@ class _FloatChip extends StatelessWidget {
           child: child,
         ),
         child: IllusGlassCard(
-          isDark: isDark,
           width: 62,
           height: 52,
           radius: 16,
@@ -212,9 +204,7 @@ class _FloatChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 7,
                   fontWeight: FontWeight.w500,
-                  color: isDark
-                      ? AppColors.darkSecondary.withValues(alpha: 0.55)
-                      : AppColors.lightSecondary.withValues(alpha: 0.55),
+                  color: AppColors.darkSecondary.withValues(alpha: 0.55),
                 ),
               ),
             ],
@@ -226,8 +216,7 @@ class _FloatChip extends StatelessWidget {
 }
 
 class _ShimmerLines extends StatelessWidget {
-  final bool isDark;
-  const _ShimmerLines({required this.isDark});
+  const _ShimmerLines();
 
   @override
   Widget build(BuildContext context) {
@@ -240,9 +229,7 @@ class _ShimmerLines extends StatelessWidget {
               height: 4,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(2),
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.15)
-                    : Colors.black.withValues(alpha: 0.09),
+                color: Colors.white.withValues(alpha: 0.15),
               ),
             ),
           ),
