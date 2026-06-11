@@ -13,25 +13,3 @@ export function useDarkMode(): [boolean, React.Dispatch<React.SetStateAction<boo
   }, [dark]);
   return [dark, setDark];
 }
-
-export function Spinner({ size = 19 }: { size?: number }) {
-  return (
-    <span style={{
-      width: size, height: size, borderRadius: "50%",
-      border: "2.5px solid rgba(255,255,255,0.28)",
-      borderTopColor: "#fff", display: "inline-block",
-      animation: "spin 0.72s linear infinite",
-    }} />
-  );
-}
-
-export function formatTimer(ms: number): string {
-  const s = Math.ceil(ms / 1000);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
-
-export function formatCountdown(ms: number): string {
-  if (ms <= 0) return "0s";
-  if (ms < 60000) return `${Math.ceil(ms / 1000)}s`;
-  return `${Math.ceil(ms / 60000)} min`;
-}
