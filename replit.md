@@ -53,6 +53,67 @@ flutter run \
 - **First-launch detection**: `SharedPreferences` key `onboarding_complete` — set once, never shown again
 - **Separate `employees` + `users` tables**: `employees` holds pre-registered records; a `users` row is created only after OTP verification
 
+---
+
+## Coding Standards — SSOT
+
+These rules apply to **all code in this project** automatically, without needing to mention them per task.
+
+### 1. Styling
+
+- **CSS classes first.** Always use CSS class names for styling. Inline `style` only for truly dynamic values: positions (`top`, `left`), computed heights, or CSS custom properties (e.g. `--bar-h`, `--ring-size`).
+- **CSS variables for every color.** No hardcoded color values in components or Flutter widgets. Every color comes from a design token variable (`var(--accent)`, `--chip-a`, etc.).
+- **Short, semantic variable names.** Prefer `--bg`, `--text-sub`, `--chip-a` over long descriptive names.
+- **Dark mode via attribute.** Web: `:root` = dark default, `[data-dark="false"]` = light override, toggled by `data-dark` on `<html>`. Flutter: `ThemeData` pair driven by `Riverpod` state.
+- **No dead CSS.** Remove any class, variable, or keyframe not referenced by a live component.
+
+### 2. DRY — No Duplication
+
+- Any visual pattern (style block, component, logic, color) that appears in 2+ places with ≥2 lines becomes a **shared CSS class** or **shared component/function**. Never copy-paste.
+- Shared UI atoms: `Chip`, `GlassBubble`, `NotifBubble`, `BadgeLabel` — define once, reuse everywhere.
+- Shared CSS utilities: `.glass-card`, `.chip`, `.notif-bubble`, `.badge-label`, `.bar`, `.ring`.
+
+### 3. Modals & Overlays — Smart Hybrid Mount
+
+Any element that opens/closes (modal, sheet, bottom-drawer, tooltip) **must** follow this lifecycle:
+
+```
+First trigger  →  mount
+Close          →  start 60 s countdown before unmount
+Reopen         →  cancel countdown, keep mounted (no re-mount cost)
+Countdown ends →  unmount
+```
+
+Implement via a `useDelayedUnmount(isOpen: boolean, delayMs = 60_000)` hook that returns `shouldRender: boolean`.
+
+### 4. Animations
+
+| Intent | Easing | Duration |
+|--------|--------|----------|
+| Enter / spring in | `cubic-bezier(0.16, 1, 0.3, 1)` | 450–550 ms |
+| Exit / snap out   | `cubic-bezier(0.4, 0, 1, 1)`    | 200–250 ms |
+| Micro-interaction | `cubic-bezier(0.22, 1, 0.36, 1)` | 120–200 ms |
+| Float / breathe   | `ease-in-out`                    | 3–5 s infinite |
+
+All durations and easings live in CSS — never hardcoded in JS `setTimeout` logic (except the transition timeout that matches the CSS duration).
+
+### 5. Design Principles (Apple-level)
+
+- **Typography:** Inter 800, `clamp(32px, 9.5vw, 46px)`, tracking `-.04em`, line-height `1.06–1.10` for headlines.
+- **Touch targets:** Minimum 44×44 px for all interactive elements.
+- **Button press:** `transform: scale(0.96)` on `:active` via CSS — no JS pointer handlers for visual feedback.
+- **Whitespace:** Generous; use `clamp()` for all padding/margin so layout breathes at every screen size.
+- **Glassmorphism:** `backdrop-filter: blur(20–28px)` + `var(--glass)` bg + `var(--glass-bd)` border. Defined once in `.glass-card`, extended where needed.
+- **Psychological flow:** One clear benefit per screen → progress dots (Zeigarnik effect) → premium CTA (Von Restorff). Never add friction before the user commits.
+
+### 6. Code Hygiene
+
+- Remove all `console.log`, `console.error`, commented-out blocks, and unused imports before committing.
+- No dead variables or unreachable branches.
+- TypeScript: no `any` unless unavoidable (e.g. CSS custom property casting `as React.CSSProperties`).
+
+---
+
 ## User preferences
 
 _Populate as you build — explicit user instructions worth remembering across sessions._
