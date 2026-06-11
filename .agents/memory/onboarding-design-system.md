@@ -39,7 +39,7 @@ description: CSS variable SSOT, class-first styling rules, Apple-level design co
 
 - **Surfaces:** Cool-slate layered — `bg` → `bg-surface` → `bg-card`, each ~8–10 pts lighter.
 - **Accent:** Amber Gold on cool slate = maximum perceptual contrast. Never swap accent for cool color.
-- **Glass (CRITICAL RULE — never break):** `--glass` must be `.96+` opacity, warm brown-toned (`rgba(74,64,52,.97)`), NOT the same color family as `--bg` (cool blue-grey). Backdrop-filter bleeds bg into card if opacity is low — so glass must be both near-opaque AND a distinctly different/warmer color than `--bg`. Tri-tone rule: cool bg → warm brown card → amber accent. Always add `--glass-tint: linear-gradient(145deg, rgba(196,130,10,.11) ...)` as a layered background on `.glass-card` for amber DNA. Top-edge inner shadow `inset 0 1px 0 rgba(255,255,255,.08)` is mandatory for depth.
+- **Glass (CRITICAL RULE — never break):** `--glass: rgba(56,54,58,.97)` — near-opaque warm-neutral, distinctly different from `--bg` (`#20242B` = cool blue). `backdrop-filter` bleeds bg into card at low opacity — must stay `.96+`. Always pair with `--glass-tint: linear-gradient(145deg, rgba(196,130,10,.09) 0%, rgba(56,54,58,0) 55%)` layered as `background: var(--glass-tint), var(--glass)` on `.glass-card` for amber DNA. Top-edge depth: `inset 0 1px 0 rgba(255,255,255,.07)` in box-shadow.
 - **Typography:** Only two weights for body — `400` (desc) and `700+` (headline). No `300` in body copy.
 - **Spacing:** `clamp()` on every `font-size` and `padding`. No fixed px for layout dimensions.
 - **Tap feedback:** `scale(.96)` on `:active`, never opacity alone. `will-change: transform` on animated elements.
