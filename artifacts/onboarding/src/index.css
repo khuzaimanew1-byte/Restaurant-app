@@ -51,20 +51,20 @@
   --accent-fg:   #FFF8F0;
   --accent-glow: rgba(196,130,10,.42);
 
-  /* ── chip backgrounds — amber tints, slightly richer on slate */
-  --chip-a: rgba(196,130,10,.24);
-  --chip-b: rgba(196,130,10,.16);
-  --chip-c: rgba(196,130,10,.10);
+  /* ── chip backgrounds — dark-slate base + amber tint, grounded in app palette */
+  --chip-a: rgba(196,130,10,.18);
+  --chip-b: rgba(196,130,10,.12);
+  --chip-c: rgba(196,130,10,.07);
 
   /* ── glass / card ─────────────────────────────────────────── */
   /* RULE: glass must be near-opaque (.96+) AND amber-warm-tinted so cards feel
      like they belong to this design system, not a generic slate dashboard.
      Never use --bg color for glass. rgb values of --glass must be warmer/
      lighter than --bg. Amber tint gradient is mandatory for cohesion.          */
-  --glass:    rgba(74,64,52,.97);
-  --glass-tint: linear-gradient(145deg, rgba(196,130,10,.11) 0%, rgba(74,64,52,0) 60%);
-  --glass-bd: rgba(196,130,10,.40);
-  --glass-hi: rgba(255,255,255,.08);
+  --glass:    rgba(58,62,70,.97);
+  --glass-tint: linear-gradient(145deg, rgba(196,130,10,.10) 0%, rgba(58,62,70,0) 58%);
+  --glass-bd: rgba(196,130,10,.36);
+  --glass-hi: rgba(255,255,255,.07);
   --glass-sh: 0 12px 44px rgba(0,0,0,.60), 0 2px 10px rgba(0,0,0,.36),
               inset 0 1px 0 var(--glass-hi);
 
