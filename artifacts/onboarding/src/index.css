@@ -57,9 +57,9 @@
   --chip-c: rgba(196,130,10,.10);
 
   /* ── glass / card ─────────────────────────────────────────── */
-  --glass:    rgba(32,36,43,.88);
-  --glass-bd: rgba(196,130,10,.22);
-  --glass-sh: 0 10px 40px rgba(0,0,0,.50), 0 2px 8px rgba(0,0,0,.28);
+  --glass:    rgba(58,66,77,.90);
+  --glass-bd: rgba(196,130,10,.30);
+  --glass-sh: 0 12px 44px rgba(0,0,0,.60), 0 2px 10px rgba(0,0,0,.36);
 
   /* ── illustration tokens ──────────────────────────────────── */
   --glow-circle:   radial-gradient(circle, rgba(196,130,10,.20) 0%, transparent 68%);
