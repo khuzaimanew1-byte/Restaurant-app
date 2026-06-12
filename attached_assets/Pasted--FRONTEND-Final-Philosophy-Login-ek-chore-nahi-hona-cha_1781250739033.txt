@@ -1,0 +1,166 @@
+# FRONTEND — Final
+
+---
+
+## Philosophy
+
+Login ek chore nahi hona chahiye. User ko pata bhi nahi chalna chahiye ke woh security steps se guzar raha hai. Har cheez naturally flow kare, koi friction nahi, koi confusion nahi.
+
+---
+
+## Layout & Structure
+
+Single centered card, vertically middle of screen. Card nahi — floating content, no borders, no shadows, just space. Content itna kam ho ke user ko scan karna na pare — seedha action kare.
+
+Top pe app name, chhota. Phir heading, bold. Phir inputs. Phir button. Forgot password bilkul neeche, small — present hai lekin attention nahi maangta.
+
+elements breathe karein. Cramped nahi lage.
+
+---
+
+## Typography
+
+Heading large, bold, warm white — anchors the screen.
+Subtext chhota, muted — supporting role, lead nahi.
+Button text medium, dark on amber — confident, readable.
+Error text chhota, red — visible but not screaming.
+
+---
+
+## Inputs
+
+Bottom stroke only. Jab focus ho toh border cover animation aaye, smoothly. No box, no background, no radius. Label placeholder ke taur pe — jab type karo toh upar float kare gently. Eye icon password ke right pe, always visible. 
+
+---
+Imp: smooth animations hon.
+
+## Button
+
+Full width, amber, rounded. Resting state solid. Hover pe thoda brighten. Press pe scale down 0.97 — tactile feel. Loading pe text hat jaye, centered spinner aaye — size same rahe, no layout shift.
+
+---
+jab tak saare inp aur inp ke neeche aggre terms & services ka checkbox click nhin hoga, tab tak btn disabled,
+enter pe next inp, 
+disable pe koi action nhin hoga
+
+## Screen 1 — Sign In
+
+```
+        Staff Attendance
+
+
+        Welcome back
+
+
+        Email ________________
+
+
+        Password _____________ 👁
+
+
+        [        Sign In        ]
+
+
+                Forgot password?
+```
+
+Sign In press karo → check + sign-in ek flow mein:
+- Agar setup → OTP bhejo → OTP screen
+- Agar login → compare → JWT → dashboard
+- Password jo enter kiya — memory mein rakho, OTP verify hone ke baad set karo DB pe
+-password check karo strong hai ya nhin 
+aisa err aayega jab signin,
+○  8+ chars ○   1 uppercase ○   1 num ○   1 special char
+
+reset password pe bhi same reuse ho same logic style.
+Imp Note: agar diff pages ya state pe apply tab bhi repeat nhin karne text ya thori modification kar sakte ho base logic, style, el ya kisi aur cheez ki.
+---
+
+## Screen 2 — OTP
+
+```
+        ←
+
+
+        Check your inbox
+
+        adm***@company.com
+
+
+        [ _ ][ _ ][ _ ][ _ ][ _ ][ _ ]
+
+
+              Resend in 8m
+```
+
+6th digit → auto submit. Paste → auto split. Wrong → shake. Back arrow → screen 1 wapas.
+
+---
+
+Set Password (new user only)
+password Screen 1 pe pehle se enter ho chuka hai. OTP verify hone ke baad wahi password DB pe save ho jata hai.
+
+---
+
+## Reset Password Flow
+
+Forgot password → OTP screen → phir yeh:
+
+```
+        ←
+
+
+        Reset your password
+
+
+        New password __________ 👁
+
+        Confirm ________________ 👁
+
+○  8+ chars ○   1 uppercase ○   1 num ○   1 special char
+
+
+
+        [      Reset Password      ]
+```
+
+---
+
+## Animations
+
+**Form load** — elements upar se fade in, staggered, 40ms apart. Subtle, barely noticeable — lekin absence mein stiff lagta.
+
+**Input focus** — stroke brightens, 180ms ease. No jump.
+
+**Button press** — scale 0.97, 120ms. Spring back.
+
+**Wrong OTP** — horizontal shake, 300ms. Boxes border red. No text — shake kaafi hai.
+
+**Wrong password** — input border flash red, 200ms. Error text fade in neeche.
+
+**OTP auto-advance** — cursor next box pe instantly. Paste — sab boxes bhar jayein, submit.
+
+**Screen transition** — current content fade out, new fade in. 200ms. No slide — slide distracting hota hai, fade cleaner.
+
+**Success** — button spinner → checkmark → fade out page → dashboard.
+
+---
+
+## Psychological Positioning
+
+**Anchoring** — App name upar chhota, heading bold — user ko context milta hai without reading.
+
+**Progressive disclosure** — sirf jo zaroorat hai woh dikhao. OTP screen pe sirf boxes — koi extra text, koi instruction paragraph nahi.
+
+**Fitts Law** — button full width — impossible to miss, thumb-friendly on mobile.
+
+**Hick's Law** — choices zero. Ek input, ek action. User ka brain decision fatigue mein nahi jaata.
+
+**Error recovery** — error seedha us cheez ke neeche jahan galti hui. User ki eye wahan pehle se hai — no hunting.
+
+**Trust** — clean space, consistent amber, no clutter — subconsciously professional aur trustworthy lagta hai.
+
+**Resend link muted** — jab tak ready nahi — user try nahi karta baar baar, cooldown naturally feel hota hai without hard block message.
+
+**Forgot password neeche** — present for those who need it. No anxiety trigger for normal users.
+
