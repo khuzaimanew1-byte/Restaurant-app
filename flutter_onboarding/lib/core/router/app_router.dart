@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../constants/app_colors.dart';
 import '../../features/onboarding/data/onboarding_repository.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 
@@ -44,17 +45,14 @@ class _InitGateState extends State<_InitGate> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(
-          color:       dark ? Colors.white38 : Colors.black26,
-          strokeWidth: 2,
+  Widget build(BuildContext context) => Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.accentLt,
+            strokeWidth: 2,
+          ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 Widget _fadeTransition(_, Animation<double> animation,

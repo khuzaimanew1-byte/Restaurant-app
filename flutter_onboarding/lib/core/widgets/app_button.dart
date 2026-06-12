@@ -64,7 +64,6 @@ class _AppButtonState extends State<AppButton>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final enabled = widget.onPressed != null && !widget.isLoading;
 
     return AnimatedBuilder(
@@ -79,39 +78,37 @@ class _AppButtonState extends State<AppButton>
           duration: const Duration(milliseconds: 200),
           child: Container(
             height: widget.height,
-            decoration: _decoration(isDark),
-            child: _child(isDark),
+            decoration: _decoration(),
+            child: _child(),
           ),
         ),
       ),
     );
   }
 
-  BoxDecoration _decoration(bool dark) {
+  BoxDecoration _decoration() {
     switch (widget.variant) {
       case AppButtonVariant.primary:
         return BoxDecoration(
-          color: dark
-              ? Colors.white.withValues(alpha: 0.93)
-              : Colors.black.withValues(alpha: 0.87),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+          gradient: const LinearGradient(
+            colors: [AppColors.accent, AppColors.accentEnd],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
             BoxShadow(
-              color: dark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.black.withValues(alpha: 0.1),
+              color: AppColors.accentGlow,
               blurRadius: 24,
-              offset: const Offset(0, 2),
+              offset: Offset(0, 4),
             ),
           ],
         );
       case AppButtonVariant.secondary:
         return BoxDecoration(
-          color: dark ? AppColors.darkCard : AppColors.lightSurface,
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: dark ? AppColors.darkBorder : AppColors.lightBorder,
-          ),
+          border: Border.all(color: AppColors.glassBd),
         );
       case AppButtonVariant.ghost:
         return BoxDecoration(
@@ -120,19 +117,19 @@ class _AppButtonState extends State<AppButton>
         );
       case AppButtonVariant.destructive:
         return BoxDecoration(
-          color: AppColors.error.withValues(alpha: 0.12),
+          color: AppColors.errGlow,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+          border: Border.all(color: AppColors.errSub),
         );
     }
   }
 
-  Widget _child(bool dark) {
+  Widget _child() {
     final textColor = switch (widget.variant) {
-      AppButtonVariant.primary => dark ? AppColors.darkBg : AppColors.lightSurface,
-      AppButtonVariant.secondary => dark ? AppColors.darkPrimary : AppColors.lightPrimary,
-      AppButtonVariant.ghost => AppColors.indigo,
-      AppButtonVariant.destructive => AppColors.error,
+      AppButtonVariant.primary     => AppColors.accentFg,
+      AppButtonVariant.secondary   => AppColors.text,
+      AppButtonVariant.ghost       => AppColors.accent,
+      AppButtonVariant.destructive => AppColors.err,
     };
 
     if (widget.isLoading) {
@@ -159,7 +156,7 @@ class _AppButtonState extends State<AppButton>
           widget.label,
           style: TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
             color: textColor,
           ),
