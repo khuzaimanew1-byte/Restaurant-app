@@ -1,1 +1,1 @@
-// Schema definitions will be added here
+export * from "./auth.js";

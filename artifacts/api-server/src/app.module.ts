@@ -1,8 +1,10 @@
+import "reflect-metadata";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { LoggerModule } from "nestjs-pino";
 import { HealthModule } from "./health/health.module.js";
+import { AuthModule }   from "./auth/auth.module.js";
 
 @Module({
   imports: [
@@ -27,6 +29,7 @@ import { HealthModule } from "./health/health.module.js";
     ]),
 
     HealthModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
