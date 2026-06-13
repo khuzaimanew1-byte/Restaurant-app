@@ -576,10 +576,6 @@ export function ResetPasswordScreen({ resetToken, onBack, onDone, enterDir }: {
         <BackIcon /><span>Back</span>
       </button>
 
-      <div className="otp-icon-wrap rp-s1">
-        <div className="otp-icon"><LockIcon /></div>
-      </div>
-
       <h1 className="login__head rp-s2">New password</h1>
       <p className="login__sub rp-s3">Create a strong password for your account</p>
 
