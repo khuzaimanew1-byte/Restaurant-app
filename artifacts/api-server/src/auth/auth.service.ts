@@ -225,7 +225,7 @@ export class AuthService implements OnModuleInit {
     return { success: true, resetToken };
   }
 
-  async resetPassword(resetToken: string, password: string): Promise<{ token: string }> {
+  async resetPassword(resetToken: string, password: string): Promise<{ success: true }> {
     let email: string;
     try {
       const payload = verifyToken(resetToken);
@@ -237,8 +237,7 @@ export class AuthService implements OnModuleInit {
     this.requireAdmin(email);
     const hash = await bcrypt.hash(password, 12);
     await db.update(adminConfig).set({ passwordHash: hash }).where(eq(adminConfig.email, email));
-    const admin = (await db.select().from(adminConfig).where(eq(adminConfig.email, email)).limit(1))[0]!;
-    return { token: signToken({ sub: String(admin.id), email: admin.email }) };
+    return { success: true };
   }
 
   async resendOtp(email: string, purpose: "login" | "reset"): Promise<{ success: true; expiresAt: number }> {
