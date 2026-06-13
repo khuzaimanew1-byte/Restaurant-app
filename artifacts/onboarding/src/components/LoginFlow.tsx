@@ -312,7 +312,9 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
       } else if (lower.includes("incorrect password") || lower.includes("invalid credentials")) {
         setPwErr("Incorrect password");
       } else if (lower.includes("setup incomplete") || lower.includes("setup first")) {
-        setPwErr("Account setup not complete. Please use Sign In to finish setting up.");
+        setPwErr("Account setup incomplete — sign in to finish setup.");
+      } else if (lower.includes("gmail") || lower.includes("email sending") || lower.includes("credentials are invalid") || lower.includes("service_unavailable") || lower.includes("unavailable")) {
+        setPwErr("Could not send verification email. Gmail credentials need to be updated.");
       } else {
         setPwErr(msg);
       }

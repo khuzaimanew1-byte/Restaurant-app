@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
 import nodemailer from "nodemailer";
 
 @Injectable()
@@ -12,11 +12,12 @@ export class EmailService {
   });
 
   async sendOtp(to: string, otp: string): Promise<void> {
-    await this.transporter.sendMail({
-      from: `"Staff Attendance" <${process.env["GMAIL"]}>`,
-      to,
-      subject: "Your verification code",
-      html: `
+    try {
+      await this.transporter.sendMail({
+        from: `"Staff Attendance" <${process.env["GMAIL"]}>`,
+        to,
+        subject: "Your verification code",
+        html: `
         <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:32px;background:#20242b;border-radius:12px;">
           <h2 style="color:#e8c98a;margin:0 0 8px">Staff Attendance</h2>
           <p style="color:#9aa3b0;margin:0 0 24px;font-size:14px">Admin verification code</p>
@@ -26,6 +27,25 @@ export class EmailService {
           <p style="color:#9aa3b0;font-size:13px;margin:0;">Valid for <strong style="color:#e8c98a;">8 minutes</strong>. Do not share this code.</p>
         </div>
       `,
-    });
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("535") || msg.includes("Username and Password") || msg.includes("BadCredentials")) {
+        throw new HttpException(
+          "Email sending failed: Gmail credentials are invalid. Please update the GMAIL_APP_PASSWORD secret.",
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+      if (msg.includes("ECONNREFUSED") || msg.includes("ETIMEDOUT") || msg.includes("ENOTFOUND")) {
+        throw new HttpException(
+          "Email sending failed: Could not reach Gmail servers. Check network/firewall settings.",
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+      throw new HttpException(
+        `Email sending failed: ${msg}`,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
   }
 }
