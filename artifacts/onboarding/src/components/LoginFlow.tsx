@@ -527,6 +527,11 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
 
       <div className="otp-s6">
         <Countdown seconds={countdown} onResend={handleResend} />
+        {isLogin && (
+          <p className="otp-spam-hint">
+            Can't find it? Check your <strong>spam</strong> or <strong>junk</strong> folder.
+          </p>
+        )}
       </div>
     </div>
   );
