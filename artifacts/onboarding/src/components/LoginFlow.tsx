@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, KeyboardEvent, ClipboardEvent } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────
-type Screen     = "signin" | "otp" | "reset-password";
+type Screen = "signin" | "otp";
 type OtpPurpose = "login"  | "reset";
 type EnterDir   = "fwd"    | "back";
 
@@ -479,12 +479,8 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
         </div>
       </div>
 
-      <h1 className="login__head otp-s2">
-        {isLogin ? "Check your inbox" : "Password reset"}
-      </h1>
-      <p className="login__sub otp-s3">
-        {isLogin ? "We sent a 6-digit code to" : "Enter the reset code sent to"}
-      </p>
+      <h1 className="login__head otp-s2">Check your inbox</h1>
+      <p className="login__sub otp-s3">We sent a 6-digit code to</p>
 
       <div className="otp-email-chip otp-s4">
         <span className="otp-email-dot" />
@@ -516,7 +512,7 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
 }
 
 // ── ResetPasswordScreen ────────────────────────────────────────────────
-function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
+export function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
   email: string; onBack: () => void;
   onDone: () => void; enterDir: EnterDir;
 }) {
@@ -594,10 +590,11 @@ function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
 
 // ── LoginFlow ──────────────────────────────────────────────────────────
 export interface LoginFlowProps {
-  onLoggedIn?: (token: string) => void;
+  onLoggedIn?:   (token: string) => void;
+  onResetReady?: () => void;
 }
 
-export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
+export function LoginFlow({ onLoggedIn, onResetReady }: LoginFlowProps) {
   const [screen,    setScreen]    = useState<Screen>("signin");
   const [screenKey, setScreenKey] = useState(0);
   const [enterDir,  setEnterDir]  = useState<EnterDir>("fwd");
@@ -649,16 +646,10 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
             pendingPw={pendingPw}
             onChangeEmail={() => goTo("signin", "back")}
             onLoggedIn={handleLoggedIn}
-            onResetReady={() => goTo("reset-password", "fwd")}
-          />
-        )}
-        {screen === "reset-password" && (
-          <ResetPasswordScreen
-            key={screenKey}
-            enterDir={enterDir}
-            email={email}
-            onBack={() => goTo("signin", "back")}
-            onDone={() => goTo("signin", "back")}
+            onResetReady={() => {
+              sessionStorage.setItem("reset_email", email);
+              onResetReady?.();
+            }}
           />
         )}
       </div>
