@@ -25,10 +25,21 @@ function SuccessScreen({ onLogout }: { onLogout: () => void }) {
 }
 
 function getInitialView(): View {
-  if (localStorage.getItem("auth_token")) return "success";
-  if (window.location.pathname === "/login" || window.location.hash === "#login") return "login";
-  const m = window.location.pathname.match(/^\/onboarding\/(\d+)$/);
-  return m ? "onboarding" : "onboarding";
+  const path = window.location.pathname;
+  if (localStorage.getItem("auth_token")) {
+    window.history.replaceState({}, "", "/success");
+    return "success";
+  }
+  if (path === "/login") return "login";
+  if (path === "/success") {
+    window.history.replaceState({}, "", "/login");
+    return "login";
+  }
+  return "onboarding";
+}
+
+function navigate(path: string) {
+  window.history.pushState({}, "", path);
 }
 
 export default function App() {
@@ -41,21 +52,25 @@ export default function App() {
   });
 
   const token = localStorage.getItem("auth_token");
-
-  // Route guards — derive the effective view from auth state
-  // Logged in  → only success is accessible
-  // Logged out → success is not accessible
   const guardedView: View = token
     ? "success"
     : view === "success" ? "login" : view;
 
-  const handleLoggedIn = () => {
-    setView("success");
+  const goTo = (v: View) => {
+    const paths: Record<View, string> = {
+      onboarding: "/",
+      login:      "/login",
+      success:    "/success",
+    };
+    navigate(paths[v]);
+    setView(v);
   };
+
+  const handleLoggedIn = () => goTo("success");
 
   const handleLogout = () => {
     localStorage.removeItem("auth_token");
-    setView("login");
+    goTo("login");
   };
 
   if (guardedView === "success") {
@@ -78,10 +93,7 @@ export default function App() {
     <OnboardingFlow
       initialSlide={slide}
       onSlideChange={n => setSlide(n)}
-      onGetStarted={() => {
-        window.history.pushState({}, "", "/login");
-        setView("login");
-      }}
+      onGetStarted={() => goTo("login")}
     />
   );
 }
