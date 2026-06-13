@@ -244,12 +244,12 @@ function OtpRow({ digits, onChange, shaking, onComplete }: {
 // ── Countdown ──────────────────────────────────────────────────────────
 function Countdown({ seconds, onResend }: { seconds: number; onResend: () => void }) {
   if (seconds > 0) {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+    const label = seconds >= 60
+      ? `${Math.floor(seconds / 60)}m`
+      : `${seconds}s`;
     return (
       <p className="countdown">
-        Resend in{" "}
-        <span className="countdown__time">{m > 0 ? `${m}m ` : ""}{String(s).padStart(2, "0")}s</span>
+        Resend in <span className="countdown__time">{label}</span>
       </p>
     );
   }
@@ -404,9 +404,9 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
 }
 
 // ── OtpScreen ──────────────────────────────────────────────────────────
-function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady, enterDir }: {
+function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedIn, onResetReady, enterDir }: {
   email: string; purpose: OtpPurpose; pendingPw: string;
-  onBack: () => void; onLoggedIn: (token: string) => void;
+  onBack: () => void; onChangeEmail: () => void; onLoggedIn: (token: string) => void;
   onResetReady: () => void; enterDir: EnterDir;
 }) {
   const [digits,    setDigits]    = useState(Array<string>(6).fill(""));
@@ -457,16 +457,22 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
   }, [loading, purpose, pendingPw, email, onLoggedIn, onResetReady]);
 
   const handleResend = async () => {
-    setDigits(Array(6).fill("")); setShaking(false); setOtpErr(""); setCountdown(8 * 60);
+    setDigits(Array(6).fill("")); setShaking(false); setOtpErr("");
     try {
       await apiPost("/resend-otp", { email, purpose });
+      setCountdown(8 * 60);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to resend code";
-      setOtpErr(lower(msg).includes("too many") || lower(msg).includes("locked") ? msg : "Failed to send code. Please try again.");
+      const lo  = msg.toLowerCase();
+      // Backend told us how many seconds remain — restore the countdown
+      const secsMatch = msg.match(/Wait (\d+) seconds/i);
+      if (secsMatch) {
+        setCountdown(parseInt(secsMatch[1]!, 10));
+        return;
+      }
+      setOtpErr(lo.includes("too many") || lo.includes("locked") ? msg : "Failed to send code. Please try again.");
     }
   };
-
-  function lower(s: string) { return s.toLowerCase(); }
 
   const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
   const isLogin = purpose === "login";
@@ -493,6 +499,9 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
       <div className="otp-email-chip otp-s4">
         <span className="otp-email-dot" />
         {maskEmail(email)}
+        <button type="button" className="otp-change-email" onClick={onChangeEmail}>
+          Change
+        </button>
       </div>
 
       <div className="otp-s5">
@@ -649,6 +658,7 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
             purpose={otpPurpose}
             pendingPw={pendingPw}
             onBack={() => goTo("signin", "back")}
+            onChangeEmail={() => goTo("signin", "back")}
             onLoggedIn={handleLoggedIn}
             onResetReady={() => goTo("reset-password", "fwd")}
           />
