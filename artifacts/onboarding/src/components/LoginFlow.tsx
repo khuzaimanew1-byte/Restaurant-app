@@ -261,9 +261,9 @@ function Countdown({ seconds, onResend }: { seconds: number; onResend: () => voi
 
 // ── SignInScreen ───────────────────────────────────────────────────────
 function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmail = "" }: {
-  onOtpNeeded: (email: string, pw: string) => void;
+  onOtpNeeded: (email: string, pw: string, countdown?: number) => void;
   onLoggedIn:  (token: string) => void;
-  onForgot:    (email: string) => void;
+  onForgot:    (email: string, countdown?: number) => void;
   enterDir:    EnterDir;
   defaultEmail?: string;
 }) {
@@ -398,16 +398,16 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
 }
 
 // ── OtpScreen ──────────────────────────────────────────────────────────
-function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir }: {
+function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir, initialCountdown = 10 * 60 }: {
   email: string; purpose: OtpPurpose; pendingPw: string;
   onChangeEmail: () => void; onLoggedIn: (token: string) => void;
-  onResetReady: () => void; enterDir: EnterDir;
+  onResetReady: () => void; enterDir: EnterDir; initialCountdown?: number;
 }) {
   const [digits,    setDigits]    = useState(Array<string>(6).fill(""));
   const [shaking,   setShaking]   = useState(false);
   const [otpErr,    setOtpErr]    = useState("");
   const [loading,   setLoading]   = useState(false);
-  const [countdown, setCountdown] = useState(10 * 60);
+  const [countdown, setCountdown] = useState(initialCountdown);
 
   useEffect(() => {
     if (countdown <= 0) return;

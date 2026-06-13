@@ -115,9 +115,9 @@ class _LoginPageState extends State<LoginPage> {
 // ── SignIn Screen ─────────────────────────────────────────────────────
 class _SignInScreen extends StatefulWidget {
   final String defaultEmail;
-  final void Function(String email, String pw) onOtpNeeded;
+  final void Function(String email, String pw, {int? countdown}) onOtpNeeded;
   final Future<void> Function(String token) onLoggedIn;
-  final void Function(String email) onForgot;
+  final void Function(String email, {int? countdown}) onForgot;
 
   const _SignInScreen({
     super.key,
@@ -178,8 +178,16 @@ class _SignInScreenState extends State<_SignInScreen> {
         await widget.onLoggedIn(token);
       }
     } catch (e) {
-      final msg        = e.toString().replaceFirst('Exception: ', '');
-      final lower      = msg.toLowerCase();
+      final msg   = e.toString().replaceFirst('Exception: ', '');
+      final waitM = RegExp(r'Wait (\d+) seconds', caseSensitive: false).firstMatch(msg);
+      if (waitM != null) {
+        widget.onOtpNeeded(
+          _emailCtrl.text.trim(), _pwCtrl.text,
+          countdown: int.parse(waitM.group(1)!),
+        );
+        return;
+      }
+      final lower = msg.toLowerCase();
       setState(() {
         if (lower.contains('not registered') || lower.contains('not found')) {
           _emailErr = 'Email not registered';
