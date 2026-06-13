@@ -133,7 +133,8 @@ All durations and easings live in CSS — never hardcoded in JS `setTimeout` log
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- **Never remove or touch secrets** (`GMAIL_APP_PASSWORD`, `JWT_SESSION`, `NEON_DATABASE_URL`, `GMAIL`, `ADMIN_GMAIL`). User manages them directly — do not request, overwrite, or clear them.
+- **Onboarding workflow runs on port 5000** (webview) to avoid conflict with the artifact workflow on port 23165.
 
 ## Gotchas
 
