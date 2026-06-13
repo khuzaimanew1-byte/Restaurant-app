@@ -425,6 +425,12 @@ class _OtpScreenState extends State<_OtpScreen> {
       if (mounted) setState(() => _countdown = 10 * 60);
       _startTimer();
     } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      final m   = RegExp(r'Wait (\d+) seconds', caseSensitive: false).firstMatch(msg);
+      if (m != null) {
+        if (mounted) setState(() => _countdown = int.parse(m.group(1)!));
+        return;
+      }
       if (mounted) setState(() => _otpErr = 'Failed to send code. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);

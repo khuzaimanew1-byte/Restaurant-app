@@ -459,6 +459,8 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
       setCountdown(10 * 60);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to resend code";
+      const m   = msg.match(/Wait (\d+) seconds/i);
+      if (m) { setCountdown(parseInt(m[1]!, 10)); return; }
       const lo  = msg.toLowerCase();
       setOtpErr(lo.includes("too many") || lo.includes("locked") ? msg : "Failed to send code. Please try again.");
     } finally {
