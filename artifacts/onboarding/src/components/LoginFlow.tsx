@@ -22,6 +22,14 @@ function parseWaitSeconds(msg: string): number {
   return 10 * 60;
 }
 
+function expiresAtFromWait(msg: string): number {
+  return Date.now() + parseWaitSeconds(msg) * 1000;
+}
+
+function secsRemaining(expiresAt: number): number {
+  return Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+}
+
 function maskEmail(email: string) {
   const [local = "", domain = ""] = email.split("@");
   return `${local.slice(0, 3)}***@${domain}`;
@@ -269,9 +277,9 @@ function Countdown({ seconds, onResend }: { seconds: number; onResend: () => voi
 
 // ── SignInScreen ───────────────────────────────────────────────────────
 function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmail = "" }: {
-  onOtpNeeded: (email: string, pw: string, countdown?: number, err?: string) => void;
+  onOtpNeeded: (email: string, pw: string, expiresAt?: number, err?: string) => void;
   onLoggedIn:  (token: string) => void;
-  onForgot:    (email: string, countdown?: number, err?: string) => void;
+  onForgot:    (email: string, expiresAt?: number, err?: string) => void;
   enterDir:    EnterDir;
   defaultEmail?: string;
 }) {
@@ -302,7 +310,7 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
           return;
         }
         const { expiresAt } = await apiPost<{ expiresAt: number }>("/send-otp", { email, purpose: "login" });
-        onOtpNeeded(email, password, Math.ceil((expiresAt - Date.now()) / 1000));
+        onOtpNeeded(email, password, expiresAt);
       } else {
         const { token } = await apiPost<{ token: string }>("/sign-in", { email, password });
         onLoggedIn(token);
@@ -311,7 +319,7 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
       const msg   = e instanceof Error ? e.message : "Something went wrong";
       const lower = msg.toLowerCase();
       if (lower.includes("already sent")) {
-        onOtpNeeded(email, password, parseWaitSeconds(msg), msg);
+        onOtpNeeded(email, password, expiresAtFromWait(msg), msg);
       } else if (lower.includes("not registered") || lower.includes("not authorized") || lower.includes("not found")) {
         setEmailErr("Email not registered");
       } else if (lower.includes("too many") || lower.includes("locked")) {
@@ -340,12 +348,12 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
         return;
       }
       const { expiresAt } = await apiPost<{ expiresAt: number }>("/send-otp", { email, purpose: "reset" });
-      onForgot(email, Math.ceil((expiresAt - Date.now()) / 1000));
+      onForgot(email, expiresAt);
     } catch (e: unknown) {
       const msg   = e instanceof Error ? e.message : "Something went wrong";
       const lower = msg.toLowerCase();
       if (lower.includes("already sent")) {
-        onForgot(email, parseWaitSeconds(msg), msg);
+        onForgot(email, expiresAtFromWait(msg), msg);
       } else if (lower.includes("not registered") || lower.includes("not authorized") || lower.includes("not found")) {
         setEmailErr("Email not registered");
       } else if (lower.includes("no password") || lower.includes("setup first") || lower.includes("set yet")) {
@@ -410,17 +418,17 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
 }
 
 // ── OtpScreen ──────────────────────────────────────────────────────────
-function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir, initialCountdown, initialErr }: {
+function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir, otpExpiresAt, onResent, initialErr }: {
   email: string; purpose: OtpPurpose; pendingPw: string;
   onChangeEmail: () => void; onLoggedIn: (token: string) => void;
   onResetReady: () => void; enterDir: EnterDir;
-  initialCountdown?: number; initialErr?: string;
+  otpExpiresAt?: number; onResent?: (expiresAt: number) => void; initialErr?: string;
 }) {
   const [digits,    setDigits]    = useState(Array<string>(6).fill(""));
   const [shaking,   setShaking]   = useState(false);
   const [otpErr,    setOtpErr]    = useState(initialErr ?? "");
   const [loading,   setLoading]   = useState(false);
-  const [countdown, setCountdown] = useState(initialCountdown ?? 10 * 60);
+  const [countdown, setCountdown] = useState(() => otpExpiresAt ? secsRemaining(otpExpiresAt) : 10 * 60);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -469,7 +477,8 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
     setDigits(Array(6).fill("")); setShaking(false); setOtpErr("");
     try {
       const { expiresAt } = await apiPost<{ expiresAt: number }>("/resend-otp", { email, purpose });
-      setCountdown(Math.ceil((expiresAt - Date.now()) / 1000));
+      onResent?.(expiresAt);
+      setCountdown(secsRemaining(expiresAt));
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to resend code";
       const lo  = msg.toLowerCase();
@@ -616,7 +625,7 @@ export function LoginFlow({ onLoggedIn, onResetVerified }: LoginFlowProps) {
   const [otpPurpose,       setOtpPurpose]       = useState<OtpPurpose>("login");
   const [email,            setEmail]             = useState("");
   const [pendingPw,        setPendingPw]         = useState("");
-  const [otpInitCountdown, setOtpInitCountdown]  = useState<number | undefined>(undefined);
+  const [otpExpiresAt,     setOtpExpiresAt]      = useState<number | undefined>(undefined);
   const [otpInitErr,       setOtpInitErr]        = useState<string | undefined>(undefined);
 
   const goTo = useCallback((s: Screen, dir: EnterDir = "fwd") => {
@@ -630,17 +639,19 @@ export function LoginFlow({ onLoggedIn, onResetVerified }: LoginFlowProps) {
     onLoggedIn?.(token);
   };
 
-  const handleOtpNeeded = (e: string, pw: string, countdown?: number, err?: string) => {
+  const handleOtpNeeded = (e: string, pw: string, expiresAt?: number, err?: string) => {
     setEmail(e); setPendingPw(pw); setOtpPurpose("login");
-    setOtpInitCountdown(countdown); setOtpInitErr(err);
+    setOtpExpiresAt(expiresAt); setOtpInitErr(err);
     goTo("otp", "fwd");
   };
 
-  const handleForgot = (e: string, countdown?: number, err?: string) => {
+  const handleForgot = (e: string, expiresAt?: number, err?: string) => {
     setEmail(e); setOtpPurpose("reset");
-    setOtpInitCountdown(countdown); setOtpInitErr(err);
+    setOtpExpiresAt(expiresAt); setOtpInitErr(err);
     goTo("otp", "fwd");
   };
+
+  const handleResent = (expiresAt: number) => setOtpExpiresAt(expiresAt);
 
   return (
     <div className="login">
@@ -666,7 +677,8 @@ export function LoginFlow({ onLoggedIn, onResetVerified }: LoginFlowProps) {
             onChangeEmail={() => goTo("signin", "back")}
             onLoggedIn={handleLoggedIn}
             onResetReady={() => onResetVerified?.(email)}
-            initialCountdown={otpInitCountdown}
+            otpExpiresAt={otpExpiresAt}
+            onResent={handleResent}
             initialErr={otpInitErr}
           />
         )}
