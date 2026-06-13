@@ -7,11 +7,9 @@ type EnterDir   = "fwd"    | "back";
 
 // ── Password validation ────────────────────────────────────────────────
 const RULES = [
-  { key: "len"    , label: "10+ chars"     , test: (p: string) => p.length >= 10 },
-  { key: "lower"  , label: "Lowercase"     , test: (p: string) => /[a-z]/.test(p) },
-  { key: "upper"  , label: "Uppercase"     , test: (p: string) => /[A-Z]/.test(p) },
-  { key: "number" , label: "Number"        , test: (p: string) => /[0-9]/.test(p) },
-  { key: "special", label: "Special char"  , test: (p: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(p) },
+  { key: "len"    , label: "8+ chars"    , test: (p: string) => p.length >= 8 },
+  { key: "number" , label: "Number"      , test: (p: string) => /[0-9]/.test(p) },
+  { key: "special", label: "Special char", test: (p: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(p) },
 ] as const;
 
 function isPwValid(pw: string) { return RULES.every(r => r.test(pw)); }
@@ -171,7 +169,10 @@ function PasswordInput({ label, value, onChange, error, autoComplete = "current-
           value={value} placeholder=" "
           onChange={e => onChange(e.target.value)}
           onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") onEnter?.(); }}
-          autoComplete={autoComplete} />
+          autoComplete={autoComplete}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false} />
         <span className="inp-line" aria-hidden="true" />
         <button type="button" tabIndex={-1} className="inp-eye"
           onClick={() => setShow(s => !s)}
@@ -273,13 +274,13 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
   const [agreed,   setAgreed]   = useState(false);
   const [emailErr, setEmailErr] = useState("");
   const [pwErr,    setPwErr]    = useState("");
-  const [loading,  setLoading]  = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [triedSubmit,  setTriedSubmit]  = useState(false);
 
   const emailRef = useRef<HTMLInputElement>(null);
   const pwRef    = useRef<HTMLInputElement>(null);
 
-  // Password rules shown when typing — informational only for first-login
-  const showRules = password.length > 0;
+  const showRules = triedSubmit && !isPwValid(password);
 
   // canSubmit does NOT require rules — registered users have any valid password
   const canSubmit = email.trim().length > 0 && password.length > 0 && agreed && !loading;
@@ -290,9 +291,9 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
     try {
       const { scene } = await apiPost<{ scene: string }>("/check", { email });
       if (scene === "first-login") {
-        // First login: password must meet rules before OTP
         if (!isPwValid(password)) {
-          setPwErr("Password must meet all requirements above");
+          setTriedSubmit(true);
+          setPwErr("Password must meet all requirements below");
           return;
         }
         await apiPost("/send-otp", { email, purpose: "login" });
@@ -484,12 +485,14 @@ function ResetPasswordScreen({ email, onBack, onLoggedIn, enterDir }: {
   const [confErr, setConfErr] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [triedReset, setTriedReset] = useState(false);
   const confirmRef = useRef<HTMLInputElement>(null);
-  const canSubmit  = isPwValid(newPw) && confirm.length > 0 && !loading;
+  const canSubmit  = newPw.length > 0 && confirm.length > 0 && !loading;
 
   const handleReset = useCallback(async () => {
     if (!canSubmit) return;
-    setNewErr(""); setConfErr("");
+    setNewErr(""); setConfErr(""); setTriedReset(true);
+    if (!isPwValid(newPw)) { setNewErr("Password must meet all requirements below"); return; }
     if (newPw !== confirm) { setConfErr("Passwords do not match"); return; }
     setLoading(true);
     try {
@@ -529,7 +532,7 @@ function ResetPasswordScreen({ email, onBack, onLoggedIn, enterDir }: {
           error={newErr}
           onEnter={() => confirmRef.current?.focus()}
         />
-        <PasswordRules password={newPw} />
+        {triedReset && !isPwValid(newPw) && <PasswordRules password={newPw} />}
       </div>
 
       <div className="rp-s5">

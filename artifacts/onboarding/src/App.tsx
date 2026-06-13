@@ -6,7 +6,7 @@ type View = "onboarding" | "login";
 
 export default function App() {
   const [view, setView] = useState<View>(() => {
-    if (window.location.hash === "#login") return "login";
+    if (window.location.pathname === "/login" || window.location.hash === "#login") return "login";
     const m = window.location.pathname.match(/^\/onboarding\/(\d+)$/);
     return m ? "onboarding" : "onboarding";
   });
@@ -18,14 +18,21 @@ export default function App() {
   });
 
   if (view === "login") {
-    return <LoginFlow onLoggedIn={() => { /* dashboard navigation will go here */ }} />;
+    return (
+      <div style={{ animation: "view-enter 0.48s cubic-bezier(.16,1,.3,1) both" }}>
+        <LoginFlow onLoggedIn={() => { /* dashboard navigation will go here */ }} />
+      </div>
+    );
   }
 
   return (
     <OnboardingFlow
       initialSlide={slide}
       onSlideChange={n => setSlide(n)}
-      onGetStarted={() => setView("login")}
+      onGetStarted={() => {
+        window.history.pushState({}, "", "/login");
+        setView("login");
+      }}
     />
   );
 }
