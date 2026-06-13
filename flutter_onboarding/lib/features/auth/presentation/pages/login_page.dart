@@ -456,16 +456,22 @@ class _OtpScreenState extends State<_OtpScreen> {
   }
 
   Future<void> _handleResend() async {
-    setState(() { _digits = List.filled(6, ''); _otpErr = ''; });
+    if (_loading) return;
+    setState(() { _loading = true; _digits = List.filled(6, ''); _otpErr = ''; });
     try {
       await AuthService.resendOtp(widget.email, widget.purpose);
-      setState(() { _countdown = 10 * 60; _emailNotSent = false; });
+      if (mounted) setState(() { _countdown = 10 * 60; _emailNotSent = false; });
       _startTimer();
     } catch (e) {
       final msg = e.toString().replaceFirst('Exception: ', '');
       final m   = RegExp(r'Wait (\d+) seconds', caseSensitive: false).firstMatch(msg);
-      if (m != null) { setState(() => _countdown = int.parse(m.group(1)!)); return; }
-      setState(() => _otpErr = 'Failed to send code. Please try again.');
+      if (m != null) {
+        if (mounted) setState(() => _countdown = int.parse(m.group(1)!));
+        return;
+      }
+      if (mounted) setState(() => _otpErr = 'Failed to send code. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 

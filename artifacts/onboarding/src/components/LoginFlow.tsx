@@ -464,6 +464,8 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
   }, [loading, purpose, pendingPw, email, onLoggedIn, onResetReady]);
 
   const handleResend = async () => {
+    if (loading) return;
+    setLoading(true);
     setDigits(Array(6).fill("")); setShaking(false); setOtpErr("");
     try {
       await apiPost("/resend-otp", { email, purpose });
@@ -475,6 +477,8 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
       if (m) { setCountdown(parseInt(m[1]!, 10)); return; }
       const lo = msg.toLowerCase();
       setOtpErr(lo.includes("too many") || lo.includes("locked") ? msg : "Failed to send code. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 

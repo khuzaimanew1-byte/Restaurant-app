@@ -239,26 +239,6 @@ export class AuthService implements OnModuleInit {
 
   async resendOtp(email: string, purpose: "login" | "reset"): Promise<{ success: true }> {
     this.requireAdmin(email);
-    const now = new Date();
-    const active = await db
-      .select()
-      .from(otpSessions)
-      .where(and(
-        eq(otpSessions.email,   email),
-        eq(otpSessions.purpose, purpose),
-        isNull(otpSessions.usedAt),
-        gt(otpSessions.expiresAt, now),
-      ))
-      .limit(1);
-
-    if (active.length > 0) {
-      const secsLeft = Math.ceil((active[0]!.expiresAt.getTime() - Date.now()) / 1000);
-      throw new HttpException(
-        `OTP already sent. Wait ${secsLeft} seconds before requesting a new one.`,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
     return this.sendOtp(email, purpose);
   }
 }
