@@ -261,9 +261,9 @@ function Countdown({ seconds, onResend }: { seconds: number; onResend: () => voi
 
 // ── SignInScreen ───────────────────────────────────────────────────────
 function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmail = "" }: {
-  onOtpNeeded: (email: string, pw: string, countdown?: number) => void;
+  onOtpNeeded: (email: string, pw: string) => void;
   onLoggedIn:  (token: string) => void;
-  onForgot:    (email: string, countdown?: number) => void;
+  onForgot:    (email: string) => void;
   enterDir:    EnterDir;
   defaultEmail?: string;
 }) {
@@ -293,14 +293,8 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
           setPwErr("Password must meet all requirements below");
           return;
         }
-        let countdown: number | undefined;
-        try {
-          await apiPost("/send-otp", { email, purpose: "login" });
-        } catch (e: unknown) {
-          const m = (e instanceof Error ? e.message : "").match(/Wait (\d+) seconds/i);
-          if (m) { countdown = parseInt(m[1]!, 10); } else { throw e; }
-        }
-        onOtpNeeded(email, password, countdown);
+        await apiPost("/send-otp", { email, purpose: "login" });
+        onOtpNeeded(email, password);
       } else {
         const { token } = await apiPost<{ token: string }>("/sign-in", { email, password });
         onLoggedIn(token);
@@ -335,14 +329,8 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
         setEmailErr("No password set yet — complete your account setup first");
         return;
       }
-      let countdown: number | undefined;
-      try {
-        await apiPost("/send-otp", { email, purpose: "reset" });
-      } catch (e: unknown) {
-        const m = (e instanceof Error ? e.message : "").match(/Wait (\d+) seconds/i);
-        if (m) { countdown = parseInt(m[1]!, 10); } else { throw e; }
-      }
-      onForgot(email, countdown);
+      await apiPost("/send-otp", { email, purpose: "reset" });
+      onForgot(email);
     } catch (e: unknown) {
       const msg   = e instanceof Error ? e.message : "Something went wrong";
       const lower = msg.toLowerCase();
@@ -410,17 +398,16 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
 }
 
 // ── OtpScreen ──────────────────────────────────────────────────────────
-function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir, initialCountdown }: {
+function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir }: {
   email: string; purpose: OtpPurpose; pendingPw: string;
   onChangeEmail: () => void; onLoggedIn: (token: string) => void;
   onResetReady: () => void; enterDir: EnterDir;
-  initialCountdown?: number;
 }) {
   const [digits,    setDigits]    = useState(Array<string>(6).fill(""));
   const [shaking,   setShaking]   = useState(false);
   const [otpErr,    setOtpErr]    = useState("");
   const [loading,   setLoading]   = useState(false);
-  const [countdown, setCountdown] = useState(initialCountdown ?? 10 * 60);
+  const [countdown, setCountdown] = useState(10 * 60);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -472,8 +459,6 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
       setCountdown(10 * 60);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to resend code";
-      const m   = msg.match(/Wait (\d+) seconds/i);
-      if (m) { setCountdown(parseInt(m[1]!, 10)); return; }
       const lo  = msg.toLowerCase();
       setOtpErr(lo.includes("too many") || lo.includes("locked") ? msg : "Failed to send code. Please try again.");
     } finally {
@@ -629,15 +614,13 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
     onLoggedIn?.(token);
   };
 
-  const [otpInitialCountdown, setOtpInitialCountdown] = useState<number | undefined>(undefined);
-
-  const handleOtpNeeded = (e: string, pw: string, countdown?: number) => {
-    setEmail(e); setPendingPw(pw); setOtpPurpose("login"); setOtpInitialCountdown(countdown);
+  const handleOtpNeeded = (e: string, pw: string) => {
+    setEmail(e); setPendingPw(pw); setOtpPurpose("login");
     goTo("otp", "fwd");
   };
 
-  const handleForgot = (e: string, countdown?: number) => {
-    setEmail(e); setOtpPurpose("reset"); setOtpInitialCountdown(countdown);
+  const handleForgot = (e: string) => {
+    setEmail(e); setOtpPurpose("reset");
     goTo("otp", "fwd");
   };
 
@@ -662,7 +645,6 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
             email={email}
             purpose={otpPurpose}
             pendingPw={pendingPw}
-            initialCountdown={otpInitialCountdown}
             onChangeEmail={() => goTo("signin", "back")}
             onLoggedIn={handleLoggedIn}
             onResetReady={() => goTo("reset-password", "fwd")}

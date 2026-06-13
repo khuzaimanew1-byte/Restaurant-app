@@ -42,15 +42,13 @@ class _LoginPageState extends State<LoginPage> {
     if (mounted) context.go('/success');
   }
 
-  int? _otpInitialCountdown;
-
-  void _handleOtpNeeded(String email, String pw, {int? countdown}) {
-    setState(() { _email = email; _pendingPw = pw; _otpPurpose = 'login'; _otpInitialCountdown = countdown; });
+  void _handleOtpNeeded(String email, String pw) {
+    setState(() { _email = email; _pendingPw = pw; _otpPurpose = 'login'; });
     _goTo(_Screen.otp);
   }
 
-  void _handleForgot(String email, {int? countdown}) {
-    setState(() { _email = email; _otpPurpose = 'reset'; _otpInitialCountdown = countdown; });
+  void _handleForgot(String email) {
+    setState(() { _email = email; _otpPurpose = 'reset'; });
     _goTo(_Screen.otp);
   }
 
@@ -97,7 +95,6 @@ class _LoginPageState extends State<LoginPage> {
                     email: _email,
                     purpose: _otpPurpose,
                     pendingPw: _pendingPw,
-                    initialCountdown: _otpInitialCountdown,
                     onChangeEmail: () => _goTo(_Screen.signIn),
                     onLoggedIn: _handleLoggedIn,
                     onResetReady: () => _goTo(_Screen.resetPassword),
@@ -121,9 +118,9 @@ class _LoginPageState extends State<LoginPage> {
 // ── SignIn Screen ─────────────────────────────────────────────────────
 class _SignInScreen extends StatefulWidget {
   final String defaultEmail;
-  final void Function(String email, String pw, {int? countdown}) onOtpNeeded;
+  final void Function(String email, String pw) onOtpNeeded;
   final Future<void> Function(String token) onLoggedIn;
-  final void Function(String email, {int? countdown}) onForgot;
+  final void Function(String email) onForgot;
 
   const _SignInScreen({
     super.key,
@@ -177,15 +174,8 @@ class _SignInScreenState extends State<_SignInScreen> {
           setState(() { _triedSubmit = true; _pwErr = 'Password must meet all requirements below'; });
           return;
         }
-        int? countdown;
-        try {
-          await AuthService.sendOtp(_emailCtrl.text.trim(), 'login');
-        } catch (e) {
-          final m = RegExp(r'Wait (\d+) seconds', caseSensitive: false)
-              .firstMatch(e.toString().replaceFirst('Exception: ', ''));
-          if (m != null) { countdown = int.parse(m.group(1)!); } else { rethrow; }
-        }
-        widget.onOtpNeeded(_emailCtrl.text.trim(), _pwCtrl.text, countdown: countdown);
+        await AuthService.sendOtp(_emailCtrl.text.trim(), 'login');
+        widget.onOtpNeeded(_emailCtrl.text.trim(), _pwCtrl.text);
       } else {
         final token = await AuthService.signIn(_emailCtrl.text.trim(), _pwCtrl.text);
         await widget.onLoggedIn(token);
@@ -222,15 +212,8 @@ class _SignInScreenState extends State<_SignInScreen> {
         setState(() => _emailErr = 'No password set yet — complete your account setup first');
         return;
       }
-      int? countdown;
-      try {
-        await AuthService.sendOtp(_emailCtrl.text.trim(), 'reset');
-      } catch (e) {
-        final m = RegExp(r'Wait (\d+) seconds', caseSensitive: false)
-            .firstMatch(e.toString().replaceFirst('Exception: ', ''));
-        if (m != null) { countdown = int.parse(m.group(1)!); } else { rethrow; }
-      }
-      widget.onForgot(_emailCtrl.text.trim(), countdown: countdown);
+      await AuthService.sendOtp(_emailCtrl.text.trim(), 'reset');
+      widget.onForgot(_emailCtrl.text.trim());
     } catch (e) {
       final msg        = e.toString().replaceFirst('Exception: ', '');
       setState(() => _emailErr = msg);
@@ -361,7 +344,6 @@ class _SignInScreenState extends State<_SignInScreen> {
 // ── OTP Screen ────────────────────────────────────────────────────────
 class _OtpScreen extends StatefulWidget {
   final String email, purpose, pendingPw;
-  final int? initialCountdown;
   final VoidCallback onChangeEmail, onResetReady;
   final Future<void> Function(String token) onLoggedIn;
 
@@ -370,7 +352,6 @@ class _OtpScreen extends StatefulWidget {
     required this.email,
     required this.purpose,
     required this.pendingPw,
-    this.initialCountdown,
     required this.onChangeEmail,
     required this.onLoggedIn,
     required this.onResetReady,
@@ -381,16 +362,15 @@ class _OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<_OtpScreen> {
-  List<String> _digits  = List.filled(6, '');
-  String       _otpErr  = '';
-  bool         _loading = false;
-  late int     _countdown;
+  List<String> _digits   = List.filled(6, '');
+  String       _otpErr   = '';
+  bool         _loading  = false;
+  int          _countdown = 10 * 60;
   Timer?       _timer;
 
   @override
   void initState() {
     super.initState();
-    _countdown = widget.initialCountdown ?? 10 * 60;
     _startTimer();
   }
 
@@ -445,12 +425,6 @@ class _OtpScreenState extends State<_OtpScreen> {
       if (mounted) setState(() => _countdown = 10 * 60);
       _startTimer();
     } catch (e) {
-      final msg = e.toString().replaceFirst('Exception: ', '');
-      final m   = RegExp(r'Wait (\d+) seconds', caseSensitive: false).firstMatch(msg);
-      if (m != null) {
-        if (mounted) setState(() => _countdown = int.parse(m.group(1)!));
-        return;
-      }
       if (mounted) setState(() => _otpErr = 'Failed to send code. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
