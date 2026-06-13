@@ -410,9 +410,9 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
 }
 
 // ── OtpScreen ──────────────────────────────────────────────────────────
-function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedIn, onResetReady, enterDir, initialCountdown = 10 * 60, notSent = false }: {
+function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir, initialCountdown = 10 * 60, notSent = false }: {
   email: string; purpose: OtpPurpose; pendingPw: string;
-  onBack: () => void; onChangeEmail: () => void; onLoggedIn: (token: string) => void;
+  onChangeEmail: () => void; onLoggedIn: (token: string) => void;
   onResetReady: () => void; enterDir: EnterDir; initialCountdown?: number; notSent?: boolean;
 }) {
   const [digits,       setDigits]       = useState(Array<string>(6).fill(""));
@@ -487,10 +487,6 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
 
   return (
     <div className={`login__screen ${dir}`}>
-      <button className="login__back otp-back" onClick={onBack} aria-label="Back">
-        <BackIcon /><span>Back</span>
-      </button>
-
       <div className="otp-icon-wrap otp-s1">
         <div className="otp-icon">
           {isLogin ? <MailIcon /> : <LockIcon />}
@@ -676,7 +672,6 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
             pendingPw={pendingPw}
             initialCountdown={otpInitialCountdown}
             notSent={otpNotSent}
-            onBack={() => goTo("signin", "back")}
             onChangeEmail={() => goTo("signin", "back")}
             onLoggedIn={handleLoggedIn}
             onResetReady={() => goTo("reset-password", "fwd")}

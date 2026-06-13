@@ -114,7 +114,6 @@ class _LoginPageState extends State<LoginPage> {
                     pendingPw: _pendingPw,
                     initialCountdown: _otpInitialCountdown,
                     notSent: _otpNotSent,
-                    onBack: () => _goTo(_Screen.signIn),
                     onChangeEmail: () => _goTo(_Screen.signIn),
                     onLoggedIn: _handleLoggedIn,
                     onResetReady: () => _goTo(_Screen.resetPassword),
@@ -376,7 +375,7 @@ class _OtpScreen extends StatefulWidget {
   final String email, purpose, pendingPw;
   final int initialCountdown;
   final bool notSent;
-  final VoidCallback onBack, onChangeEmail, onResetReady;
+  final VoidCallback onChangeEmail, onResetReady;
   final Future<void> Function(String token) onLoggedIn;
 
   const _OtpScreen({
@@ -386,7 +385,6 @@ class _OtpScreen extends StatefulWidget {
     required this.pendingPw,
     required this.initialCountdown,
     required this.notSent,
-    required this.onBack,
     required this.onChangeEmail,
     required this.onLoggedIn,
     required this.onResetReady,
@@ -489,16 +487,6 @@ class _OtpScreenState extends State<_OtpScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextButton.icon(
-            onPressed: widget.onBack,
-            icon: const Icon(Icons.arrow_back_rounded, size: 16),
-            label: const Text('Back'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.textSub,
-              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-            ),
-          ),
-          const SizedBox(height: 20),
           Container(
             width: 56, height: 56,
             decoration: BoxDecoration(
