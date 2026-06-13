@@ -752,6 +752,10 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   color: var(--text-ter); margin-top: 10px;
 }
 .otp-spam-hint strong { color: var(--text-sub); font-weight: 600; }
+.otp-not-sent {
+  text-align: center; font-size: clamp(11px,3vw,12px);
+  color: var(--accent); opacity: .75; margin-top: 10px;
+}
 
 /* ── Spinner ── */
 @keyframes spin { to { transform: rotate(360deg); } }

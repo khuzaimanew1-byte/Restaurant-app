@@ -418,16 +418,17 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
 }
 
 // ── OtpScreen ──────────────────────────────────────────────────────────
-function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedIn, onResetReady, enterDir, initialCountdown = 10 * 60 }: {
+function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedIn, onResetReady, enterDir, initialCountdown = 10 * 60, notSent = false }: {
   email: string; purpose: OtpPurpose; pendingPw: string;
   onBack: () => void; onChangeEmail: () => void; onLoggedIn: (token: string) => void;
-  onResetReady: () => void; enterDir: EnterDir; initialCountdown?: number;
+  onResetReady: () => void; enterDir: EnterDir; initialCountdown?: number; notSent?: boolean;
 }) {
-  const [digits,    setDigits]    = useState(Array<string>(6).fill(""));
-  const [shaking,   setShaking]   = useState(false);
-  const [otpErr,    setOtpErr]    = useState("");
-  const [loading,   setLoading]   = useState(false);
-  const [countdown, setCountdown] = useState(initialCountdown);
+  const [digits,       setDigits]       = useState(Array<string>(6).fill(""));
+  const [shaking,      setShaking]      = useState(false);
+  const [otpErr,       setOtpErr]       = useState("");
+  const [loading,      setLoading]      = useState(false);
+  const [countdown,    setCountdown]    = useState(initialCountdown);
+  const [emailNotSent, setEmailNotSent] = useState(notSent);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -475,6 +476,7 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
     try {
       await apiPost("/resend-otp", { email, purpose });
       setCountdown(10 * 60);
+      setEmailNotSent(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to resend code";
       const lo  = msg.toLowerCase();
@@ -529,8 +531,13 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
 
       <div className="otp-s6">
         <Countdown seconds={countdown} onResend={handleResend} />
-        {isLogin && countdown > 0 && (
+        {isLogin && countdown > 0 && !emailNotSent && (
           <p className="otp-spam-hint">Check spam/junk if not received.</p>
+        )}
+        {emailNotSent && countdown > 0 && (
+          <p className="otp-not-sent">
+            No new email sent — previous code is still active.
+          </p>
         )}
       </div>
     </div>
@@ -629,6 +636,7 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
   const [email,               setEmail]              = useState("");
   const [pendingPw,           setPendingPw]          = useState("");
   const [otpInitialCountdown, setOtpInitialCountdown] = useState(10 * 60);
+  const [otpNotSent,          setOtpNotSent]          = useState(false);
 
   // Navigate with direction-aware transition
   const goTo = useCallback((s: Screen, dir: EnterDir = "fwd") => {
@@ -645,12 +653,14 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
   const handleOtpNeeded = (e: string, pw: string, countdown?: number) => {
     setEmail(e); setPendingPw(pw); setOtpPurpose("login");
     setOtpInitialCountdown(countdown ?? 10 * 60);
+    setOtpNotSent(countdown !== undefined);
     goTo("otp", "fwd");
   };
 
   const handleForgot = (e: string, countdown?: number) => {
     setEmail(e); setOtpPurpose("reset");
     setOtpInitialCountdown(countdown ?? 10 * 60);
+    setOtpNotSent(countdown !== undefined);
     goTo("otp", "fwd");
   };
 
@@ -676,6 +686,7 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
             purpose={otpPurpose}
             pendingPw={pendingPw}
             initialCountdown={otpInitialCountdown}
+            notSent={otpNotSent}
             onBack={() => goTo("signin", "back")}
             onChangeEmail={() => goTo("signin", "back")}
             onLoggedIn={handleLoggedIn}
