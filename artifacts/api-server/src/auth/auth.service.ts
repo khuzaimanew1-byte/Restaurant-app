@@ -124,7 +124,7 @@ export class AuthService implements OnModuleInit {
     await db.delete(otpSessions).where(
       or(
         lt(otpSessions.expiresAt, new Date()),
-        and(eq(otpSessions.email, email), eq(otpSessions.purpose, purpose)),
+        isNotNull(otpSessions.usedAt),
       ),
     );
     const inserted = await db.insert(otpSessions).values({ email, otpHash, purpose, expiresAt }).returning();
