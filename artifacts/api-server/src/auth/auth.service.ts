@@ -54,7 +54,8 @@ export class AuthService implements OnModuleInit {
   // ── Helpers ──────────────────────────────────────────────────────────
   private requireAdmin(email: string) {
     const allowed = process.env["ADMIN_GMAIL"];
-    if (!allowed || email !== allowed) throw new UnauthorizedException("Not authorized");
+    if (!allowed || email !== allowed)
+      throw new HttpException("Email not registered", HttpStatus.NOT_FOUND);
   }
 
   private checkCooldown(email: string) {
@@ -89,7 +90,7 @@ export class AuthService implements OnModuleInit {
       const rows = await db.select().from(adminConfig).where(eq(adminConfig.email, email)).limit(1);
       if (!rows[0]?.passwordHash) {
         throw new HttpException(
-          "No password has been set for this account",
+          "No password set yet. Complete your account setup first.",
           HttpStatus.UNPROCESSABLE_ENTITY,
         );
       }
@@ -114,12 +115,25 @@ export class AuthService implements OnModuleInit {
     const rows = await db.select().from(adminConfig).where(eq(adminConfig.email, email)).limit(1);
     const admin = rows[0];
 
-    if (!admin?.passwordHash) throw new UnauthorizedException("Account not set up yet");
+    if (!admin?.passwordHash)
+      throw new HttpException(
+        "Account setup incomplete. Sign in to complete setup first.",
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
 
     const match = await bcrypt.compare(password, admin.passwordHash);
-    if (!match) { this.recordFail(email); throw new UnauthorizedException("Invalid credentials"); }
+    if (!match) {
+      this.recordFail(email);
+      throw new UnauthorizedException("Incorrect password");
+    }
 
     this.clearAttempts(email);
+    const secret = process.env["JWT_SESSION"];
+    if (!secret)
+      throw new HttpException(
+        "Server configuration error. Please contact the administrator.",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     return { token: signToken({ sub: String(admin.id), email: admin.email }) };
   }
 
@@ -141,10 +155,10 @@ export class AuthService implements OnModuleInit {
       .limit(1);
 
     const session = rows[0];
-    if (!session) { this.recordFail(email); throw new UnauthorizedException("Invalid or expired code"); }
+    if (!session) { this.recordFail(email); throw new UnauthorizedException("Invalid or expired code. Please request a new one."); }
 
     const match = await bcrypt.compare(otp, session.otpHash);
-    if (!match)  { this.recordFail(email); throw new UnauthorizedException("Invalid or expired code"); }
+    if (!match)  { this.recordFail(email); throw new UnauthorizedException("Incorrect code. Check your email and try again."); }
 
     await db.update(otpSessions).set({ usedAt: now }).where(eq(otpSessions.id, session.id));
     this.clearAttempts(email);

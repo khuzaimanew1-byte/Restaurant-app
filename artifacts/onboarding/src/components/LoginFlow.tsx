@@ -305,10 +305,14 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
       const lower = msg.toLowerCase();
-      if (lower.includes("not authorized") || lower.includes("not registered")) {
+      if (lower.includes("not registered") || lower.includes("not authorized") || lower.includes("not found")) {
         setEmailErr("Email not registered");
-      } else if (lower.includes("locked") || lower.includes("too many")) {
+      } else if (lower.includes("too many") || lower.includes("locked")) {
         setEmailErr(msg);
+      } else if (lower.includes("incorrect password") || lower.includes("invalid credentials")) {
+        setPwErr("Incorrect password");
+      } else if (lower.includes("setup incomplete") || lower.includes("setup first")) {
+        setPwErr("Account setup not complete. Please use Sign In to finish setting up.");
       } else {
         setPwErr(msg);
       }
@@ -323,12 +327,23 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
     try {
       const { scene } = await apiPost<{ scene: string }>("/check", { email });
       if (scene === "first-login") {
-        setEmailErr("No password set for this account");
+        setEmailErr("No password set yet — complete your account setup first");
         return;
       }
+      await apiPost("/send-otp", { email, purpose: "reset" });
       onForgot(email);
-    } catch {
-      setEmailErr("Email not registered");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Something went wrong";
+      const lower = msg.toLowerCase();
+      if (lower.includes("not registered") || lower.includes("not authorized") || lower.includes("not found")) {
+        setEmailErr("Email not registered");
+      } else if (lower.includes("no password") || lower.includes("setup first") || lower.includes("set yet")) {
+        setEmailErr("No password set yet — complete your account setup first");
+      } else if (lower.includes("too many") || lower.includes("locked")) {
+        setEmailErr(msg);
+      } else {
+        setEmailErr(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -392,6 +407,7 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
 }) {
   const [digits,    setDigits]    = useState(Array<string>(6).fill(""));
   const [shaking,   setShaking]   = useState(false);
+  const [otpErr,    setOtpErr]    = useState("");
   const [loading,   setLoading]   = useState(false);
   const [countdown, setCountdown] = useState(8 * 60);
 
@@ -409,7 +425,7 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
   const handleVerify = useCallback(async (completedDigits: string[]) => {
     const code = completedDigits.join("");
     if (code.length < 6 || loading) return;
-    setLoading(true);
+    setLoading(true); setOtpErr("");
     try {
       const body = purpose === "login"
         ? { email, otp: code, password: pendingPw, purpose }
@@ -417,18 +433,36 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
       const res = await apiPost<{ token?: string }>("/verify-otp", body);
       if (purpose === "login") onLoggedIn(res.token!);
       else                     onResetReady();
-    } catch {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Invalid or expired code";
+      const lower = msg.toLowerCase();
       triggerShake();
       setDigits(Array(6).fill(""));
+      if (lower.includes("expired") || lower.includes("request a new")) {
+        setOtpErr("Code expired. Request a new one below.");
+      } else if (lower.includes("incorrect code") || lower.includes("check your email")) {
+        setOtpErr("Incorrect code. Check your email and try again.");
+      } else if (lower.includes("too many") || lower.includes("locked")) {
+        setOtpErr(msg);
+      } else {
+        setOtpErr("Invalid code. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   }, [loading, purpose, pendingPw, email, onLoggedIn, onResetReady]);
 
   const handleResend = async () => {
-    setDigits(Array(6).fill("")); setShaking(false); setCountdown(8 * 60);
-    try { await apiPost("/resend-otp", { email, purpose }); } catch { /* silent */ }
+    setDigits(Array(6).fill("")); setShaking(false); setOtpErr(""); setCountdown(8 * 60);
+    try {
+      await apiPost("/resend-otp", { email, purpose });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to resend code";
+      setOtpErr(lower(msg).includes("too many") || lower(msg).includes("locked") ? msg : "Failed to send code. Please try again.");
+    }
   };
+
+  function lower(s: string) { return s.toLowerCase(); }
 
   const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
   const isLogin = purpose === "login";
@@ -460,11 +494,12 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
       <div className="otp-s5">
         <OtpRow
           digits={digits}
-          onChange={v => { setDigits(v); setShaking(false); }}
+          onChange={v => { setDigits(v); setShaking(false); setOtpErr(""); }}
           shaking={shaking}
           onComplete={handleVerify}
         />
         {loading && <div className="otp-spinner"><Spinner /></div>}
+        {otpErr && <div className="err-text otp-err">{otpErr}</div>}
       </div>
 
       <div className="otp-s6">
@@ -586,7 +621,6 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
   const handleForgot = (e: string) => {
     setEmail(e); setOtpPurpose("reset");
     goTo("otp", "fwd");
-    apiPost("/send-otp", { email: e, purpose: "reset" }).catch(() => {});
   };
 
   return (

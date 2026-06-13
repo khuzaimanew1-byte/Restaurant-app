@@ -4,11 +4,13 @@ import { ValidationPipe } from "@nestjs/common";
 import { Logger } from "nestjs-pino";
 import helmet from "helmet";
 import { AppModule } from "./app.module.js";
+import { AllExceptionsFilter } from "./auth/all-exceptions.filter.js";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   app.useLogger(app.get(Logger));
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   app.use(helmet());
 
