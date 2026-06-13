@@ -212,9 +212,12 @@ export class AuthService implements OnModuleInit {
       const hash = await bcrypt.hash(password, 12);
       await db.update(adminConfig).set({ passwordHash: hash }).where(eq(adminConfig.email, email));
       const admin = (await db.select().from(adminConfig).where(eq(adminConfig.email, email)).limit(1))[0]!;
+      // Login OTP fully consumed — remove it
+      await db.delete(otpSessions).where(eq(otpSessions.id, session.id));
       return { success: true, token: signToken({ sub: String(admin.id), email: admin.email }) };
     }
 
+    // Reset OTP: keep row with usedAt set — resetPassword reads it to confirm identity
     return { success: true };
   }
 
@@ -235,6 +238,8 @@ export class AuthService implements OnModuleInit {
     const hash = await bcrypt.hash(password, 12);
     await db.update(adminConfig).set({ passwordHash: hash }).where(eq(adminConfig.email, email));
     const admin = (await db.select().from(adminConfig).where(eq(adminConfig.email, email)).limit(1))[0]!;
+    // Reset OTP fully consumed — remove it so the row doesn't linger
+    await db.delete(otpSessions).where(eq(otpSessions.id, rows[0]!.id));
     return { token: signToken({ sub: String(admin.id), email: admin.email }) };
   }
 

@@ -634,7 +634,12 @@ export function LoginFlow({ onLoggedIn, onResetVerified }: LoginFlowProps) {
     setScreenKey(k => k + 1);
   }, []);
 
+  const clearOtpState = () => {
+    setPendingPw(""); setOtpExpiresAt(undefined); setOtpInitErr(undefined);
+  };
+
   const handleLoggedIn = (token: string) => {
+    clearOtpState();
     localStorage.setItem("auth_token", token);
     onLoggedIn?.(token);
   };
@@ -652,6 +657,10 @@ export function LoginFlow({ onLoggedIn, onResetVerified }: LoginFlowProps) {
   };
 
   const handleResent = (expiresAt: number) => setOtpExpiresAt(expiresAt);
+
+  const handleBackToSignin = () => { clearOtpState(); goTo("signin", "back"); };
+
+  const handleResetReady = () => { clearOtpState(); onResetVerified?.(email); };
 
   return (
     <div className="login">
@@ -674,9 +683,9 @@ export function LoginFlow({ onLoggedIn, onResetVerified }: LoginFlowProps) {
             email={email}
             purpose={otpPurpose}
             pendingPw={pendingPw}
-            onChangeEmail={() => goTo("signin", "back")}
+            onChangeEmail={handleBackToSignin}
             onLoggedIn={handleLoggedIn}
-            onResetReady={() => onResetVerified?.(email)}
+            onResetReady={handleResetReady}
             otpExpiresAt={otpExpiresAt}
             onResent={handleResent}
             initialErr={otpInitErr}
