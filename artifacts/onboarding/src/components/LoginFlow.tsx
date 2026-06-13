@@ -302,7 +302,9 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
     } catch (e: unknown) {
       const msg   = e instanceof Error ? e.message : "Something went wrong";
       const lower = msg.toLowerCase();
-      if (lower.includes("not registered") || lower.includes("not authorized") || lower.includes("not found")) {
+      if (lower.includes("already sent")) {
+        onOtpNeeded(email, password);
+      } else if (lower.includes("not registered") || lower.includes("not authorized") || lower.includes("not found")) {
         setEmailErr("Email not registered");
       } else if (lower.includes("too many") || lower.includes("locked")) {
         setEmailErr(msg);
@@ -334,7 +336,9 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
     } catch (e: unknown) {
       const msg   = e instanceof Error ? e.message : "Something went wrong";
       const lower = msg.toLowerCase();
-      if (lower.includes("not registered") || lower.includes("not authorized") || lower.includes("not found")) {
+      if (lower.includes("already sent")) {
+        onForgot(email);
+      } else if (lower.includes("not registered") || lower.includes("not authorized") || lower.includes("not found")) {
         setEmailErr("Email not registered");
       } else if (lower.includes("no password") || lower.includes("setup first") || lower.includes("set yet")) {
         setEmailErr("No password set yet — complete your account setup first");
