@@ -86,6 +86,27 @@ export class AuthService implements OnModuleInit {
     this.requireAdmin(email);
     this.checkCooldown(email);
 
+    const now = new Date();
+    const active = await db.select().from(otpSessions).where(
+      and(
+        eq(otpSessions.email, email),
+        eq(otpSessions.purpose, purpose),
+        isNull(otpSessions.usedAt),
+        gt(otpSessions.expiresAt, now),
+      ),
+    ).limit(1);
+
+    if (active[0]) {
+      const secsLeft = Math.ceil((active[0].expiresAt.getTime() - Date.now()) / 1000);
+      const mins = Math.floor(secsLeft / 60);
+      const secs = secsLeft % 60;
+      const label = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      throw new HttpException(
+        `An OTP was already sent. Please wait ${label} before requesting a new one.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     if (purpose === "reset") {
       const rows = await db.select().from(adminConfig).where(eq(adminConfig.email, email)).limit(1);
       if (!rows[0]?.passwordHash) {
