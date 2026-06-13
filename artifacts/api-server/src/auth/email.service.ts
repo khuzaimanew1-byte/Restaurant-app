@@ -54,7 +54,7 @@ export class EmailService {
           <div style="background:#2b3038;border-radius:8px;padding:24px;text-align:center;margin-bottom:24px;">
             <span style="font-size:36px;font-weight:700;letter-spacing:12px;color:#f0f2f5;">${otp}</span>
           </div>
-          <p style="color:#9aa3b0;font-size:13px;margin:0;">Valid for <strong style="color:#e8c98a;">8 minutes</strong>. Do not share this code.</p>
+          <p style="color:#9aa3b0;font-size:13px;margin:0;">Valid for <strong style="color:#e8c98a;">10 minutes</strong>. Do not share this code.</p>
         </div>
       `,
       });
