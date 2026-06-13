@@ -122,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                   _Screen.resetPassword => _ResetPasswordScreen(
                     key: ValueKey('reset-$_screenKey'),
                     email: _email,
-                    onBack: () => _goTo(_Screen.otp),
+                    onBack: () => _goTo(_Screen.signIn),
                     onLoggedIn: _handleLoggedIn,
                   ),
                 },
