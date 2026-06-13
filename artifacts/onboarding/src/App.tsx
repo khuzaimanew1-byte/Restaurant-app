@@ -53,8 +53,9 @@ function navigate(path: string) {
 }
 
 export default function App() {
-  const [view, setView] = useState<View>(getInitialView);
-  const [slide, setSlide] = useState(() => {
+  const [view, setView]       = useState<View>(getInitialView);
+  const [viewDir, setViewDir] = useState<"fwd" | "back">("fwd");
+  const [slide, setSlide]     = useState(() => {
     const m = window.location.pathname.match(/^\/onboarding\/(\d+)$/);
     return m ? Math.max(0, Math.min(parseInt(m[1]!), 2)) : 0;
   });
@@ -64,38 +65,41 @@ export default function App() {
     ? "success"
     : view === "success" ? "login" : view;
 
-  const goTo = (v: View) => {
+  const goTo = (v: View, dir: "fwd" | "back" = "fwd") => {
     const paths: Record<View, string> = {
-      onboarding: "/",
-      login:      "/login",
-      success:    "/success",
+      onboarding:     "/",
+      login:          "/login",
+      success:        "/success",
       "new-password": "/new-password",
     };
     navigate(paths[v]);
+    setViewDir(dir);
     setView(v);
   };
 
   const handleResetVerified = (resetToken: string) => {
     sessionStorage.setItem(SESSION_KEY, resetToken);
-    goTo("new-password");
+    goTo("new-password", "fwd");
   };
 
   const leaveNewPassword = () => {
     sessionStorage.removeItem(SESSION_KEY);
-    goTo("login");
+    goTo("login", "back");
   };
 
+  const viewClass = `view-${viewDir}`;
+
   if (guardedView === "success") return (
-    <div className="view-enter">
-      <SuccessScreen onLogout={() => { localStorage.removeItem("auth_token"); goTo("login"); }} />
+    <div className={viewClass}>
+      <SuccessScreen onLogout={() => { localStorage.removeItem("auth_token"); goTo("login", "back"); }} />
     </div>
   );
 
   if (guardedView === "new-password") {
     const resetToken = sessionStorage.getItem(SESSION_KEY);
-    if (!resetToken) { goTo("login"); return null; }
+    if (!resetToken) { goTo("login", "back"); return null; }
     return (
-      <div className="view-enter">
+      <div className={viewClass}>
         <div className="login">
           <div className="ob__bg-glow" />
           <div className="login__inner">
@@ -112,9 +116,9 @@ export default function App() {
   }
 
   if (guardedView === "login") return (
-    <div className="view-enter">
+    <div className={viewClass}>
       <LoginFlow
-        onLoggedIn={() => goTo("success")}
+        onLoggedIn={() => goTo("success", "fwd")}
         onResetVerified={handleResetVerified}
       />
     </div>
@@ -124,7 +128,7 @@ export default function App() {
     <OnboardingFlow
       initialSlide={slide}
       onSlideChange={n => setSlide(n)}
-      onGetStarted={() => goTo("login")}
+      onGetStarted={() => goTo("login", "fwd")}
     />
   );
 }

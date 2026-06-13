@@ -778,6 +778,18 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .screen-fwd  { animation: screen-fwd  560ms cubic-bezier(.16,1,.3,1) both; }
 .screen-back { animation: screen-back 560ms cubic-bezier(.16,1,.3,1) both; }
 
+/* Direction-aware element settling — overrides animation-name on child elements.
+   settle-fwd : elements slide in from the right (going deeper in tree).
+   settle-back: elements slide in from the left  (going up in tree).      */
+@keyframes settle-fwd  {
+  from { opacity: 0; transform: translateX(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
+}
+@keyframes settle-back {
+  from { opacity: 0; transform: translateX(-28px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0)     scale(1);    }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SIGNIN SCREEN — cascade from top
    Elements drop sequentially from above (authoritative, settled)
@@ -795,6 +807,13 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .si-s5b { animation: si-elem 0.68s cubic-bezier(.16,1,.3,1) 300ms both; }
 .si-s6  { animation: si-elem 0.68s cubic-bezier(.16,1,.3,1) 335ms both; }
 .si-s7 { animation: si-elem 0.66s cubic-bezier(.16,1,.3,1) 380ms both; }
+/* SignIn direction overrides (duration/delay inherited from rules above) */
+.screen-fwd  .si-s1,.screen-fwd  .si-s2,.screen-fwd  .si-s3,
+.screen-fwd  .si-s4,.screen-fwd  .si-s5,.screen-fwd  .si-s5b,
+.screen-fwd  .si-s6,.screen-fwd  .si-s7 { animation-name: settle-fwd;  }
+.screen-back .si-s1,.screen-back .si-s2,.screen-back .si-s3,
+.screen-back .si-s4,.screen-back .si-s5,.screen-back .si-s5b,
+.screen-back .si-s6,.screen-back .si-s7 { animation-name: settle-back; }
 
 /* ═══════════════════════════════════════════════════════════════
    OTP SCREEN — spring bloom from below
@@ -814,36 +833,35 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   65%  {             transform: scale(1.04) translateY(-3px); }
   to   { opacity: 1; transform: scale(1)    translateY(0);    }
 }
-@keyframes otp-back-in {
-  from { opacity: 0; transform: translateX(-12px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
 .otp-s1 { animation: otp-icon  0.76s cubic-bezier(.34,1.56,.64,1)  40ms both; }
 .otp-s2 { animation: otp-elem  0.68s cubic-bezier(.16,1,.3,1)     110ms both; }
 .otp-s3 { animation: otp-elem  0.66s cubic-bezier(.16,1,.3,1)     160ms both; }
 .otp-s4 { animation: otp-elem  0.66s cubic-bezier(.16,1,.3,1)     210ms both; }
 .otp-s5 { animation: otp-boxes 0.76s cubic-bezier(.34,1.36,.64,1) 270ms both; }
 .otp-s6 { animation: otp-elem  0.66s cubic-bezier(.16,1,.3,1)     360ms both; }
+/* OTP direction overrides — s1 (icon-pop) and s5 (boxes-spring) keep unique animations */
+.screen-fwd  .otp-s2,.screen-fwd  .otp-s3,
+.screen-fwd  .otp-s4,.screen-fwd  .otp-s6 { animation-name: settle-fwd;  }
+.screen-back .otp-s2,.screen-back .otp-s3,
+.screen-back .otp-s4,.screen-back .otp-s6 { animation-name: settle-back; }
 
 /* ═══════════════════════════════════════════════════════════════
-   RESET PASSWORD SCREEN — bloom upward
-   Icon lifts with overshoot, fields build from below (constructive)
+   RESET PASSWORD SCREEN — fields settle from navigation direction
 ═══════════════════════════════════════════════════════════════ */
-@keyframes rp-icon {
-  from { opacity: 0; transform: translateY(36px) scale(0.65); }
-  68%  {             transform: translateY(-5px)  scale(1.10); }
-  to   { opacity: 1; transform: translateY(0)     scale(1);    }
-}
 @keyframes rp-elem {
   from { opacity: 0; transform: translateY(28px); }
   to   { opacity: 1; transform: translateY(0);    }
 }
-.rp-s1 { animation: rp-icon 0.76s cubic-bezier(.34,1.46,.64,1)  50ms both; }
 .rp-s2 { animation: rp-elem 0.68s cubic-bezier(.16,1,.3,1)     120ms both; }
 .rp-s3 { animation: rp-elem 0.66s cubic-bezier(.16,1,.3,1)     175ms both; }
 .rp-s4 { animation: rp-elem 0.66s cubic-bezier(.16,1,.3,1)     235ms both; }
 .rp-s5 { animation: rp-elem 0.64s cubic-bezier(.16,1,.3,1)     295ms both; }
 .rp-s6 { animation: rp-elem 0.64s cubic-bezier(.16,1,.3,1)     350ms both; }
+/* Reset direction overrides */
+.screen-fwd  .rp-s2,.screen-fwd  .rp-s3,.screen-fwd  .rp-s4,
+.screen-fwd  .rp-s5,.screen-fwd  .rp-s6 { animation-name: settle-fwd;  }
+.screen-back .rp-s2,.screen-back .rp-s3,.screen-back .rp-s4,
+.screen-back .rp-s5,.screen-back .rp-s6 { animation-name: settle-back; }
 
 /* ── Shake (wrong OTP) ── */
 @keyframes shake {
@@ -894,11 +912,8 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   from { opacity: 0; transform: scale(0.5); }
   to   { opacity: 1; transform: scale(1); }
 }
-@keyframes view-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-.view-enter { animation: view-enter 0.48s cubic-bezier(.16,1,.3,1) both; }
-
-/* ── View transition (Onboarding → Login) ── */
-@keyframes view-enter {
-  from { opacity: 0; transform: scale(0.975); }
-  to   { opacity: 1; transform: scale(1);     }
-}
+/* View transitions — direction-aware (fwd: from right, back: from left) */
+@keyframes view-fwd  { from { opacity: 0; transform: translateX(32px) scale(0.975); } to { opacity: 1; transform: translateX(0) scale(1); } }
+@keyframes view-back { from { opacity: 0; transform: translateX(-32px) scale(0.975); } to { opacity: 1; transform: translateX(0) scale(1); } }
+.view-fwd  { animation: view-fwd  480ms cubic-bezier(.16,1,.3,1) both; }
+.view-back { animation: view-back 480ms cubic-bezier(.16,1,.3,1) both; }

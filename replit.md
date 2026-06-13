@@ -114,6 +114,35 @@ Implement via a `useDelayedUnmount(isOpen: boolean, delayMs = 60_000)` hook that
 
 All durations and easings live in CSS — never hardcoded in JS `setTimeout` logic (except the transition timeout that matches the CSS duration).
 
+#### Page Navigation Tree & Animation Direction (SSOT — strictly enforced)
+
+Spatial model — left = shallow, right = deep:
+
+```
+[Onboarding /] ──fwd──▶ [Login /login] ──fwd──▶ [OTP (inline)] ──fwd──▶ [New Password /new-password]
+                                └──────────────fwd──────────────▶ [Success /success]
+Back is the exact reverse of each forward arrow.
+```
+
+**Direction rules (must follow — no exceptions):**
+
+| Transition | Dir | Class applied |
+|---|---|---|
+| Onboarding → Login | fwd | `.view-fwd` |
+| Login → OTP | fwd | `.screen-fwd` |
+| OTP → Login (back/change) | back | `.screen-back` |
+| OTP → New Password (reset verified) | fwd | `.screen-fwd` + `.view-fwd` |
+| New Password → Login (back/done) | back | `.view-back` |
+| Login → Success (logged in) | fwd | `.view-fwd` |
+| Success → Login (logout) | back | `.view-back` |
+
+**Implementation contracts:**
+- App-level view switches → `App.tsx` `goTo(view, dir)` sets `viewDir` state → wrapper gets `className="view-fwd"` or `"view-back"`.
+- Within-LoginFlow screen switches → `enterDir` prop → `LoginFlow` renders `.screen-fwd` or `.screen-back` on the screen root.
+- **Element settling follows parent direction automatically:** `.screen-fwd .si-s*` / `.screen-back .si-s*` override `animation-name` with `settle-fwd` / `settle-back`. Same for `.otp-s*` and `.rp-s*`. Duration/delay/easing inherited from base rules — never re-specify them in direction overrides.
+- `otp-s1` (icon pop) and `otp-s5` (OTP boxes spring) keep their unique semantic animations regardless of direction.
+- CSS keyframes: `settle-fwd` (translateX 28px→0), `settle-back` (translateX -28px→0), `view-fwd` (32px+scale), `view-back` (-32px+scale).
+
 ### 5. Design Principles (Apple-level)
 
 - **Typography:** Inter 800, `clamp(32px, 9.5vw, 46px)`, tracking `-.04em`, line-height `1.06–1.10` for headlines.
