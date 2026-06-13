@@ -529,9 +529,9 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
 }
 
 // ── ResetPasswordScreen ────────────────────────────────────────────────
-function ResetPasswordScreen({ email, onBack, onLoggedIn, enterDir }: {
+function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
   email: string; onBack: () => void;
-  onLoggedIn: (token: string) => void; enterDir: EnterDir;
+  onDone: () => void; enterDir: EnterDir;
 }) {
   const [newPw,   setNewPw]   = useState("");
   const [confirm, setConfirm] = useState("");
@@ -550,10 +550,10 @@ function ResetPasswordScreen({ email, onBack, onLoggedIn, enterDir }: {
     if (newPw !== confirm) { setConfErr("Passwords do not match"); return; }
     setLoading(true);
     try {
-      const { token } = await apiPost<{ token: string }>("/reset-password", {
+      await apiPost("/reset-password", {
         email, password: newPw, confirmPassword: confirm,
       });
-      onLoggedIn(token);
+      onDone();
     } catch (e: unknown) {
       setNewErr(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -679,8 +679,8 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
             key={screenKey}
             enterDir={enterDir}
             email={email}
-            onBack={() => goTo("otp", "back")}
-            onLoggedIn={handleLoggedIn}
+            onBack={() => goTo("signin", "back")}
+            onDone={() => goTo("signin", "back")}
           />
         )}
       </div>
