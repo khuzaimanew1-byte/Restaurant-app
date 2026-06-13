@@ -488,17 +488,7 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
     }
   };
 
-  const handleChangeEmail = () => {
-    if (countdown > 0) {
-      const label = countdown >= 60
-        ? `${Math.floor(countdown / 60)}m ${countdown % 60}s`
-        : `${countdown}s`;
-      setOtpErr(`Code still active for ${label} — same email won't receive a new one yet.`);
-      setTimeout(onChangeEmail, 1800);
-    } else {
-      onChangeEmail();
-    }
-  };
+  const handleChangeEmail = () => onChangeEmail();
 
   const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
   const isLogin = purpose === "login";
@@ -539,10 +529,8 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
 
       <div className="otp-s6">
         <Countdown seconds={countdown} onResend={handleResend} />
-        {isLogin && (
-          <p className="otp-spam-hint">
-            Can't find it? Check your <strong>spam</strong> or <strong>junk</strong> folder.
-          </p>
+        {isLogin && countdown > 0 && (
+          <p className="otp-spam-hint">Check spam/junk if not received.</p>
         )}
       </div>
     </div>
