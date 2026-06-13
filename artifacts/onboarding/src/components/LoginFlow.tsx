@@ -3,14 +3,15 @@ import { useState, useRef, useCallback, useEffect, KeyboardEvent, ClipboardEvent
 // ── Types ──────────────────────────────────────────────────────────────
 type Screen     = "signin" | "otp" | "reset-password";
 type OtpPurpose = "login"  | "reset";
+type EnterDir   = "fwd"    | "back";
 
 // ── Password validation ────────────────────────────────────────────────
 const RULES = [
   { key: "len"    , label: "10+ chars"     , test: (p: string) => p.length >= 10 },
-  { key: "lower"  , label: "1 lowercase"   , test: (p: string) => /[a-z]/.test(p) },
-  { key: "upper"  , label: "1 uppercase"   , test: (p: string) => /[A-Z]/.test(p) },
-  { key: "number" , label: "1 number"      , test: (p: string) => /[0-9]/.test(p) },
-  { key: "special", label: "1 special char", test: (p: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(p) },
+  { key: "lower"  , label: "Lowercase"     , test: (p: string) => /[a-z]/.test(p) },
+  { key: "upper"  , label: "Uppercase"     , test: (p: string) => /[A-Z]/.test(p) },
+  { key: "number" , label: "Number"        , test: (p: string) => /[0-9]/.test(p) },
+  { key: "special", label: "Special char"  , test: (p: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(p) },
 ] as const;
 
 function isPwValid(pw: string) { return RULES.every(r => r.test(pw)); }
@@ -56,9 +57,9 @@ function EyeOffIcon() {
 
 function BackIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
       <path d="M19 12H5M12 5l-7 7 7 7"
-        stroke="currentColor" strokeWidth="2"
+        stroke="currentColor" strokeWidth="2.2"
         strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -66,23 +67,23 @@ function BackIcon() {
 
 function MailIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
       <rect x="2" y="4" width="20" height="16" rx="3"
-        stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-      <path d="M2 7l10 7 10-7"
-        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M2 7.5l10 6.5 10-6.5"
+        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function LockIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="11" width="18" height="11" rx="3"
-        stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="11" width="18" height="12" rx="3"
+        stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
       <path d="M7 11V7a5 5 0 0110 0v4"
-        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <circle cx="12" cy="16" r="1.5" fill="currentColor" />
+        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="17" r="1.4" fill="currentColor" />
     </svg>
   );
 }
@@ -103,18 +104,12 @@ function CustomCheckbox({ id, checked, onChange }: {
 }) {
   return (
     <>
-      <input
-        type="checkbox" id={id}
-        className="cb-input"
-        checked={checked}
-        onChange={e => onChange(e.target.checked)}
-      />
+      <input type="checkbox" id={id} className="cb-input" checked={checked}
+        onChange={e => onChange(e.target.checked)} />
       <span className="cb-box" onClick={() => onChange(!checked)} aria-hidden="true">
         <svg className="cb-check" viewBox="0 0 11 9" fill="none" aria-hidden="true">
-          <path className="cb-path"
-            d="M1 4.5l3 3 6-6"
-            strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-          />
+          <path className="cb-path" d="M1 4.5l3 3 6-6"
+            strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </span>
     </>
@@ -125,36 +120,34 @@ function CustomCheckbox({ id, checked, onChange }: {
 function PasswordRules({ password }: { password: string }) {
   return (
     <div className="pw-rules">
-      {RULES.map(({ key, label, test }) => (
-        <span key={key} className={`pw-rule${test(password) ? " pw-rule--met" : ""}`}>
-          {test(password) ? "●" : "○"} {label}
-        </span>
-      ))}
+      {RULES.map(({ key, label, test }) => {
+        const met = test(password);
+        return (
+          <div key={key} className={`pw-rule${met ? " pw-rule--met" : ""}`}>
+            <span className="pw-dot" aria-hidden="true" />
+            <span className="pw-label">{label}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 // ── TextInput ──────────────────────────────────────────────────────────
 function TextInput({ label, value, onChange, error, type = "text", autoComplete, onEnter, inputRef }: {
-  label: string; value: string;
-  onChange: (v: string) => void;
-  error?: string; type?: string;
-  autoComplete?: string; onEnter?: () => void;
-  inputRef?: React.RefObject<HTMLInputElement | null>;
+  label: string; value: string; onChange: (v: string) => void;
+  error?: string; type?: string; autoComplete?: string;
+  onEnter?: () => void; inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
   return (
     <div className="inp-wrap">
       <div className="inp-field">
-        <input
-          ref={inputRef}
-          type={type}
+        <input ref={inputRef} type={type}
           className={`inp${error ? " inp--error" : ""}`}
-          value={value}
-          placeholder=" "
+          value={value} placeholder=" "
           onChange={e => onChange(e.target.value)}
           onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") onEnter?.(); }}
-          autoComplete={autoComplete}
-        />
+          autoComplete={autoComplete} />
         <span className="inp-line" aria-hidden="true" />
       </div>
       <label className="inp-label">{label}</label>
@@ -165,34 +158,24 @@ function TextInput({ label, value, onChange, error, type = "text", autoComplete,
 
 // ── PasswordInput ──────────────────────────────────────────────────────
 function PasswordInput({ label, value, onChange, error, autoComplete = "current-password", onEnter, inputRef }: {
-  label: string; value: string;
-  onChange: (v: string) => void;
-  error?: string; autoComplete?: string;
-  onEnter?: () => void;
+  label: string; value: string; onChange: (v: string) => void;
+  error?: string; autoComplete?: string; onEnter?: () => void;
   inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
   const [show, setShow] = useState(false);
-
   return (
     <div className="inp-wrap">
       <div className="inp-field">
-        <input
-          ref={inputRef}
-          type={show ? "text" : "password"}
+        <input ref={inputRef} type={show ? "text" : "password"}
           className={`inp inp--pw${error ? " inp--error" : ""}`}
-          value={value}
-          placeholder=" "
+          value={value} placeholder=" "
           onChange={e => onChange(e.target.value)}
           onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") onEnter?.(); }}
-          autoComplete={autoComplete}
-        />
+          autoComplete={autoComplete} />
         <span className="inp-line" aria-hidden="true" />
-        <button
-          type="button" tabIndex={-1}
-          className="inp-eye"
+        <button type="button" tabIndex={-1} className="inp-eye"
           onClick={() => setShow(s => !s)}
-          aria-label={show ? "Hide password" : "Show password"}
-        >
+          aria-label={show ? "Hide password" : "Show password"}>
           {show ? <EyeOffIcon /> : <EyeIcon />}
         </button>
       </div>
@@ -212,8 +195,7 @@ function OtpRow({ digits, onChange, shaking, onComplete }: {
 
   const handleChange = (i: number, raw: string) => {
     const ch = raw.replace(/\D/g, "").slice(-1);
-    const next = [...digits];
-    next[i] = ch;
+    const next = [...digits]; next[i] = ch;
     onChange(next);
     if (ch && i < 5) focus(i + 1);
     if (ch && i === 5 && next.every(Boolean)) onComplete(next);
@@ -244,9 +226,7 @@ function OtpRow({ digits, onChange, shaking, onComplete }: {
   return (
     <div className={`otp-row${shaking ? " otp-row--shake" : ""}`}>
       {digits.map((digit, i) => (
-        <input
-          key={i}
-          ref={el => { refs.current[i] = el; }}
+        <input key={i} ref={el => { refs.current[i] = el; }}
           type="text" inputMode="numeric" maxLength={1}
           className={`otp-box${digit ? " otp-box--filled" : ""}${shaking ? " otp-box--error" : ""}`}
           value={digit}
@@ -254,8 +234,7 @@ function OtpRow({ digits, onChange, shaking, onComplete }: {
           onKeyDown={e => handleKey(i, e)}
           onPaste={handlePaste}
           onFocus={e => e.target.select()}
-          autoComplete="one-time-code"
-        />
+          autoComplete="one-time-code" />
       ))}
     </div>
   );
@@ -276,20 +255,20 @@ function Countdown({ seconds, onResend }: { seconds: number; onResend: () => voi
   return (
     <p className="countdown">
       Didn't receive it?{" "}
-      <button type="button" className="countdown__link" onClick={onResend}>
-        Resend code
-      </button>
+      <button type="button" className="countdown__link" onClick={onResend}>Resend code</button>
     </p>
   );
 }
 
 // ── SignInScreen ───────────────────────────────────────────────────────
-function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
+function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmail = "" }: {
   onOtpNeeded: (email: string, pw: string) => void;
   onLoggedIn:  (token: string) => void;
   onForgot:    (email: string) => void;
+  enterDir:    EnterDir;
+  defaultEmail?: string;
 }) {
-  const [email,    setEmail]    = useState("");
+  const [email,    setEmail]    = useState(defaultEmail);
   const [password, setPassword] = useState("");
   const [agreed,   setAgreed]   = useState(false);
   const [emailErr, setEmailErr] = useState("");
@@ -299,9 +278,11 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
   const emailRef = useRef<HTMLInputElement>(null);
   const pwRef    = useRef<HTMLInputElement>(null);
 
+  // Password rules shown when typing — informational only for first-login
   const showRules = password.length > 0;
-  const pwValid   = isPwValid(password);
-  const canSubmit = email.length > 0 && password.length > 0 && agreed && !loading && pwValid;
+
+  // canSubmit does NOT require rules — registered users have any valid password
+  const canSubmit = email.trim().length > 0 && password.length > 0 && agreed && !loading;
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
@@ -309,6 +290,11 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
     try {
       const { scene } = await apiPost<{ scene: string }>("/check", { email });
       if (scene === "first-login") {
+        // First login: password must meet rules before OTP
+        if (!isPwValid(password)) {
+          setPwErr("Password must meet all requirements above");
+          return;
+        }
         await apiPost("/send-otp", { email, purpose: "login" });
         onOtpNeeded(email, password);
       } else {
@@ -318,8 +304,10 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
       const lower = msg.toLowerCase();
-      if (lower.includes("not authorized") || lower.includes("not registered") || lower.includes("email") || lower.includes("locked")) {
-        setEmailErr(lower.includes("not authorized") ? "Email not registered" : msg);
+      if (lower.includes("not authorized") || lower.includes("not registered")) {
+        setEmailErr("Email not registered");
+      } else if (lower.includes("locked") || lower.includes("too many")) {
+        setEmailErr(msg);
       } else {
         setPwErr(msg);
       }
@@ -329,7 +317,7 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
   }, [canSubmit, email, password, onOtpNeeded, onLoggedIn]);
 
   const handleForgot = useCallback(async () => {
-    if (!email) { setEmailErr("Enter your email first"); emailRef.current?.focus(); return; }
+    if (!email.trim()) { setEmailErr("Enter your email first"); emailRef.current?.focus(); return; }
     setEmailErr(""); setLoading(true);
     try {
       const { scene } = await apiPost<{ scene: string }>("/check", { email });
@@ -345,17 +333,14 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
     }
   }, [email, onForgot]);
 
+  const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
+
   return (
-    <div className="login__screen screen-enter">
-      <div className="login__brand stagger-load stagger-load-1">
-        <span className="login__brand-dot" />
-        Staff Attendance
-      </div>
+    <div className={`login__screen ${dir}`}>
+      <h1 className="login__head si-s1">Welcome back</h1>
+      <p className="login__sub-head si-s2">Sign in to your account</p>
 
-      <h1 className="login__head stagger-load stagger-load-2">Welcome back</h1>
-      <p className="login__sub-head stagger-load stagger-load-2">Sign in to your account</p>
-
-      <div className="stagger-load stagger-load-3">
+      <div className="si-s3">
         <TextInput
           label="Email address" value={email} type="email"
           autoComplete="email" inputRef={emailRef}
@@ -365,18 +350,16 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
         />
       </div>
 
-      <div className="stagger-load stagger-load-4">
+      <div className="si-s4">
         <PasswordInput
-          label="Password" value={password}
-          inputRef={pwRef}
+          label="Password" value={password} inputRef={pwRef}
           onChange={v => { setPassword(v); setPwErr(""); }}
-          error={pwErr}
-          onEnter={handleSubmit}
+          error={pwErr} onEnter={handleSubmit}
         />
         {showRules && <PasswordRules password={password} />}
       </div>
 
-      <div className="terms-row stagger-load stagger-load-5">
+      <div className="terms-row si-s5">
         <CustomCheckbox id="terms" checked={agreed} onChange={setAgreed} />
         <label className="terms-text" htmlFor="terms">
           I agree to the{" "}
@@ -386,13 +369,14 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
         </label>
       </div>
 
-      <div className="stagger-load stagger-load-6">
+      <div className="si-s6">
         <button className="cta-btn" onClick={handleSubmit} disabled={!canSubmit}>
           {loading ? <Spinner /> : "Sign In"}
         </button>
       </div>
 
-      <button type="button" className="login__forgot" onClick={handleForgot} disabled={loading}>
+      <button type="button" className="login__forgot si-s7"
+        onClick={handleForgot} disabled={loading}>
         Forgot password?
       </button>
     </div>
@@ -400,9 +384,10 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
 }
 
 // ── OtpScreen ──────────────────────────────────────────────────────────
-function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady }: {
+function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady, enterDir }: {
   email: string; purpose: OtpPurpose; pendingPw: string;
-  onBack: () => void; onLoggedIn: (token: string) => void; onResetReady: () => void;
+  onBack: () => void; onLoggedIn: (token: string) => void;
+  onResetReady: () => void; enterDir: EnterDir;
 }) {
   const [digits,    setDigits]    = useState(Array<string>(6).fill(""));
   const [shaking,   setShaking]   = useState(false);
@@ -417,7 +402,7 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
 
   const triggerShake = () => {
     setShaking(true);
-    setTimeout(() => setShaking(false), 450);
+    setTimeout(() => setShaking(false), 500);
   };
 
   const handleVerify = useCallback(async (completedDigits: string[]) => {
@@ -444,45 +429,44 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
     try { await apiPost("/resend-otp", { email, purpose }); } catch { /* silent */ }
   };
 
+  const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
   const isLogin = purpose === "login";
 
   return (
-    <div className="login__screen screen-enter">
-      <button className="login__back" onClick={onBack} aria-label="Back">
-        <BackIcon />
-        <span>Back</span>
+    <div className={`login__screen ${dir}`}>
+      <button className="login__back otp-back" onClick={onBack} aria-label="Back">
+        <BackIcon /><span>Back</span>
       </button>
 
-      <div className="otp-icon-wrap stagger-load stagger-load-1">
+      <div className="otp-icon-wrap otp-s1">
         <div className="otp-icon">
           {isLogin ? <MailIcon /> : <LockIcon />}
         </div>
       </div>
 
-      <h1 className="login__head stagger-load stagger-load-2">
+      <h1 className="login__head otp-s2">
         {isLogin ? "Check your inbox" : "Reset password"}
       </h1>
-      <p className="login__sub stagger-load stagger-load-2">
+      <p className="login__sub otp-s3">
         {isLogin ? "We sent a 6-digit code to" : "Enter the code sent to"}
       </p>
 
-      <div className="otp-email-chip stagger-load stagger-load-3">
+      <div className="otp-email-chip otp-s4">
         <span className="otp-email-dot" />
         {maskEmail(email)}
       </div>
 
-      <div className="stagger-load stagger-load-4">
+      <div className="otp-s5">
         <OtpRow
           digits={digits}
           onChange={v => { setDigits(v); setShaking(false); }}
           shaking={shaking}
           onComplete={handleVerify}
         />
+        {loading && <div className="otp-spinner"><Spinner /></div>}
       </div>
 
-      {loading && <div className="otp-spinner"><Spinner /></div>}
-
-      <div className="stagger-load stagger-load-5">
+      <div className="otp-s6">
         <Countdown seconds={countdown} onResend={handleResend} />
       </div>
     </div>
@@ -490,8 +474,9 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
 }
 
 // ── ResetPasswordScreen ────────────────────────────────────────────────
-function ResetPasswordScreen({ email, onBack, onLoggedIn }: {
-  email: string; onBack: () => void; onLoggedIn: (token: string) => void;
+function ResetPasswordScreen({ email, onBack, onLoggedIn, enterDir }: {
+  email: string; onBack: () => void;
+  onLoggedIn: (token: string) => void; enterDir: EnterDir;
 }) {
   const [newPw,   setNewPw]   = useState("");
   const [confirm, setConfirm] = useState("");
@@ -519,23 +504,24 @@ function ResetPasswordScreen({ email, onBack, onLoggedIn }: {
     }
   }, [canSubmit, newPw, confirm, email, onLoggedIn]);
 
+  const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
+
   return (
-    <div className="login__screen screen-enter">
-      <button className="login__back" onClick={onBack} aria-label="Back">
-        <BackIcon />
-        <span>Back</span>
+    <div className={`login__screen ${dir}`}>
+      <button className="login__back otp-back" onClick={onBack} aria-label="Back">
+        <BackIcon /><span>Back</span>
       </button>
 
-      <div className="otp-icon-wrap stagger-load stagger-load-1">
+      <div className="otp-icon-wrap rp-s1">
         <div className="otp-icon">
           <LockIcon />
         </div>
       </div>
 
-      <h1 className="login__head stagger-load stagger-load-2">New password</h1>
-      <p className="login__sub stagger-load stagger-load-2">Create a strong password for your account</p>
+      <h1 className="login__head rp-s2">New password</h1>
+      <p className="login__sub rp-s3">Create a strong password for your account</p>
 
-      <div className="stagger-load stagger-load-3">
+      <div className="rp-s4">
         <PasswordInput
           label="New password" value={newPw}
           autoComplete="new-password"
@@ -546,18 +532,16 @@ function ResetPasswordScreen({ email, onBack, onLoggedIn }: {
         <PasswordRules password={newPw} />
       </div>
 
-      <div className="stagger-load stagger-load-4">
+      <div className="rp-s5">
         <PasswordInput
-          label="Confirm password" value={confirm}
-          inputRef={confirmRef}
+          label="Confirm password" value={confirm} inputRef={confirmRef}
           autoComplete="new-password"
           onChange={v => { setConfirm(v); setConfErr(""); }}
-          error={confErr}
-          onEnter={handleReset}
+          error={confErr} onEnter={handleReset}
         />
       </div>
 
-      <div className="stagger-load stagger-load-5">
+      <div className="rp-s6">
         <button className="cta-btn" onClick={handleReset} disabled={!canSubmit}>
           {loading ? <Spinner /> : "Set Password"}
         </button>
@@ -573,9 +557,18 @@ export interface LoginFlowProps {
 
 export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
   const [screen,     setScreen]     = useState<Screen>("signin");
+  const [screenKey,  setScreenKey]  = useState(0);
+  const [enterDir,   setEnterDir]   = useState<EnterDir>("fwd");
   const [otpPurpose, setOtpPurpose] = useState<OtpPurpose>("login");
   const [email,      setEmail]      = useState("");
   const [pendingPw,  setPendingPw]  = useState("");
+
+  // Navigate with direction-aware transition
+  const goTo = useCallback((s: Screen, dir: EnterDir = "fwd") => {
+    setEnterDir(dir);
+    setScreen(s);
+    setScreenKey(k => k + 1);
+  }, []);
 
   const handleLoggedIn = (token: string) => {
     localStorage.setItem("auth_token", token);
@@ -583,11 +576,13 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
   };
 
   const handleOtpNeeded = (e: string, pw: string) => {
-    setEmail(e); setPendingPw(pw); setOtpPurpose("login"); setScreen("otp");
+    setEmail(e); setPendingPw(pw); setOtpPurpose("login");
+    goTo("otp", "fwd");
   };
 
   const handleForgot = (e: string) => {
-    setEmail(e); setOtpPurpose("reset"); setScreen("otp");
+    setEmail(e); setOtpPurpose("reset");
+    goTo("otp", "fwd");
     apiPost("/send-otp", { email: e, purpose: "reset" }).catch(() => {});
   };
 
@@ -597,6 +592,9 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
       <div className="login__inner">
         {screen === "signin" && (
           <SignInScreen
+            key={screenKey}
+            enterDir={enterDir}
+            defaultEmail={email}
             onOtpNeeded={handleOtpNeeded}
             onLoggedIn={handleLoggedIn}
             onForgot={handleForgot}
@@ -604,19 +602,22 @@ export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
         )}
         {screen === "otp" && (
           <OtpScreen
-            key="otp"
+            key={screenKey}
+            enterDir={enterDir}
             email={email}
             purpose={otpPurpose}
             pendingPw={pendingPw}
-            onBack={() => setScreen("signin")}
+            onBack={() => goTo("signin", "back")}
             onLoggedIn={handleLoggedIn}
-            onResetReady={() => setScreen("reset-password")}
+            onResetReady={() => goTo("reset-password", "fwd")}
           />
         )}
         {screen === "reset-password" && (
           <ResetPasswordScreen
+            key={screenKey}
+            enterDir={enterDir}
             email={email}
-            onBack={() => setScreen("otp")}
+            onBack={() => goTo("otp", "back")}
             onLoggedIn={handleLoggedIn}
           />
         )}
