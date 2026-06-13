@@ -85,6 +85,16 @@ export class AuthService implements OnModuleInit {
     this.requireAdmin(email);
     this.checkCooldown(email);
 
+    if (purpose === "reset") {
+      const rows = await db.select().from(adminConfig).where(eq(adminConfig.email, email)).limit(1);
+      if (!rows[0]?.passwordHash) {
+        throw new HttpException(
+          "No password has been set for this account",
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
+      }
+    }
+
     const otp     = String(Math.floor(100_000 + Math.random() * 900_000));
     const otpHash = await bcrypt.hash(otp, 10);
     const expiresAt = new Date(Date.now() + 8 * 60_000);

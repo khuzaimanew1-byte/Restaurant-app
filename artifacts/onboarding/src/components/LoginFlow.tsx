@@ -56,10 +56,33 @@ function EyeOffIcon() {
 
 function BackIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
       <path d="M19 12H5M12 5l-7 7 7 7"
         stroke="currentColor" strokeWidth="2"
         strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MailIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <rect x="2" y="4" width="20" height="16" rx="3"
+        stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M2 7l10 7 10-7"
+        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="11" width="18" height="11" rx="3"
+        stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M7 11V7a5 5 0 0110 0v4"
+        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="12" cy="16" r="1.5" fill="currentColor" />
     </svg>
   );
 }
@@ -182,7 +205,7 @@ function PasswordInput({ label, value, onChange, error, autoComplete = "current-
 // ── OtpRow ─────────────────────────────────────────────────────────────
 function OtpRow({ digits, onChange, shaking, onComplete }: {
   digits: string[]; onChange: (v: string[]) => void;
-  shaking: boolean; onComplete: () => void;
+  shaking: boolean; onComplete: (completed: string[]) => void;
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const focus = (i: number) => refs.current[i]?.focus();
@@ -193,7 +216,7 @@ function OtpRow({ digits, onChange, shaking, onComplete }: {
     next[i] = ch;
     onChange(next);
     if (ch && i < 5) focus(i + 1);
-    if (ch && i === 5 && next.every(Boolean)) onComplete();
+    if (ch && i === 5 && next.every(Boolean)) onComplete(next);
   };
 
   const handleKey = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
@@ -211,11 +234,11 @@ function OtpRow({ digits, onChange, shaking, onComplete }: {
     e.preventDefault();
     const raw = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     if (!raw) return;
-    const next = Array(6).fill("");
+    const next = Array(6).fill("") as string[];
     [...raw].forEach((d, i) => { next[i] = d; });
     onChange(next);
     focus(Math.min(raw.length - 1, 5));
-    if (raw.length === 6) onComplete();
+    if (raw.length === 6) onComplete(next);
   };
 
   return (
@@ -245,12 +268,14 @@ function Countdown({ seconds, onResend }: { seconds: number; onResend: () => voi
     const s = seconds % 60;
     return (
       <p className="countdown">
-        Resend in {m > 0 ? `${m}m ` : ""}{String(s).padStart(2, "0")}s
+        Resend in{" "}
+        <span className="countdown__time">{m > 0 ? `${m}m ` : ""}{String(s).padStart(2, "0")}s</span>
       </p>
     );
   }
   return (
     <p className="countdown">
+      Didn't receive it?{" "}
       <button type="button" className="countdown__link" onClick={onResend}>
         Resend code
       </button>
@@ -292,8 +317,9 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
-      if (msg.toLowerCase().includes("email") || msg.toLowerCase().includes("locked")) {
-        setEmailErr(msg);
+      const lower = msg.toLowerCase();
+      if (lower.includes("not authorized") || lower.includes("not registered") || lower.includes("email") || lower.includes("locked")) {
+        setEmailErr(lower.includes("not authorized") ? "Email not registered" : msg);
       } else {
         setPwErr(msg);
       }
@@ -302,19 +328,36 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
     }
   }, [canSubmit, email, password, onOtpNeeded, onLoggedIn]);
 
-  const handleForgot = () => {
+  const handleForgot = useCallback(async () => {
     if (!email) { setEmailErr("Enter your email first"); emailRef.current?.focus(); return; }
-    onForgot(email);
-  };
+    setEmailErr(""); setLoading(true);
+    try {
+      const { scene } = await apiPost<{ scene: string }>("/check", { email });
+      if (scene === "first-login") {
+        setEmailErr("No password set for this account");
+        return;
+      }
+      onForgot(email);
+    } catch {
+      setEmailErr("Email not registered");
+    } finally {
+      setLoading(false);
+    }
+  }, [email, onForgot]);
 
   return (
     <div className="login__screen screen-enter">
-      <p className="login__app-name stagger-load stagger-load-1">Staff Attendance</p>
+      <div className="login__brand stagger-load stagger-load-1">
+        <span className="login__brand-dot" />
+        Staff Attendance
+      </div>
+
       <h1 className="login__head stagger-load stagger-load-2">Welcome back</h1>
+      <p className="login__sub-head stagger-load stagger-load-2">Sign in to your account</p>
 
       <div className="stagger-load stagger-load-3">
         <TextInput
-          label="Email" value={email} type="email"
+          label="Email address" value={email} type="email"
           autoComplete="email" inputRef={emailRef}
           onChange={v => { setEmail(v); setEmailErr(""); }}
           error={emailErr}
@@ -349,7 +392,7 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot }: {
         </button>
       </div>
 
-      <button type="button" className="login__forgot" onClick={handleForgot}>
+      <button type="button" className="login__forgot" onClick={handleForgot} disabled={loading}>
         Forgot password?
       </button>
     </div>
@@ -374,11 +417,11 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
 
   const triggerShake = () => {
     setShaking(true);
-    setTimeout(() => setShaking(false), 400);
+    setTimeout(() => setShaking(false), 450);
   };
 
-  const handleVerify = useCallback(async (overrideDigits?: string[]) => {
-    const code = (overrideDigits ?? digits).join("");
+  const handleVerify = useCallback(async (completedDigits: string[]) => {
+    const code = completedDigits.join("");
     if (code.length < 6 || loading) return;
     setLoading(true);
     try {
@@ -394,34 +437,52 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onLoggedIn, onResetReady
     } finally {
       setLoading(false);
     }
-  }, [digits, loading, purpose, pendingPw, onLoggedIn, onResetReady]);
+  }, [loading, purpose, pendingPw, email, onLoggedIn, onResetReady]);
 
   const handleResend = async () => {
     setDigits(Array(6).fill("")); setShaking(false); setCountdown(8 * 60);
     try { await apiPost("/resend-otp", { email, purpose }); } catch { /* silent */ }
   };
 
+  const isLogin = purpose === "login";
+
   return (
     <div className="login__screen screen-enter">
       <button className="login__back" onClick={onBack} aria-label="Back">
         <BackIcon />
+        <span>Back</span>
       </button>
 
-      <h1 className="login__head stagger-load stagger-load-1">Check your inbox</h1>
-      <p className="login__sub stagger-load stagger-load-2">{maskEmail(email)}</p>
+      <div className="otp-icon-wrap stagger-load stagger-load-1">
+        <div className="otp-icon">
+          {isLogin ? <MailIcon /> : <LockIcon />}
+        </div>
+      </div>
 
-      <div className="stagger-load stagger-load-3">
+      <h1 className="login__head stagger-load stagger-load-2">
+        {isLogin ? "Check your inbox" : "Reset password"}
+      </h1>
+      <p className="login__sub stagger-load stagger-load-2">
+        {isLogin ? "We sent a 6-digit code to" : "Enter the code sent to"}
+      </p>
+
+      <div className="otp-email-chip stagger-load stagger-load-3">
+        <span className="otp-email-dot" />
+        {maskEmail(email)}
+      </div>
+
+      <div className="stagger-load stagger-load-4">
         <OtpRow
           digits={digits}
           onChange={v => { setDigits(v); setShaking(false); }}
           shaking={shaking}
-          onComplete={() => handleVerify(digits)}
+          onComplete={handleVerify}
         />
       </div>
 
       {loading && <div className="otp-spinner"><Spinner /></div>}
 
-      <div className="stagger-load stagger-load-4">
+      <div className="stagger-load stagger-load-5">
         <Countdown seconds={countdown} onResend={handleResend} />
       </div>
     </div>
@@ -462,11 +523,19 @@ function ResetPasswordScreen({ email, onBack, onLoggedIn }: {
     <div className="login__screen screen-enter">
       <button className="login__back" onClick={onBack} aria-label="Back">
         <BackIcon />
+        <span>Back</span>
       </button>
 
-      <h1 className="login__head stagger-load stagger-load-1">Reset your password</h1>
+      <div className="otp-icon-wrap stagger-load stagger-load-1">
+        <div className="otp-icon">
+          <LockIcon />
+        </div>
+      </div>
 
-      <div className="stagger-load stagger-load-2">
+      <h1 className="login__head stagger-load stagger-load-2">New password</h1>
+      <p className="login__sub stagger-load stagger-load-2">Create a strong password for your account</p>
+
+      <div className="stagger-load stagger-load-3">
         <PasswordInput
           label="New password" value={newPw}
           autoComplete="new-password"
@@ -474,11 +543,10 @@ function ResetPasswordScreen({ email, onBack, onLoggedIn }: {
           error={newErr}
           onEnter={() => confirmRef.current?.focus()}
         />
+        <PasswordRules password={newPw} />
       </div>
 
-      <PasswordRules password={newPw} />
-
-      <div className="stagger-load stagger-load-3">
+      <div className="stagger-load stagger-load-4">
         <PasswordInput
           label="Confirm password" value={confirm}
           inputRef={confirmRef}
@@ -489,9 +557,9 @@ function ResetPasswordScreen({ email, onBack, onLoggedIn }: {
         />
       </div>
 
-      <div className="stagger-load stagger-load-4">
+      <div className="stagger-load stagger-load-5">
         <button className="cta-btn" onClick={handleReset} disabled={!canSubmit}>
-          {loading ? <Spinner /> : "Reset Password"}
+          {loading ? <Spinner /> : "Set Password"}
         </button>
       </div>
     </div>

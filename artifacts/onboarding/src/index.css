@@ -85,11 +85,11 @@
   --err-glow:     rgba(224,82,82,.24);
 
   /* ── input — bottom-stroke ─────────────────────────────── */
-  --inp-stroke:       rgba(196,130,10,.22);
+  --inp-stroke:       rgba(255,255,255,.16);
   --inp-stroke-focus: #C4820A;
   --inp-stroke-err:   rgba(224,82,82,1);
-  --inp-label:        rgba(245,230,200,.40);
-  --inp-label-focus:  rgba(196,130,10,.90);
+  --inp-label:        rgba(255,255,255,.38);
+  --inp-label-focus:  rgba(196,130,10,.95);
   --inp-label-err:    rgba(224,82,82,.85);
 }
 
@@ -456,54 +456,76 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 /* ── Screen wrapper ── */
 .login__screen { display: flex; flex-direction: column; }
 
-.login__app-name {
-  font-size: clamp(10px,2.8vw,12px);
+/* ── Brand mark ── */
+.login__brand {
+  display: flex; align-items: center; gap: 7px;
+  font-size: clamp(10px,2.6vw,11px);
   font-weight: 600;
-  letter-spacing: .12em;
+  letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--text-ter);
-  margin-bottom: clamp(28px,7vw,40px);
+  margin-bottom: clamp(32px,8vw,46px);
+}
+.login__brand-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
 }
 
 .login__head {
-  font-size: clamp(28px,8vw,38px);
+  font-size: clamp(30px,8.5vw,40px);
   font-weight: 800;
   color: var(--text);
-  letter-spacing: -.04em;
-  line-height: 1.08;
-  margin-bottom: clamp(8px,2vw,12px);
+  letter-spacing: -.045em;
+  line-height: 1.06;
+  margin-bottom: clamp(4px,1vw,6px);
+}
+
+.login__sub-head {
+  font-size: clamp(13px,3.8vw,15px);
+  color: var(--text-ter);
+  margin-bottom: clamp(28px,7vw,36px);
+  letter-spacing: -.01em;
 }
 
 .login__sub {
   font-size: clamp(13px,3.8vw,15px);
   color: var(--text-sub);
-  margin-bottom: clamp(4px,1vw,8px);
-  letter-spacing: .01em;
+  margin-bottom: clamp(6px,1.5vw,8px);
+  letter-spacing: -.01em;
 }
 
 .login__back {
   position: absolute;
-  top: clamp(-52px,-12vw,-40px);
-  left: -4px;
+  top: clamp(-56px,-13vw,-44px);
+  left: -6px;
   background: none; border: none; cursor: pointer;
   color: var(--text-sub);
-  padding: 8px;
-  display: flex; align-items: center;
-  transition: color .2s;
+  padding: 8px 10px 8px 8px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: clamp(13px,3.5vw,14px);
+  font-family: inherit; font-weight: 500;
+  border-radius: 10px;
+  transition: color .2s, background .2s;
 }
-.login__back:active { opacity: .5; }
+.login__back:hover  { color: var(--text); background: rgba(255,255,255,.06); }
+.login__back:active { opacity: .55; }
 
 .login__forgot {
   display: block;
   text-align: center;
-  margin-top: clamp(14px,4vw,18px);
+  margin-top: clamp(14px,4vw,20px);
   font-size: clamp(13px,3.5vw,14px);
-  color: var(--text-ter);
+  color: var(--accent);
+  opacity: .75;
   background: none; border: none; cursor: pointer;
-  font-family: inherit; padding: 8px 0;
-  transition: color .2s;
+  font-family: inherit; padding: 10px 0;
+  transition: opacity .2s;
 }
-.login__forgot:active { opacity: .6; }
+.login__forgot:hover  { opacity: 1; }
+.login__forgot:active { opacity: .45; }
+.login__forgot:disabled { pointer-events: none; opacity: .35; }
 
 /* ── Bottom-stroke inputs ── */
 .inp-wrap {
@@ -521,9 +543,9 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   content: '';
   position: absolute;
   bottom: 0; left: 0;
-  width: 100%; height: 1.5px;
+  width: 100%; height: 2px;
   background: var(--inp-stroke);
-  border-radius: 1px;
+  border-radius: 2px;
   pointer-events: none;
   transition: background 200ms ease;
 }
@@ -547,14 +569,14 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .inp-line {
   position: absolute;
   bottom: 0; left: 0;
-  width: 100%; height: 2px;
+  width: 100%; height: 3px;
   background: var(--inp-stroke-focus);
+  box-shadow: 0 0 10px rgba(196,130,10,.45);
   transform: scaleX(0);
   transform-origin: left center;
-  /* enter: spring-fill */
-  transition: transform 300ms cubic-bezier(0.22,1,0.36,1);
+  transition: transform 320ms cubic-bezier(0.22,1,0.36,1);
   pointer-events: none;
-  border-radius: 1px;
+  border-radius: 2px;
   z-index: 1;
   will-change: transform;
 }
@@ -708,76 +730,136 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   box-shadow: none;
 }
 
-/* ── OTP ── */
+/* ── OTP icon area ── */
+.otp-icon-wrap {
+  margin-bottom: clamp(18px,5vw,26px);
+}
+.otp-icon {
+  width: 58px; height: 58px;
+  background: rgba(196,130,10,.12);
+  border: 1px solid rgba(196,130,10,.28);
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+  box-shadow: 0 0 28px rgba(196,130,10,.14);
+}
+
+/* ── OTP email chip ── */
+.otp-email-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 20px;
+  font-size: clamp(12px,3.4vw,13px);
+  font-weight: 500;
+  color: var(--text-sub);
+  letter-spacing: .01em;
+  margin-bottom: clamp(6px,1.5vw,8px);
+}
+.otp-email-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ── OTP row ── */
 .otp-row {
-  display: flex; gap: clamp(8px,3vw,14px);
+  display: flex; gap: clamp(8px,2.5vw,12px);
   justify-content: center;
-  margin: clamp(24px,7vw,36px) 0 clamp(8px,2vw,12px);
+  margin: clamp(26px,7vw,36px) 0 clamp(10px,2.5vw,14px);
 }
 .otp-box {
-  width: clamp(40px,12vw,52px);
-  height: clamp(48px,13vw,60px);
-  background: none; border: none;
-  border-bottom: 2px solid var(--inp-stroke);
+  width: clamp(44px,12.5vw,54px);
+  height: clamp(52px,14vw,60px);
+  background: rgba(255,255,255,.04);
+  border: 1.5px solid rgba(255,255,255,.11);
+  border-radius: 14px;
   text-align: center;
-  font-size: clamp(20px,6vw,26px); font-weight: 700;
+  font-size: clamp(22px,6.5vw,28px); font-weight: 700;
   color: var(--text); font-family: inherit;
   outline: none; caret-color: var(--accent);
-  transition: border-bottom-color 180ms ease;
+  transition:
+    border-color 200ms ease,
+    background   200ms ease,
+    box-shadow   200ms ease,
+    transform    180ms cubic-bezier(0.22,1,0.36,1);
+  will-change: transform, box-shadow;
 }
-.otp-box:focus { border-bottom-color: var(--inp-stroke-focus); }
-.otp-box--filled { border-bottom-color: var(--inp-stroke-focus); }
-.otp-box--error  { border-bottom-color: var(--inp-stroke-err) !important; }
+.otp-box:focus {
+  border-color: var(--accent);
+  background: rgba(196,130,10,.08);
+  box-shadow: 0 0 0 3.5px rgba(196,130,10,.18), 0 4px 16px rgba(0,0,0,.22);
+  transform: scale(1.07);
+}
+.otp-box--filled {
+  border-color: rgba(196,130,10,.50);
+  background: rgba(196,130,10,.06);
+}
+.otp-box--error {
+  border-color: var(--err) !important;
+  background: rgba(224,82,82,.07) !important;
+  box-shadow: 0 0 0 3px var(--err-glow) !important;
+  transform: scale(1) !important;
+}
 
-.otp-row--shake { animation: shake 350ms ease; }
+.otp-row--shake { animation: shake 420ms cubic-bezier(.36,.07,.19,.97); }
 
-.otp-spinner { text-align: center; margin: 8px 0; color: var(--text-ter); }
+.otp-spinner { text-align: center; margin: 10px 0; color: var(--accent); }
 
 /* ── Countdown ── */
 .countdown {
   text-align: center;
   font-size: clamp(12px,3.3vw,14px);
   color: var(--text-ter);
-  margin-top: 4px;
+  margin-top: 6px;
+}
+.countdown__time {
+  color: var(--text-sub);
+  font-weight: 500;
 }
 .countdown__link {
   background: none; border: none;
   color: var(--accent); cursor: pointer;
   font-size: inherit; font-family: inherit;
-  padding: 0; text-decoration: underline;
+  padding: 0; font-weight: 500;
+  transition: opacity .18s;
 }
+.countdown__link:active { opacity: .5; }
 
 /* ── Spinner ── */
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin-icon { animation: spin 0.75s linear infinite; display: block; }
 
-/* ── Screen fade-in ── */
+/* ── Screen slide-up enter ── */
 @keyframes screen-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from { opacity: 0; transform: translateY(20px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
 }
-.screen-enter { animation: screen-in 200ms ease both; }
+.screen-enter { animation: screen-in 460ms cubic-bezier(.16,1,.3,1) both; }
 
-/* ── Stagger load (login) ── */
+/* ── Stagger load (login) — elements rise from below ── */
 @keyframes stagger-up {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0);    }
 }
-.stagger-load   { animation: stagger-up 0.48s cubic-bezier(.16,1,.3,1) both; }
-.stagger-load-1 { animation-delay: 0ms;   }
-.stagger-load-2 { animation-delay: 40ms;  }
-.stagger-load-3 { animation-delay: 80ms;  }
-.stagger-load-4 { animation-delay: 120ms; }
-.stagger-load-5 { animation-delay: 160ms; }
-.stagger-load-6 { animation-delay: 200ms; }
+.stagger-load   { animation: stagger-up 0.52s cubic-bezier(.16,1,.3,1) both; }
+.stagger-load-1 { animation-delay: 30ms;  }
+.stagger-load-2 { animation-delay: 75ms;  }
+.stagger-load-3 { animation-delay: 115ms; }
+.stagger-load-4 { animation-delay: 155ms; }
+.stagger-load-5 { animation-delay: 190ms; }
+.stagger-load-6 { animation-delay: 220ms; }
 
 /* ── Shake (wrong OTP) ── */
 @keyframes shake {
-  0%,100% { transform: translateX(0);   }
-  20%     { transform: translateX(-9px); }
-  40%     { transform: translateX( 8px); }
-  60%     { transform: translateX(-6px); }
-  80%     { transform: translateX( 5px); }
+  0%,100% { transform: translateX(0);    }
+  15%     { transform: translateX(-10px); }
+  30%     { transform: translateX(  9px); }
+  45%     { transform: translateX( -7px); }
+  60%     { transform: translateX(  5px); }
+  75%     { transform: translateX( -3px); }
 }
 
 /* ── Error text entrance ── */
