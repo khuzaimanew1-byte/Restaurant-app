@@ -269,11 +269,12 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
   enterDir:    EnterDir;
   defaultEmail?: string;
 }) {
-  const [email,    setEmail]    = useState(defaultEmail);
-  const [password, setPassword] = useState("");
-  const [agreed,   setAgreed]   = useState(false);
-  const [emailErr, setEmailErr] = useState("");
-  const [pwErr,    setPwErr]    = useState("");
+  const [email,      setEmail]      = useState(defaultEmail);
+  const [password,   setPassword]   = useState("");
+  const [agreed,     setAgreed]     = useState(false);
+  const [emailErr,   setEmailErr]   = useState("");
+  const [pwErr,      setPwErr]      = useState("");
+  const [generalErr, setGeneralErr] = useState("");
   const [loading,      setLoading]      = useState(false);
   const [triedSubmit,  setTriedSubmit]  = useState(false);
 
@@ -287,7 +288,7 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
-    setEmailErr(""); setPwErr(""); setLoading(true);
+    setEmailErr(""); setPwErr(""); setGeneralErr(""); setLoading(true);
     try {
       const { scene } = await apiPost<{ scene: string }>("/check", { email });
       if (scene === "first-login") {
@@ -312,11 +313,11 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
       } else if (lower.includes("incorrect password") || lower.includes("invalid credentials")) {
         setPwErr("Incorrect password");
       } else if (lower.includes("setup incomplete") || lower.includes("setup first")) {
-        setPwErr("Account setup incomplete — sign in to finish setup.");
+        setGeneralErr("Account setup incomplete — sign in to finish setup.");
       } else if (lower.includes("gmail") || lower.includes("email sending") || lower.includes("credentials are invalid") || lower.includes("service_unavailable") || lower.includes("unavailable")) {
-        setPwErr("Could not send verification email. Gmail credentials need to be updated.");
+        setGeneralErr("Could not send verification email. Please try again.");
       } else {
-        setPwErr(msg);
+        setGeneralErr(msg);
       }
     } finally {
       setLoading(false);
@@ -362,7 +363,7 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
         <TextInput
           label="Email address" value={email} type="email"
           autoComplete="email" inputRef={emailRef}
-          onChange={v => { setEmail(v); setEmailErr(""); }}
+          onChange={v => { setEmail(v); setEmailErr(""); setGeneralErr(""); }}
           error={emailErr}
           onEnter={() => pwRef.current?.focus()}
         />
@@ -371,7 +372,7 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
       <div className="si-s4">
         <PasswordInput
           label="Password" value={password} inputRef={pwRef}
-          onChange={v => { setPassword(v); setPwErr(""); }}
+          onChange={v => { setPassword(v); setPwErr(""); setGeneralErr(""); }}
           error={pwErr} onEnter={handleSubmit}
         />
         {showRules && <PasswordRules password={password} />}
@@ -386,6 +387,7 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
           <span className="terms-link">Privacy Policy</span>
         </label>
       </div>
+      {generalErr && <div className="err-text general-err si-s5b">{generalErr}</div>}
 
       <div className="si-s6">
         <button className="cta-btn" onClick={handleSubmit} disabled={!canSubmit}>
