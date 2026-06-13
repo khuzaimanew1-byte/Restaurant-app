@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { eq, and, gt, lt, or, isNull, isNotNull, desc } from "drizzle-orm";
 import { db, pool, adminConfig, otpSessions } from "@workspace/db";
 import { EmailService } from "./email.service.js";
-import { signToken } from "./jwt.util.js";
+import { signToken, signResetToken, verifyToken } from "./jwt.util.js";
 
 interface AttemptRecord { count: number; lockedUntil: number | null; }
 
@@ -171,7 +171,7 @@ export class AuthService implements OnModuleInit {
 
   async verifyOtp(
     email: string, otp: string, purpose: "login" | "reset", password?: string,
-  ): Promise<{ token?: string; success: boolean }> {
+  ): Promise<{ token?: string; resetToken?: string; success: boolean }> {
     this.checkCooldown(email);
     const now = new Date();
 
@@ -215,34 +215,28 @@ export class AuthService implements OnModuleInit {
       const hash = await bcrypt.hash(password, 12);
       await db.update(adminConfig).set({ passwordHash: hash }).where(eq(adminConfig.email, email));
       const admin = (await db.select().from(adminConfig).where(eq(adminConfig.email, email)).limit(1))[0]!;
-      // Login OTP fully consumed — remove it
       await db.delete(otpSessions).where(eq(otpSessions.id, session.id));
       return { success: true, token: signToken({ sub: String(admin.id), email: admin.email }) };
     }
 
-    // Reset OTP: keep row with usedAt set — resetPassword reads it to confirm identity
-    return { success: true };
+    // Reset OTP: issue a short-lived resetToken — resetPassword validates this instead of DB
+    const resetToken = signResetToken(email);
+    return { success: true, resetToken };
   }
 
-  async resetPassword(email: string, password: string): Promise<{ token: string }> {
+  async resetPassword(resetToken: string, password: string): Promise<{ token: string }> {
+    let email: string;
+    try {
+      const payload = verifyToken(resetToken);
+      if (payload.purpose !== "reset_verified") throw new Error("Invalid token purpose");
+      email = payload.email;
+    } catch {
+      throw new UnauthorizedException("Reset session expired. Please start over.");
+    }
     this.requireAdmin(email);
-    const cutoff = new Date(Date.now() - 15 * 60_000);
-    const rows = await db.select().from(otpSessions).where(
-      and(
-        eq(otpSessions.email,   email),
-        eq(otpSessions.purpose, "reset"),
-        isNotNull(otpSessions.usedAt),
-        gt(otpSessions.usedAt!, cutoff),
-      ),
-    ).limit(1);
-
-    if (!rows.length) throw new UnauthorizedException("OTP not verified or session expired");
-
     const hash = await bcrypt.hash(password, 12);
     await db.update(adminConfig).set({ passwordHash: hash }).where(eq(adminConfig.email, email));
     const admin = (await db.select().from(adminConfig).where(eq(adminConfig.email, email)).limit(1))[0]!;
-    // Reset OTP fully consumed — remove it so the row doesn't linger
-    await db.delete(otpSessions).where(eq(otpSessions.id, rows[0]!.id));
     return { token: signToken({ sub: String(admin.id), email: admin.email }) };
   }
 

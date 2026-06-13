@@ -421,7 +421,7 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
 function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir, otpExpiresAt, onResent, initialErr }: {
   email: string; purpose: OtpPurpose; pendingPw: string;
   onChangeEmail: () => void; onLoggedIn: (token: string) => void;
-  onResetReady: () => void; enterDir: EnterDir;
+  onResetReady: (resetToken: string) => void; enterDir: EnterDir;
   otpExpiresAt?: number; onResent?: (expiresAt: number) => void; initialErr?: string;
 }) {
   const [digits,    setDigits]    = useState(Array<string>(6).fill(""));
@@ -449,9 +449,9 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
       const body = purpose === "login"
         ? { email, otp: code, password: pendingPw, purpose }
         : { email, otp: code, purpose };
-      const res = await apiPost<{ token?: string }>("/verify-otp", body);
+      const res = await apiPost<{ token?: string; resetToken?: string }>("/verify-otp", body);
       if (purpose === "login") onLoggedIn(res.token!);
-      else                     onResetReady();
+      else                     onResetReady(res.resetToken!);
     } catch (e: unknown) {
       const msg   = e instanceof Error ? e.message : "Invalid or expired code";
       const lower = msg.toLowerCase();
@@ -536,8 +536,8 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
 }
 
 // ── ResetPasswordScreen ────────────────────────────────────────────────
-export function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
-  email: string; onBack: () => void;
+export function ResetPasswordScreen({ resetToken, onBack, onDone, enterDir }: {
+  resetToken: string; onBack: () => void;
   onDone: () => void; enterDir: EnterDir;
 }) {
   const [newPw,   setNewPw]   = useState("");
@@ -558,7 +558,7 @@ export function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
     setLoading(true);
     try {
       await apiPost("/reset-password", {
-        email, password: newPw, confirmPassword: confirm,
+        resetToken, password: newPw, confirmPassword: confirm,
       });
       onDone();
     } catch (e: unknown) {
@@ -566,7 +566,7 @@ export function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
     } finally {
       setLoading(false);
     }
-  }, [canSubmit, newPw, confirm, email, onDone]);
+  }, [canSubmit, newPw, confirm, resetToken, onDone]);
 
   const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
 
@@ -614,8 +614,8 @@ export function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
 
 // ── LoginFlow ──────────────────────────────────────────────────────────
 export interface LoginFlowProps {
-  onLoggedIn?:      (token: string) => void;
-  onResetVerified?: (email: string) => void;
+  onLoggedIn?:       (token: string) => void;
+  onResetVerified?: (resetToken: string) => void;
 }
 
 export function LoginFlow({ onLoggedIn, onResetVerified }: LoginFlowProps) {
@@ -660,7 +660,7 @@ export function LoginFlow({ onLoggedIn, onResetVerified }: LoginFlowProps) {
 
   const handleBackToSignin = () => { clearOtpState(); goTo("signin", "back"); };
 
-  const handleResetReady = () => { clearOtpState(); onResetVerified?.(email); };
+  const handleResetReady = (resetToken: string) => { clearOtpState(); onResetVerified?.(resetToken); };
 
   return (
     <div className="login">

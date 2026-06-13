@@ -40,7 +40,7 @@ export class AuthController {
 
   @Post("reset-password")
   resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.auth.resetPassword(dto.email, dto.password);
+    return this.auth.resetPassword(dto.resetToken, dto.password);
   }
 
   @Post("resend-otp")

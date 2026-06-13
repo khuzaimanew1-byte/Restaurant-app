@@ -25,7 +25,7 @@ function SuccessScreen({ onLogout }: { onLogout: () => void }) {
   );
 }
 
-const SESSION_KEY = "reset_verified_email";
+const SESSION_KEY = "reset_token";
 
 function getInitialView(): View {
   const path = window.location.pathname;
@@ -75,8 +75,8 @@ export default function App() {
     setView(v);
   };
 
-  const handleResetVerified = (email: string) => {
-    sessionStorage.setItem(SESSION_KEY, email);
+  const handleResetVerified = (resetToken: string) => {
+    sessionStorage.setItem(SESSION_KEY, resetToken);
     goTo("new-password");
   };
 
@@ -92,15 +92,15 @@ export default function App() {
   );
 
   if (guardedView === "new-password") {
-    const email = sessionStorage.getItem(SESSION_KEY);
-    if (!email) { goTo("login"); return null; }
+    const resetToken = sessionStorage.getItem(SESSION_KEY);
+    if (!resetToken) { goTo("login"); return null; }
     return (
       <div className="view-enter">
         <div className="login">
           <div className="ob__bg-glow" />
           <div className="login__inner">
             <ResetPasswordScreen
-              email={email}
+              resetToken={resetToken}
               enterDir="fwd"
               onBack={leaveNewPassword}
               onDone={leaveNewPassword}
