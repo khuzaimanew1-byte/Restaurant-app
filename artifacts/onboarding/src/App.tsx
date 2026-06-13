@@ -44,50 +44,33 @@ function navigate(path: string) {
 
 export default function App() {
   const [view, setView] = useState<View>(getInitialView);
-
   const [slide, setSlide] = useState(() => {
     const m = window.location.pathname.match(/^\/onboarding\/(\d+)$/);
-    if (m) return Math.max(0, Math.min(parseInt(m[1]), 2));
-    return 0;
+    return m ? Math.max(0, Math.min(parseInt(m[1]!), 2)) : 0;
   });
 
-  const token = localStorage.getItem("auth_token");
+  const token       = localStorage.getItem("auth_token");
   const guardedView: View = token
     ? "success"
     : view === "success" ? "login" : view;
 
   const goTo = (v: View) => {
-    const paths: Record<View, string> = {
-      onboarding: "/",
-      login:      "/login",
-      success:    "/success",
-    };
+    const paths: Record<View, string> = { onboarding: "/", login: "/login", success: "/success" };
     navigate(paths[v]);
     setView(v);
   };
 
-  const handleLoggedIn = () => goTo("success");
+  if (guardedView === "success") return (
+    <div className="view-enter">
+      <SuccessScreen onLogout={() => { localStorage.removeItem("auth_token"); goTo("login"); }} />
+    </div>
+  );
 
-  const handleLogout = () => {
-    localStorage.removeItem("auth_token");
-    goTo("login");
-  };
-
-  if (guardedView === "success") {
-    return (
-      <div style={{ animation: "view-enter 0.48s cubic-bezier(.16,1,.3,1) both" }}>
-        <SuccessScreen onLogout={handleLogout} />
-      </div>
-    );
-  }
-
-  if (guardedView === "login") {
-    return (
-      <div style={{ animation: "view-enter 0.48s cubic-bezier(.16,1,.3,1) both" }}>
-        <LoginFlow onLoggedIn={handleLoggedIn} />
-      </div>
-    );
-  }
+  if (guardedView === "login") return (
+    <div className="view-enter">
+      <LoginFlow onLoggedIn={() => goTo("success")} />
+    </div>
+  );
 
   return (
     <OnboardingFlow

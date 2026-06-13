@@ -117,6 +117,7 @@ class _OnboardingPageState extends State<OnboardingPage>
   Future<void> _handleGetStarted() async {
     HapticFeedback.mediumImpact();
     await OnboardingRepository().markOnboardingComplete();
+    if (mounted) context.go('/login');
   }
 
   void _handleSkip() {
@@ -130,7 +131,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     final isLast = _currentIndex == onboardingPages.length - 1;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: AppColors.bg,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: SafeArea(
@@ -178,8 +179,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                           fontSize: 15,
                           fontWeight: FontWeight.w400,
                           letterSpacing: -0.2,
-                          color: AppColors.darkSecondary
-                              .withValues(alpha: 0.45),
+                          color: AppColors.textTer,
                         ),
                       ),
                     ),
@@ -217,7 +217,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 fontWeight: FontWeight.w800,
                 letterSpacing: -1.0,
                 height: 1.10,
-                color: AppColors.darkPrimary,
+                color: AppColors.text,
               ),
             ),
             const SizedBox(height: 12),
@@ -228,7 +228,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 fontWeight: FontWeight.w400,
                 letterSpacing: -0.1,
                 height: 1.55,
-                color: AppColors.darkSecondary.withValues(alpha: 0.72),
+                color: AppColors.textSub,
               ),
             ),
             const SizedBox(height: 28),

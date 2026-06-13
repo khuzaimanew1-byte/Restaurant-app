@@ -125,7 +125,7 @@ export class AuthService implements OnModuleInit {
     );
     const inserted = await db.insert(otpSessions).values({ email, otpHash, purpose, expiresAt }).returning();
     try {
-      await this.email.sendOtp(email, otp);
+      await this.email.sendOtp(email, otp, purpose);
     } catch (err) {
       // Roll back the OTP row so the user can retry immediately
       if (inserted[0]) {
