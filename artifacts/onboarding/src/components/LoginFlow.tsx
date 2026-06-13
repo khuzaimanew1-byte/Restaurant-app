@@ -493,10 +493,11 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
       const label = countdown >= 60
         ? `${Math.floor(countdown / 60)}m ${countdown % 60}s`
         : `${countdown}s`;
-      setOtpErr(`Code is still active for ${label}. Wait for it to expire first.`);
-      return;
+      setOtpErr(`Code still active for ${label} — same email won't receive a new one yet.`);
+      setTimeout(onChangeEmail, 1800);
+    } else {
+      onChangeEmail();
     }
-    onChangeEmail();
   };
 
   const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
