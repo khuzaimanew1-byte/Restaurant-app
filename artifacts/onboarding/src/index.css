@@ -600,7 +600,8 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   margin-top: 5px;
   animation: err-in 250ms cubic-bezier(.16,1,.3,1) both;
 }
-.general-err { margin-top: 12px; margin-bottom: 4px; }
+.general-err { margin-top: 8px; }
+.si-s6 { margin-top: clamp(16px,4vw,22px); }
 
 /* ── Password rules — CSS dot indicators ── */
 .pw-rules {
