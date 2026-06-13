@@ -483,6 +483,10 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
 
   return (
     <div className={`login__screen ${dir}`}>
+      <button className="login__back otp-back" onClick={onBack} aria-label="Back">
+        <BackIcon /><span>Back</span>
+      </button>
+
       <div className="otp-icon-wrap otp-s1">
         <div className="otp-icon">
           {isLogin ? <MailIcon /> : <LockIcon />}
@@ -559,7 +563,7 @@ function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
     } finally {
       setLoading(false);
     }
-  }, [canSubmit, newPw, confirm, email, onLoggedIn]);
+  }, [canSubmit, newPw, confirm, email, onDone]);
 
   const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
 
