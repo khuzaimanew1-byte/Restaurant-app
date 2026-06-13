@@ -1,20 +1,50 @@
-import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import { Injectable, HttpException, HttpStatus, Logger } from "@nestjs/common";
 import nodemailer from "nodemailer";
+import type { Transporter } from "nodemailer";
 
 @Injectable()
 export class EmailService {
-  private readonly transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env["GMAIL"],
-      pass: process.env["GMAIL_APP_PASSWORD"],
-    },
-  });
+  private readonly logger = new Logger(EmailService.name);
+  private _transporter: Transporter | null = null;
+
+  private get transporter(): Transporter {
+    if (!this._transporter) {
+      const user = process.env["SENDING_GMAIL"] ?? process.env["GMAIL"];
+      const rawPass = process.env["GMAIL_APP_PASSWORD"] ?? "";
+      // Strip all whitespace & non-breaking spaces — Gmail App Passwords are
+      // 16-char codes; spaces are cosmetic and must be removed before auth.
+      const pass = rawPass.replace(/[\s\u00a0]/g, "");
+
+      if (!user) {
+        throw new HttpException(
+          "Email service not configured: SENDING_GMAIL env var is missing.",
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+      if (!pass) {
+        throw new HttpException(
+          "Email service not configured: GMAIL_APP_PASSWORD secret is missing.",
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+
+      this.logger.log(`Creating SMTP transporter for ${user} (pass length: ${pass.length})`);
+
+      this._transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: { type: "LOGIN", user, pass },
+      });
+    }
+    return this._transporter;
+  }
 
   async sendOtp(to: string, otp: string): Promise<void> {
+    const from = process.env["SENDING_GMAIL"] ?? process.env["GMAIL"];
     try {
       await this.transporter.sendMail({
-        from: `"Staff Attendance" <${process.env["GMAIL"]}>`,
+        from: `"Staff Attendance" <${from}>`,
         to,
         subject: "Your verification code",
         html: `
@@ -29,16 +59,26 @@ export class EmailService {
       `,
       });
     } catch (err: unknown) {
+      // Reset transporter so next call rebuilds it with fresh env vars
+      this._transporter = null;
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("535") || msg.includes("Username and Password") || msg.includes("BadCredentials")) {
+      this.logger.error(`sendMail failed: ${msg}`);
+
+      if (msg.includes("535") || msg.includes("BadCredentials") || msg.includes("Username and Password")) {
         throw new HttpException(
-          "Email sending failed: Gmail credentials are invalid. Please update the GMAIL_APP_PASSWORD secret.",
+          "Email sending failed: Gmail App Password is incorrect or expired.",
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+      if (msg.includes("Missing credentials")) {
+        throw new HttpException(
+          "Email service misconfigured: GMAIL or GMAIL_APP_PASSWORD env var is missing.",
           HttpStatus.SERVICE_UNAVAILABLE,
         );
       }
       if (msg.includes("ECONNREFUSED") || msg.includes("ETIMEDOUT") || msg.includes("ENOTFOUND")) {
         throw new HttpException(
-          "Email sending failed: Could not reach Gmail servers. Check network/firewall settings.",
+          "Email sending failed: Cannot reach Gmail servers.",
           HttpStatus.SERVICE_UNAVAILABLE,
         );
       }

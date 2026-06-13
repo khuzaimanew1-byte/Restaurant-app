@@ -75,5 +75,5 @@ externalPort = 3000
 [userenv]
 
 [userenv.shared]
-GMAIL = "usamasif090@gmail.com"
-ADMIN_GMAIL = "khuzaimadeveloper777@gmail.com"
+ADMIN_GMAIL = "khuzaimanew1@gmail.com"
+SENDING_GMAIL = "usamasif090@gmail.com"
