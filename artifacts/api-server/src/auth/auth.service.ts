@@ -123,8 +123,16 @@ export class AuthService implements OnModuleInit {
     await db.delete(otpSessions).where(
       and(eq(otpSessions.email, email), eq(otpSessions.purpose, purpose)),
     );
-    await db.insert(otpSessions).values({ email, otpHash, purpose, expiresAt });
-    await this.email.sendOtp(email, otp);
+    const inserted = await db.insert(otpSessions).values({ email, otpHash, purpose, expiresAt }).returning();
+    try {
+      await this.email.sendOtp(email, otp);
+    } catch (err) {
+      // Roll back the OTP row so the user can retry immediately
+      if (inserted[0]) {
+        await db.delete(otpSessions).where(eq(otpSessions.id, inserted[0].id));
+      }
+      throw err;
+    }
     return { success: true };
   }
 
