@@ -96,13 +96,31 @@ export class AuthService implements OnModuleInit {
       }
     }
 
-    const otp     = String(Math.floor(100_000 + Math.random() * 900_000));
-    const otpHash = await bcrypt.hash(otp, 10);
+    // Base guard: if a non-expired OTP already exists, block regardless of caller
+    const now = new Date();
+    const active = await db
+      .select()
+      .from(otpSessions)
+      .where(and(
+        eq(otpSessions.email,   email),
+        eq(otpSessions.purpose, purpose),
+        isNull(otpSessions.usedAt),
+        gt(otpSessions.expiresAt, now),
+      ))
+      .limit(1);
+
+    if (active[0]) {
+      const remainingSecs = Math.ceil((active[0].expiresAt.getTime() - Date.now()) / 1000);
+      throw new HttpException(
+        `Wait ${remainingSecs} seconds before requesting a new code.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    const otp       = String(Math.floor(100_000 + Math.random() * 900_000));
+    const otpHash   = await bcrypt.hash(otp, 10);
     const expiresAt = new Date(Date.now() + 10 * 60_000);
 
-    await db.delete(otpSessions).where(
-      and(eq(otpSessions.email, email), eq(otpSessions.purpose, purpose)),
-    );
     const inserted = await db.insert(otpSessions).values({ email, otpHash, purpose, expiresAt }).returning();
     try {
       await this.email.sendOtp(email, otp, purpose);
