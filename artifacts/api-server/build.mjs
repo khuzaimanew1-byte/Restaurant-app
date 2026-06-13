@@ -30,6 +30,7 @@ async function buildAll() {
       "pino-pretty",
       // Cannot be bundled (native addons, dynamic paths, etc.)
       "*.node",
+      "jsonwebtoken",
       "nodemailer",
       "helmet",
       "sharp",
