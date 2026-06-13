@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { OnboardingFlow }      from "./components/OnboardingFlow";
-import { LoginFlow, ResetPasswordScreen } from "./components/LoginFlow";
+import { OnboardingFlow } from "./components/OnboardingFlow";
+import { LoginFlow }      from "./components/LoginFlow";
 
-type View = "onboarding" | "login" | "success" | "new-password";
+type View = "onboarding" | "login" | "success";
 
 function SuccessScreen({ onLogout }: { onLogout: () => void }) {
   return (
@@ -30,13 +30,6 @@ function getInitialView(): View {
     window.history.replaceState({}, "", "/success");
     return "success";
   }
-  if (path === "/new-password") {
-    if (!sessionStorage.getItem("reset_email")) {
-      window.history.replaceState({}, "", "/login");
-      return "login";
-    }
-    return "new-password";
-  }
   if (path === "/login") return "login";
   if (path === "/success") {
     window.history.replaceState({}, "", "/login");
@@ -56,18 +49,13 @@ export default function App() {
     return m ? Math.max(0, Math.min(parseInt(m[1]!), 2)) : 0;
   });
 
-  const token        = localStorage.getItem("auth_token");
+  const token       = localStorage.getItem("auth_token");
   const guardedView: View = token
     ? "success"
     : view === "success" ? "login" : view;
 
   const goTo = (v: View) => {
-    const paths: Record<View, string> = {
-      onboarding:    "/",
-      login:         "/login",
-      success:       "/success",
-      "new-password": "/new-password",
-    };
+    const paths: Record<View, string> = { onboarding: "/", login: "/login", success: "/success" };
     navigate(paths[v]);
     setView(v);
   };
@@ -78,31 +66,9 @@ export default function App() {
     </div>
   );
 
-  if (guardedView === "new-password") {
-    const resetEmail = sessionStorage.getItem("reset_email") ?? "";
-    return (
-      <div className="view-enter">
-        <div className="login">
-          <div className="ob__bg-glow" />
-          <div className="login__inner">
-            <ResetPasswordScreen
-              email={resetEmail}
-              enterDir="fwd"
-              onBack={() => { sessionStorage.removeItem("reset_email"); goTo("login"); }}
-              onDone={() => { sessionStorage.removeItem("reset_email"); goTo("login"); }}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (guardedView === "login") return (
     <div className="view-enter">
-      <LoginFlow
-        onLoggedIn={() => goTo("success")}
-        onResetReady={() => goTo("new-password")}
-      />
+      <LoginFlow onLoggedIn={() => goTo("success")} />
     </div>
   );
 

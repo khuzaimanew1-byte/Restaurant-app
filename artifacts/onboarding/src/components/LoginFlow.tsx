@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, KeyboardEvent, ClipboardEvent } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────
-type Screen = "signin" | "otp";
+type Screen     = "signin" | "otp" | "reset-password";
 type OtpPurpose = "login"  | "reset";
 type EnterDir   = "fwd"    | "back";
 
@@ -261,9 +261,9 @@ function Countdown({ seconds, onResend }: { seconds: number; onResend: () => voi
 
 // ── SignInScreen ───────────────────────────────────────────────────────
 function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmail = "" }: {
-  onOtpNeeded: (email: string, pw: string, countdown?: number) => void;
+  onOtpNeeded: (email: string, pw: string) => void;
   onLoggedIn:  (token: string) => void;
-  onForgot:    (email: string, countdown?: number) => void;
+  onForgot:    (email: string) => void;
   enterDir:    EnterDir;
   defaultEmail?: string;
 }) {
@@ -398,16 +398,16 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
 }
 
 // ── OtpScreen ──────────────────────────────────────────────────────────
-function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir, initialCountdown = 10 * 60 }: {
+function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir }: {
   email: string; purpose: OtpPurpose; pendingPw: string;
   onChangeEmail: () => void; onLoggedIn: (token: string) => void;
-  onResetReady: () => void; enterDir: EnterDir; initialCountdown?: number;
+  onResetReady: () => void; enterDir: EnterDir;
 }) {
   const [digits,    setDigits]    = useState(Array<string>(6).fill(""));
   const [shaking,   setShaking]   = useState(false);
   const [otpErr,    setOtpErr]    = useState("");
   const [loading,   setLoading]   = useState(false);
-  const [countdown, setCountdown] = useState(initialCountdown);
+  const [countdown, setCountdown] = useState(10 * 60);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -459,8 +459,6 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
       setCountdown(10 * 60);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to resend code";
-      const m   = msg.match(/Wait (\d+) seconds/i);
-      if (m) { setCountdown(parseInt(m[1]!, 10)); return; }
       const lo  = msg.toLowerCase();
       setOtpErr(lo.includes("too many") || lo.includes("locked") ? msg : "Failed to send code. Please try again.");
     } finally {
@@ -479,8 +477,12 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
         </div>
       </div>
 
-      <h1 className="login__head otp-s2">Check your inbox</h1>
-      <p className="login__sub otp-s3">We sent a 6-digit code to</p>
+      <h1 className="login__head otp-s2">
+        {isLogin ? "Check your inbox" : "Password reset"}
+      </h1>
+      <p className="login__sub otp-s3">
+        {isLogin ? "We sent a 6-digit code to" : "Enter the reset code sent to"}
+      </p>
 
       <div className="otp-email-chip otp-s4">
         <span className="otp-email-dot" />
@@ -512,7 +514,7 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
 }
 
 // ── ResetPasswordScreen ────────────────────────────────────────────────
-export function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
+function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
   email: string; onBack: () => void;
   onDone: () => void; enterDir: EnterDir;
 }) {
@@ -590,11 +592,10 @@ export function ResetPasswordScreen({ email, onBack, onDone, enterDir }: {
 
 // ── LoginFlow ──────────────────────────────────────────────────────────
 export interface LoginFlowProps {
-  onLoggedIn?:   (token: string) => void;
-  onResetReady?: () => void;
+  onLoggedIn?: (token: string) => void;
 }
 
-export function LoginFlow({ onLoggedIn, onResetReady }: LoginFlowProps) {
+export function LoginFlow({ onLoggedIn }: LoginFlowProps) {
   const [screen,    setScreen]    = useState<Screen>("signin");
   const [screenKey, setScreenKey] = useState(0);
   const [enterDir,  setEnterDir]  = useState<EnterDir>("fwd");
@@ -646,10 +647,16 @@ export function LoginFlow({ onLoggedIn, onResetReady }: LoginFlowProps) {
             pendingPw={pendingPw}
             onChangeEmail={() => goTo("signin", "back")}
             onLoggedIn={handleLoggedIn}
-            onResetReady={() => {
-              sessionStorage.setItem("reset_email", email);
-              onResetReady?.();
-            }}
+            onResetReady={() => goTo("reset-password", "fwd")}
+          />
+        )}
+        {screen === "reset-password" && (
+          <ResetPasswordScreen
+            key={screenKey}
+            enterDir={enterDir}
+            email={email}
+            onBack={() => goTo("signin", "back")}
+            onDone={() => goTo("signin", "back")}
           />
         )}
       </div>

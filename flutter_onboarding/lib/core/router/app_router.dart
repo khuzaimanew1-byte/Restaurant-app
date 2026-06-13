@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_colors.dart';
 import '../../features/auth/data/auth_storage.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
-import '../../features/auth/presentation/pages/new_password_page.dart';
 import '../../features/auth/presentation/pages/success_page.dart';
 import '../../features/onboarding/data/onboarding_repository.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
@@ -30,22 +29,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           child: const LoginPage(),
           transitionsBuilder: _fadeSlide,
         ),
-      ),
-      GoRoute(
-        path: '/new-password',
-        redirect: (_, state) {
-          final extra = state.extra;
-          if (extra is! Map || (extra as Map)['email'] == null) return '/login';
-          return null;
-        },
-        pageBuilder: (_, state) {
-          final email = (state.extra! as Map)['email'] as String;
-          return CustomTransitionPage(
-            key: state.pageKey,
-            child: NewPasswordPage(email: email),
-            transitionsBuilder: _fadeSlide,
-          );
-        },
       ),
       GoRoute(
         path: '/success',
