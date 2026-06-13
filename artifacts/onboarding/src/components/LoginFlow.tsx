@@ -301,8 +301,8 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
           setPwErr("Password must meet all requirements below");
           return;
         }
-        await apiPost("/send-otp", { email, purpose: "login" });
-        onOtpNeeded(email, password);
+        const { expiresAt } = await apiPost<{ expiresAt: number }>("/send-otp", { email, purpose: "login" });
+        onOtpNeeded(email, password, Math.ceil((expiresAt - Date.now()) / 1000));
       } else {
         const { token } = await apiPost<{ token: string }>("/sign-in", { email, password });
         onLoggedIn(token);
@@ -339,8 +339,8 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
         setEmailErr("No password set yet — complete your account setup first");
         return;
       }
-      await apiPost("/send-otp", { email, purpose: "reset" });
-      onForgot(email);
+      const { expiresAt } = await apiPost<{ expiresAt: number }>("/send-otp", { email, purpose: "reset" });
+      onForgot(email, Math.ceil((expiresAt - Date.now()) / 1000));
     } catch (e: unknown) {
       const msg   = e instanceof Error ? e.message : "Something went wrong";
       const lower = msg.toLowerCase();
@@ -468,8 +468,8 @@ function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onRes
     setLoading(true);
     setDigits(Array(6).fill("")); setShaking(false); setOtpErr("");
     try {
-      await apiPost("/resend-otp", { email, purpose });
-      setCountdown(10 * 60);
+      const { expiresAt } = await apiPost<{ expiresAt: number }>("/resend-otp", { email, purpose });
+      setCountdown(Math.ceil((expiresAt - Date.now()) / 1000));
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to resend code";
       const lo  = msg.toLowerCase();

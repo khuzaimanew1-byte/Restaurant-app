@@ -82,7 +82,7 @@ export class AuthService implements OnModuleInit {
     return { scene: rows[0]?.passwordHash ? "existing" : "first-login" };
   }
 
-  async sendOtp(email: string, purpose: "login" | "reset"): Promise<{ success: true }> {
+  async sendOtp(email: string, purpose: "login" | "reset"): Promise<{ success: true; expiresAt: number }> {
     this.requireAdmin(email);
     this.checkCooldown(email);
 
@@ -134,7 +134,7 @@ export class AuthService implements OnModuleInit {
       }
       throw err;
     }
-    return { success: true };
+    return { success: true, expiresAt: expiresAt.getTime() };
   }
 
   async signIn(email: string, password: string): Promise<{ token: string }> {
@@ -238,7 +238,7 @@ export class AuthService implements OnModuleInit {
     return { token: signToken({ sub: String(admin.id), email: admin.email }) };
   }
 
-  async resendOtp(email: string, purpose: "login" | "reset"): Promise<{ success: true }> {
+  async resendOtp(email: string, purpose: "login" | "reset"): Promise<{ success: true; expiresAt: number }> {
     this.requireAdmin(email);
     return this.sendOtp(email, purpose);
   }
