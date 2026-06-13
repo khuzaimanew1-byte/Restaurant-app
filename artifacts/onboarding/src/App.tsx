@@ -7,6 +7,7 @@ type View = "onboarding" | "login";
 export default function App() {
   const [view, setView] = useState<View>(() => {
     if (window.location.pathname === "/login" || window.location.hash === "#login") return "login";
+    if (localStorage.getItem("auth_token")) return "login";
     const m = window.location.pathname.match(/^\/onboarding\/(\d+)$/);
     return m ? "onboarding" : "onboarding";
   });

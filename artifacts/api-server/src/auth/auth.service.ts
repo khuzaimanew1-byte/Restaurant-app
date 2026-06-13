@@ -53,8 +53,8 @@ export class AuthService implements OnModuleInit {
 
   // ── Helpers ──────────────────────────────────────────────────────────
   private requireAdmin(email: string) {
-    const allowed = process.env["ADMIN_GMAIL"];
-    if (!allowed || email !== allowed)
+    const allowed = process.env["ADMIN_GMAIL"]?.toLowerCase().trim();
+    if (!allowed || email.toLowerCase().trim() !== allowed)
       throw new HttpException("Email not registered", HttpStatus.NOT_FOUND);
   }
 
@@ -185,10 +185,26 @@ export class AuthService implements OnModuleInit {
     const session = rows[0];
     if (!session) { this.recordFail(email); throw new UnauthorizedException("Invalid or expired code. Please request a new one."); }
 
-    const match = await bcrypt.compare(otp, session.otpHash);
-    if (!match)  { this.recordFail(email); throw new UnauthorizedException("Incorrect code. Check your email and try again."); }
+    // Atomically claim the session before verifying — prevents concurrent replay
+    const claimed = await db
+      .update(otpSessions)
+      .set({ usedAt: now })
+      .where(and(eq(otpSessions.id, session.id), isNull(otpSessions.usedAt)))
+      .returning();
 
-    await db.update(otpSessions).set({ usedAt: now }).where(eq(otpSessions.id, session.id));
+    if (!claimed.length) {
+      this.recordFail(email);
+      throw new UnauthorizedException("Invalid or expired code. Please request a new one.");
+    }
+
+    const match = await bcrypt.compare(otp, session.otpHash);
+    if (!match) {
+      // Release the claim so the user can retry
+      await db.update(otpSessions).set({ usedAt: null }).where(eq(otpSessions.id, session.id));
+      this.recordFail(email);
+      throw new UnauthorizedException("Incorrect code. Check your email and try again.");
+    }
+
     this.clearAttempts(email);
 
     if (purpose === "login" && password) {

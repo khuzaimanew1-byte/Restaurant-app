@@ -320,8 +320,8 @@ export function OnboardingFlow() {
   const [dir, setDir]         = useState<"fwd"|"bwd">("fwd");
   const [phase, setPhase]     = useState<Phase>("idle");
   const [dark, setDark]       = useState(true);
-  const exitTimer  = useRef<ReturnType<typeof setTimeout>>();
-  const enterTimer = useRef<ReturnType<typeof setTimeout>>();
+  const exitTimer  = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const enterTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme:dark)");
