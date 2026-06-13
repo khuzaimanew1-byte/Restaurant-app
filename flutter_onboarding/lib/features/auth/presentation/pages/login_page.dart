@@ -20,13 +20,6 @@ String _maskEmail(String email) {
   return '${local.substring(0, local.length.clamp(0, 3))}***@${parts[1]}';
 }
 
-int? _parseAlreadySent(String msg) {
-  final lower = msg.toLowerCase();
-  if (!lower.contains('otp already sent') && !lower.contains('already sent')) return null;
-  final m = RegExp(r'Wait (\d+) seconds', caseSensitive: false).firstMatch(msg);
-  return m != null ? int.parse(m.group(1)!) : 10 * 60;
-}
-
 // ── LoginPage — mirrors React's LoginFlow ─────────────────────────────
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -38,11 +31,9 @@ class _LoginPageState extends State<LoginPage> {
   _Screen _screen    = _Screen.signIn;
   int     _screenKey = 0;
 
-  String _email              = '';
-  String _pendingPw          = '';
-  String _otpPurpose         = 'login';
-  int    _otpInitialCountdown = 10 * 60;
-  bool   _otpNotSent         = false;
+  String _email      = '';
+  String _pendingPw  = '';
+  String _otpPurpose = 'login';
 
   void _goTo(_Screen s) => setState(() { _screen = s; _screenKey++; });
 
@@ -51,21 +42,13 @@ class _LoginPageState extends State<LoginPage> {
     if (mounted) context.go('/success');
   }
 
-  void _handleOtpNeeded(String email, String pw, {int? countdown}) {
-    setState(() {
-      _email = email; _pendingPw = pw; _otpPurpose = 'login';
-      _otpInitialCountdown = countdown ?? 10 * 60;
-      _otpNotSent = countdown != null;
-    });
+  void _handleOtpNeeded(String email, String pw) {
+    setState(() { _email = email; _pendingPw = pw; _otpPurpose = 'login'; });
     _goTo(_Screen.otp);
   }
 
-  void _handleForgot(String email, {int? countdown}) {
-    setState(() {
-      _email = email; _otpPurpose = 'reset';
-      _otpInitialCountdown = countdown ?? 10 * 60;
-      _otpNotSent = countdown != null;
-    });
+  void _handleForgot(String email) {
+    setState(() { _email = email; _otpPurpose = 'reset'; });
     _goTo(_Screen.otp);
   }
 
@@ -112,8 +95,6 @@ class _LoginPageState extends State<LoginPage> {
                     email: _email,
                     purpose: _otpPurpose,
                     pendingPw: _pendingPw,
-                    initialCountdown: _otpInitialCountdown,
-                    notSent: _otpNotSent,
                     onChangeEmail: () => _goTo(_Screen.signIn),
                     onLoggedIn: _handleLoggedIn,
                     onResetReady: () => _goTo(_Screen.resetPassword),
@@ -137,9 +118,9 @@ class _LoginPageState extends State<LoginPage> {
 // ── SignIn Screen ─────────────────────────────────────────────────────
 class _SignInScreen extends StatefulWidget {
   final String defaultEmail;
-  final void Function(String email, String pw, {int? countdown}) onOtpNeeded;
+  final void Function(String email, String pw) onOtpNeeded;
   final Future<void> Function(String token) onLoggedIn;
-  final void Function(String email, {int? countdown}) onForgot;
+  final void Function(String email) onForgot;
 
   const _SignInScreen({
     super.key,
@@ -202,11 +183,6 @@ class _SignInScreenState extends State<_SignInScreen> {
     } catch (e) {
       final msg        = e.toString().replaceFirst('Exception: ', '');
       final lower      = msg.toLowerCase();
-      final alreadySent = _parseAlreadySent(msg);
-      if (alreadySent != null) {
-        widget.onOtpNeeded(_emailCtrl.text.trim(), _pwCtrl.text, countdown: alreadySent);
-        return;
-      }
       setState(() {
         if (lower.contains('not registered') || lower.contains('not found')) {
           _emailErr = 'Email not registered';
@@ -240,11 +216,6 @@ class _SignInScreenState extends State<_SignInScreen> {
       widget.onForgot(_emailCtrl.text.trim());
     } catch (e) {
       final msg        = e.toString().replaceFirst('Exception: ', '');
-      final alreadySent = _parseAlreadySent(msg);
-      if (alreadySent != null) {
-        widget.onForgot(_emailCtrl.text.trim(), countdown: alreadySent);
-        return;
-      }
       setState(() => _emailErr = msg);
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -373,8 +344,6 @@ class _SignInScreenState extends State<_SignInScreen> {
 // ── OTP Screen ────────────────────────────────────────────────────────
 class _OtpScreen extends StatefulWidget {
   final String email, purpose, pendingPw;
-  final int initialCountdown;
-  final bool notSent;
   final VoidCallback onChangeEmail, onResetReady;
   final Future<void> Function(String token) onLoggedIn;
 
@@ -383,8 +352,6 @@ class _OtpScreen extends StatefulWidget {
     required this.email,
     required this.purpose,
     required this.pendingPw,
-    required this.initialCountdown,
-    required this.notSent,
     required this.onChangeEmail,
     required this.onLoggedIn,
     required this.onResetReady,
@@ -395,18 +362,15 @@ class _OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<_OtpScreen> {
-  List<String> _digits    = List.filled(6, '');
-  String       _otpErr    = '';
-  bool         _loading   = false;
-  bool         _emailNotSent = false;
-  late int     _countdown;
+  List<String> _digits   = List.filled(6, '');
+  String       _otpErr   = '';
+  bool         _loading  = false;
+  int          _countdown = 10 * 60;
   Timer?       _timer;
 
   @override
   void initState() {
     super.initState();
-    _countdown    = widget.initialCountdown;
-    _emailNotSent = widget.notSent;
     _startTimer();
   }
 
@@ -458,15 +422,9 @@ class _OtpScreenState extends State<_OtpScreen> {
     setState(() { _loading = true; _digits = List.filled(6, ''); _otpErr = ''; });
     try {
       await AuthService.resendOtp(widget.email, widget.purpose);
-      if (mounted) setState(() { _countdown = 10 * 60; _emailNotSent = false; });
+      if (mounted) setState(() => _countdown = 10 * 60);
       _startTimer();
     } catch (e) {
-      final msg = e.toString().replaceFirst('Exception: ', '');
-      final m   = RegExp(r'Wait (\d+) seconds', caseSensitive: false).firstMatch(msg);
-      if (m != null) {
-        if (mounted) setState(() => _countdown = int.parse(m.group(1)!));
-        return;
-      }
       if (mounted) setState(() => _otpErr = 'Failed to send code. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -552,11 +510,6 @@ class _OtpScreenState extends State<_OtpScreen> {
           if (_otpErr.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(_otpErr, style: const TextStyle(fontSize: 11.5, color: AppColors.err)),
-          ],
-          if (_otpErr.isEmpty && _emailNotSent && _countdown > 0) ...[
-            const SizedBox(height: 8),
-            Text('OTP already sent. Please wait to resend.',
-              style: TextStyle(fontSize: 11.5, color: AppColors.accent.withValues(alpha: 0.72))),
           ],
           const SizedBox(height: 20),
           if (_countdown > 0)
