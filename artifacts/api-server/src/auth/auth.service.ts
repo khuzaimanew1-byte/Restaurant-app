@@ -2,7 +2,7 @@ import {
   Injectable, Inject, OnModuleInit, UnauthorizedException, HttpException, HttpStatus,
 } from "@nestjs/common";
 import bcrypt from "bcryptjs";
-import { eq, and, gt, isNull, isNotNull, desc } from "drizzle-orm";
+import { eq, and, gt, lt, or, isNull, isNotNull, desc } from "drizzle-orm";
 import { db, pool, adminConfig, otpSessions } from "@workspace/db";
 import { EmailService } from "./email.service.js";
 import { signToken } from "./jwt.util.js";
@@ -122,7 +122,10 @@ export class AuthService implements OnModuleInit {
     const expiresAt = new Date(Date.now() + 10 * 60_000);
 
     await db.delete(otpSessions).where(
-      and(eq(otpSessions.email, email), eq(otpSessions.purpose, purpose)),
+      or(
+        lt(otpSessions.expiresAt, new Date()),
+        and(eq(otpSessions.email, email), eq(otpSessions.purpose, purpose)),
+      ),
     );
     const inserted = await db.insert(otpSessions).values({ email, otpHash, purpose, expiresAt }).returning();
     try {
