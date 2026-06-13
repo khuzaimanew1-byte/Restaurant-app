@@ -488,6 +488,17 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
     }
   };
 
+  const handleChangeEmail = () => {
+    if (countdown > 0) {
+      const label = countdown >= 60
+        ? `${Math.floor(countdown / 60)}m ${countdown % 60}s`
+        : `${countdown}s`;
+      setOtpErr(`Code is still active for ${label}. Wait for it to expire first.`);
+      return;
+    }
+    onChangeEmail();
+  };
+
   const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
   const isLogin = purpose === "login";
 
@@ -509,7 +520,7 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
       <div className="otp-email-chip otp-s4">
         <span className="otp-email-dot" />
         {maskEmail(email)}
-        <button type="button" className="otp-change-email" onClick={onChangeEmail}>
+        <button type="button" className="otp-change-email" onClick={handleChangeEmail}>
           Change
         </button>
       </div>
