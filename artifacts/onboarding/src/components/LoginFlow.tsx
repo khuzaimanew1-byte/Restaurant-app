@@ -527,17 +527,15 @@ function OtpScreen({ email, purpose, pendingPw, onBack, onChangeEmail, onLoggedI
         />
         {loading && <div className="otp-spinner"><Spinner /></div>}
         {otpErr && <div className="err-text otp-err">{otpErr}</div>}
+        {!otpErr && emailNotSent && countdown > 0 && (
+          <p className="otp-not-sent">OTP already sent. Please wait to resend otp.</p>
+        )}
       </div>
 
       <div className="otp-s6">
         <Countdown seconds={countdown} onResend={handleResend} />
-        {isLogin && countdown > 0 && !emailNotSent && (
+        {isLogin && countdown > 0 && (
           <p className="otp-spam-hint">Check spam/junk if not received.</p>
-        )}
-        {emailNotSent && countdown > 0 && (
-          <p className="otp-not-sent">
-            No new email sent — previous code is still active.
-          </p>
         )}
       </div>
     </div>
