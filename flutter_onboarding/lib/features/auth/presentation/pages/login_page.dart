@@ -123,7 +123,7 @@ class _LoginPageState extends State<LoginPage> {
                     key: ValueKey('reset-$_screenKey'),
                     email: _email,
                     onBack: () => _goTo(_Screen.signIn),
-                    onLoggedIn: _handleLoggedIn,
+                    onDone: () => _goTo(_Screen.signIn),
                   ),
                 },
               ),
@@ -599,13 +599,13 @@ class _OtpScreenState extends State<_OtpScreen> {
 class _ResetPasswordScreen extends StatefulWidget {
   final String email;
   final VoidCallback onBack;
-  final Future<void> Function(String token) onLoggedIn;
+  final VoidCallback onDone;
 
   const _ResetPasswordScreen({
     super.key,
     required this.email,
     required this.onBack,
-    required this.onLoggedIn,
+    required this.onDone,
   });
 
   @override
@@ -648,10 +648,10 @@ class _ResetPasswordScreenState extends State<_ResetPasswordScreen> {
     }
     setState(() => _loading = true);
     try {
-      final token = await AuthService.resetPassword(
+      await AuthService.resetPassword(
         widget.email, _newPwCtrl.text, _confirmCtrl.text,
       );
-      await widget.onLoggedIn(token);
+      widget.onDone();
     } catch (e) {
       setState(() => _newErr = e.toString().replaceFirst('Exception: ', ''));
     } finally {
