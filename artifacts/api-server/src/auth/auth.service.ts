@@ -211,15 +211,16 @@ export class AuthService implements OnModuleInit {
 
     this.clearAttempts(email);
 
+    // OTP used — delete immediately regardless of purpose
+    await db.delete(otpSessions).where(eq(otpSessions.id, session.id));
+
     if (purpose === "login" && password) {
       const hash = await bcrypt.hash(password, 12);
       await db.update(adminConfig).set({ passwordHash: hash }).where(eq(adminConfig.email, email));
       const admin = (await db.select().from(adminConfig).where(eq(adminConfig.email, email)).limit(1))[0]!;
-      await db.delete(otpSessions).where(eq(otpSessions.id, session.id));
       return { success: true, token: signToken({ sub: String(admin.id), email: admin.email }) };
     }
 
-    // Reset OTP: issue a short-lived resetToken — resetPassword validates this instead of DB
     const resetToken = signResetToken(email);
     return { success: true, resetToken };
   }
