@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { OnboardingFlow } from "./components/OnboardingFlow";
-import { LoginFlow }      from "./components/LoginFlow";
+import { OnboardingFlow }    from "./components/OnboardingFlow";
+import { LoginFlow }         from "./components/LoginFlow";
+import { ResetPasswordScreen } from "./components/LoginFlow";
 
-type View = "onboarding" | "login" | "success";
+type View = "onboarding" | "login" | "success" | "new-password";
 
 function SuccessScreen({ onLogout }: { onLogout: () => void }) {
   return (
@@ -24,6 +25,8 @@ function SuccessScreen({ onLogout }: { onLogout: () => void }) {
   );
 }
 
+const SESSION_KEY = "reset_verified_email";
+
 function getInitialView(): View {
   const path = window.location.pathname;
   if (localStorage.getItem("auth_token")) {
@@ -34,6 +37,13 @@ function getInitialView(): View {
   if (path === "/success") {
     window.history.replaceState({}, "", "/login");
     return "login";
+  }
+  if (path === "/new-password") {
+    if (!sessionStorage.getItem(SESSION_KEY)) {
+      window.history.replaceState({}, "", "/login");
+      return "login";
+    }
+    return "new-password";
   }
   return "onboarding";
 }
@@ -55,9 +65,24 @@ export default function App() {
     : view === "success" ? "login" : view;
 
   const goTo = (v: View) => {
-    const paths: Record<View, string> = { onboarding: "/", login: "/login", success: "/success" };
+    const paths: Record<View, string> = {
+      onboarding: "/",
+      login:      "/login",
+      success:    "/success",
+      "new-password": "/new-password",
+    };
     navigate(paths[v]);
     setView(v);
+  };
+
+  const handleResetVerified = (email: string) => {
+    sessionStorage.setItem(SESSION_KEY, email);
+    goTo("new-password");
+  };
+
+  const leaveNewPassword = () => {
+    sessionStorage.removeItem(SESSION_KEY);
+    goTo("login");
   };
 
   if (guardedView === "success") return (
@@ -66,9 +91,32 @@ export default function App() {
     </div>
   );
 
+  if (guardedView === "new-password") {
+    const email = sessionStorage.getItem(SESSION_KEY);
+    if (!email) { goTo("login"); return null; }
+    return (
+      <div className="view-enter">
+        <div className="login">
+          <div className="ob__bg-glow" />
+          <div className="login__inner">
+            <ResetPasswordScreen
+              email={email}
+              enterDir="fwd"
+              onBack={leaveNewPassword}
+              onDone={leaveNewPassword}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (guardedView === "login") return (
     <div className="view-enter">
-      <LoginFlow onLoggedIn={() => goTo("success")} />
+      <LoginFlow
+        onLoggedIn={() => goTo("success")}
+        onResetVerified={handleResetVerified}
+      />
     </div>
   );
 
