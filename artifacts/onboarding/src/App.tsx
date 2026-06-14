@@ -1,40 +1,21 @@
 import { useState } from "react";
-import { OnboardingFlow }    from "./components/OnboardingFlow";
-import { LoginFlow }         from "./components/LoginFlow";
+import { OnboardingFlow }  from "./components/OnboardingFlow";
+import { LoginFlow }       from "./components/LoginFlow";
 import { ResetPasswordScreen } from "./components/LoginFlow";
+import { AdminDashboard }  from "./components/AdminDashboard";
 
-type View = "onboarding" | "login" | "success" | "new-password";
-
-function SuccessScreen({ onLogout }: { onLogout: () => void }) {
-  return (
-    <div className="success-screen">
-      <div className="ob__bg-glow" />
-      <div className="success-inner">
-        <div className="success-icon">
-          <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-            <circle cx="26" cy="26" r="25" stroke="var(--accent)" strokeWidth="1.8" />
-            <path d="M15 26.5l8 8 14-16"
-              stroke="var(--accent)" strokeWidth="2.4"
-              strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <h1 className="success-head">Admin Successfully Verified</h1>
-        <button className="success-logout" onClick={onLogout}>Log out</button>
-      </div>
-    </div>
-  );
-}
+type View = "onboarding" | "login" | "admin" | "new-password" | "add-employee";
 
 const SESSION_KEY = "reset_token";
 
 function getInitialView(): View {
   const path = window.location.pathname;
   if (localStorage.getItem("auth_token")) {
-    window.history.replaceState({}, "", "/success");
-    return "success";
+    window.history.replaceState({}, "", "/admin/dashboard");
+    return "admin";
   }
   if (path === "/login") return "login";
-  if (path === "/success") {
+  if (path.startsWith("/admin")) {
     window.history.replaceState({}, "", "/login");
     return "login";
   }
@@ -52,25 +33,47 @@ function navigate(path: string) {
   window.history.pushState({}, "", path);
 }
 
+function AddEmployeePlaceholder({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="admin">
+      <header className="admin-bar">
+        <button className="admin-bar__back-btn" onClick={onBack}>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.8"
+              strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span>Back</span>
+        </button>
+        <span className="admin-bar__title">Add Employee</span>
+      </header>
+      <main className="admin-content admin-content--center">
+        <p className="admin-feedback__head">Coming soon</p>
+        <p className="admin-feedback__sub">Employee creation form will be here</p>
+      </main>
+    </div>
+  );
+}
+
 export default function App() {
-  const [view, setView]       = useState<View>(getInitialView);
+  const [view,    setView]    = useState<View>(getInitialView);
   const [viewDir, setViewDir] = useState<"fwd" | "back">("fwd");
-  const [slide, setSlide]     = useState(() => {
+  const [slide,   setSlide]   = useState(() => {
     const m = window.location.pathname.match(/^\/onboarding\/(\d+)$/);
     return m ? Math.max(0, Math.min(parseInt(m[1]!), 2)) : 0;
   });
 
   const token       = localStorage.getItem("auth_token");
   const guardedView: View = token
-    ? "success"
-    : view === "success" ? "login" : view;
+    ? (view === "add-employee" ? "add-employee" : "admin")
+    : (["admin", "add-employee"].includes(view) ? "login" : view);
 
   const goTo = (v: View, dir: "fwd" | "back" = "fwd") => {
     const paths: Record<View, string> = {
-      onboarding:     "/",
-      login:          "/login",
-      success:        "/success",
-      "new-password": "/new-password",
+      onboarding:      "/",
+      login:           "/login",
+      admin:           "/admin/dashboard",
+      "new-password":  "/new-password",
+      "add-employee":  "/admin/employees/new",
     };
     navigate(paths[v]);
     setViewDir(dir);
@@ -87,11 +90,25 @@ export default function App() {
     goTo("login", "back");
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("auth_token");
+    goTo("login", "back");
+  };
+
   const viewClass = `view-${viewDir}`;
 
-  if (guardedView === "success") return (
+  if (guardedView === "admin") return (
     <div className={viewClass}>
-      <SuccessScreen onLogout={() => { localStorage.removeItem("auth_token"); goTo("login", "back"); }} />
+      <AdminDashboard
+        onLogout={handleLogout}
+        onAddEmployee={() => goTo("add-employee", "fwd")}
+      />
+    </div>
+  );
+
+  if (guardedView === "add-employee") return (
+    <div className={viewClass}>
+      <AddEmployeePlaceholder onBack={() => goTo("admin", "back")} />
     </div>
   );
 
@@ -118,7 +135,7 @@ export default function App() {
   if (guardedView === "login") return (
     <div className={viewClass}>
       <LoginFlow
-        onLoggedIn={() => goTo("success", "fwd")}
+        onLoggedIn={() => goTo("admin", "fwd")}
         onResetVerified={handleResetVerified}
       />
     </div>
