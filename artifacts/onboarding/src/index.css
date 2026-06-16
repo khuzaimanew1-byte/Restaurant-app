@@ -951,6 +951,8 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   gap: 4px;
 }
 .adm-nav-item {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -960,23 +962,49 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   font-weight: 500;
   color: var(--adm-text-dim);
   border: none;
-  border-right: 3px solid transparent;
   background: none;
   cursor: pointer;
   text-align: left;
   width: 100%;
-  transition: background 180ms ease, color 180ms ease;
   font-family: 'Inter', sans-serif;
+  transition: color 220ms ease, transform 150ms cubic-bezier(.22,1,.36,1);
+  will-change: color;
+}
+/* Expanding highlight — sweeps left→right on activation */
+.adm-nav-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: rgba(242,201,76,.10);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 320ms cubic-bezier(.16,1,.3,1);
+  pointer-events: none;
+}
+/* Left accent bar — scales in from center */
+.adm-nav-item::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 18%; bottom: 18%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--adm-gold-bright);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 260ms cubic-bezier(.16,1,.3,1) 60ms;
+  pointer-events: none;
 }
 .adm-nav-item:hover:not(.adm-nav-active) {
-  background: rgba(255,255,255,.05);
   color: var(--adm-gold-bright);
+  background: rgba(255,255,255,.04);
 }
+.adm-nav-item:active { transform: scale(.97); }
 .adm-nav-active {
   color: var(--adm-gold-bright);
-  background: rgba(242,201,76,.10);
-  border-right: 3px solid var(--adm-gold-bright);
 }
+.adm-nav-active::before { transform: scaleX(1); }
+.adm-nav-active::after  { transform: scaleY(1); }
 .adm-sidebar-footer {
   padding: 16px;
   border-top: 1px solid rgba(255,255,255,.05);
@@ -1321,10 +1349,7 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   justify-content: space-between;
   padding: 12px;
   border-radius: 12px;
-  min-width: 305px;
-  max-width: 310px;
   width: 100%;
-  margin: 0 auto;
   background: var(--adm-card);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -1338,8 +1363,7 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 }
 @media (min-width: 768px) {
   .adm-card {
-    min-width: unset;
-    max-width: unset;
+    min-width: 305px;
     margin: 0;
     padding: 16px;
     border-radius: 16px;
@@ -1606,17 +1630,7 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .view-fwd  { animation: view-fwd  480ms cubic-bezier(.16,1,.3,1) both; }
 .view-back { animation: view-back 480ms cubic-bezier(.16,1,.3,1) both; }
 
-/* ── Sidebar nav animation — active expands from left ──── */
-.adm-nav-item {
-  transition: background 220ms cubic-bezier(.22,1,.36,1),
-              color 200ms ease,
-              padding-left 280ms cubic-bezier(.16,1,.3,1),
-              transform 150ms cubic-bezier(.22,1,.36,1);
-}
-.adm-nav-item:active { transform: scale(.96); }
-.adm-nav-active {
-  padding-left: 24px;
-}
+/* nav animation handled by ::before / ::after pseudo-elements above */
 
 /* ── Avatar dropdown ──────────────────────────────────── */
 .adm-avatar-dropdown {

@@ -285,7 +285,8 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [dropdownOpen, setDropdownOpen]     = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
   const searchRef                           = useRef<HTMLInputElement>(null);
-  const dropdownRef                         = useRef<HTMLDivElement>(null);
+  const desktopDropdownRef                  = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef                   = useRef<HTMLDivElement>(null);
 
   const today        = getTodayStr();
   const presentCount = EMPLOYEES.filter(e => e.status === "in").length;
@@ -316,7 +317,10 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     if (!dropdownOpen) return;
     function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const insideDesktop = desktopDropdownRef.current?.contains(target);
+      const insideMobile  = mobileDropdownRef.current?.contains(target);
+      if (!insideDesktop && !insideMobile) {
         setDropdownOpen(false);
       }
     }
@@ -383,7 +387,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <span className="adm-notif-dot" />
             </button>
 
-            <div className="adm-profile-wrap" ref={dropdownRef}>
+            <div className="adm-profile-wrap" ref={desktopDropdownRef}>
               <div
                 className={`adm-profile-avatar${dropdownOpen ? " adm-profile-avatar-open" : ""}`}
                 onClick={() => setDropdownOpen(v => !v)}
@@ -433,7 +437,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               )}
             </button>
 
-            <div className="adm-topbar-avatar-wrap" ref={dropdownRef as React.RefObject<HTMLDivElement>}>
+            <div className="adm-topbar-avatar-wrap" ref={mobileDropdownRef}>
               <button
                 className={`adm-topbar-profile${dropdownOpen ? " adm-topbar-profile-open" : ""}`}
                 onClick={() => setDropdownOpen(v => !v)}
