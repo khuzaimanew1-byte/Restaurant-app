@@ -1,40 +1,21 @@
 import { useState } from "react";
-import { OnboardingFlow }    from "./components/OnboardingFlow";
-import { LoginFlow }         from "./components/LoginFlow";
+import { OnboardingFlow }      from "./components/OnboardingFlow";
+import { LoginFlow }           from "./components/LoginFlow";
 import { ResetPasswordScreen } from "./components/LoginFlow";
+import { AdminDashboard }      from "./components/AdminDashboard";
 
-type View = "onboarding" | "login" | "success" | "new-password";
-
-function SuccessScreen({ onLogout }: { onLogout: () => void }) {
-  return (
-    <div className="success-screen">
-      <div className="ob__bg-glow" />
-      <div className="success-inner">
-        <div className="success-icon">
-          <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-            <circle cx="26" cy="26" r="25" stroke="var(--accent)" strokeWidth="1.8" />
-            <path d="M15 26.5l8 8 14-16"
-              stroke="var(--accent)" strokeWidth="2.4"
-              strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <h1 className="success-head">Admin Successfully Verified</h1>
-        <button className="success-logout" onClick={onLogout}>Log out</button>
-      </div>
-    </div>
-  );
-}
+type View = "onboarding" | "login" | "admin-dashboard" | "new-password";
 
 const SESSION_KEY = "reset_token";
 
 function getInitialView(): View {
   const path = window.location.pathname;
   if (localStorage.getItem("auth_token")) {
-    window.history.replaceState({}, "", "/success");
-    return "success";
+    window.history.replaceState({}, "", "/admin/dashboard");
+    return "admin-dashboard";
   }
   if (path === "/login") return "login";
-  if (path === "/success") {
+  if (path === "/admin/dashboard") {
     window.history.replaceState({}, "", "/login");
     return "login";
   }
@@ -60,17 +41,17 @@ export default function App() {
     return m ? Math.max(0, Math.min(parseInt(m[1]!), 2)) : 0;
   });
 
-  const token       = localStorage.getItem("auth_token");
+  const token        = localStorage.getItem("auth_token");
   const guardedView: View = token
-    ? "success"
-    : view === "success" ? "login" : view;
+    ? "admin-dashboard"
+    : view === "admin-dashboard" ? "login" : view;
 
   const goTo = (v: View, dir: "fwd" | "back" = "fwd") => {
     const paths: Record<View, string> = {
-      onboarding:     "/",
-      login:          "/login",
-      success:        "/success",
-      "new-password": "/new-password",
+      onboarding:        "/",
+      login:             "/login",
+      "admin-dashboard": "/admin/dashboard",
+      "new-password":    "/new-password",
     };
     navigate(paths[v]);
     setViewDir(dir);
@@ -87,11 +68,16 @@ export default function App() {
     goTo("login", "back");
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("auth_token");
+    goTo("login", "back");
+  };
+
   const viewClass = `view-${viewDir}`;
 
-  if (guardedView === "success") return (
+  if (guardedView === "admin-dashboard") return (
     <div className={viewClass}>
-      <SuccessScreen onLogout={() => { localStorage.removeItem("auth_token"); goTo("login", "back"); }} />
+      <AdminDashboard onLogout={handleLogout} />
     </div>
   );
 
@@ -118,7 +104,7 @@ export default function App() {
   if (guardedView === "login") return (
     <div className={viewClass}>
       <LoginFlow
-        onLoggedIn={() => goTo("success", "fwd")}
+        onLoggedIn={() => goTo("admin-dashboard", "fwd")}
         onResetVerified={handleResetVerified}
       />
     </div>
