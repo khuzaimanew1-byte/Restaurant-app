@@ -1339,9 +1339,9 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   grid-template-columns: 1fr;
   gap: 16px;
 }
-@media (min-width: 740px) {
+@media (min-width: 350px) {
   .adm-grid {
-    grid-template-columns: repeat(2, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(max(350px, calc(50% - 10px)), 1fr));
     gap: 20px;
   }
 }
