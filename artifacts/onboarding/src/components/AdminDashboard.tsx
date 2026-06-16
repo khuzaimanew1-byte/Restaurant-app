@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 type Status = "in" | "out" | "late" | "leave" | "leave-denied";
-type NavItem = "dashboard" | "leave" | "analytics" | "settings";
+type NavItem = "dashboard" | "leave" | "analytics" | "settings" | "notifications";
 
 interface Employee {
   id: number;
@@ -58,10 +58,18 @@ const EMPLOYEES: Employee[] = [
 ];
 
 const NAV_ITEMS: { id: NavItem; label: string }[] = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "leave",     label: "Leave" },
-  { id: "analytics", label: "Analytics" },
-  { id: "settings",  label: "Settings" },
+  { id: "dashboard",     label: "Dashboard" },
+  { id: "leave",         label: "Leave" },
+  { id: "analytics",     label: "Analytics" },
+  { id: "settings",      label: "Settings" },
+];
+
+const BOTTOM_NAV_ITEMS: { id: NavItem; label: string }[] = [
+  { id: "dashboard",     label: "Dashboard" },
+  { id: "leave",         label: "Leave" },
+  { id: "notifications", label: "Alerts" },
+  { id: "analytics",     label: "Analytics" },
+  { id: "settings",      label: "Settings" },
 ];
 
 function getTodayStr() {
@@ -202,6 +210,13 @@ function NavIcon({ id }: { id: NavItem }) {
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
       );
+    case "notifications":
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      );
   }
 }
 
@@ -215,11 +230,62 @@ function RestaurantLogo({ size = 28 }: { size?: number }) {
   );
 }
 
+function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div className="adm-modal-overlay" onClick={onCancel}>
+      <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </div>
+        <h3 className="adm-modal-title">Sign out?</h3>
+        <p className="adm-modal-body">You'll need to sign in again to access the dashboard.</p>
+        <div className="adm-modal-actions">
+          <button className="adm-modal-cancel" onClick={onCancel}>Cancel</button>
+          <button className="adm-modal-confirm" onClick={onConfirm}>Sign out</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AvatarDropdown({ onLogoutRequest, onClose }: { onLogoutRequest: () => void; onClose: () => void }) {
+  return (
+    <div className="adm-avatar-dropdown">
+      <div className="adm-dropdown-header">
+        <div className="adm-dropdown-avatar">A</div>
+        <div className="adm-dropdown-info">
+          <span className="adm-dropdown-name">Admin</span>
+          <span className="adm-dropdown-role">Administrator</span>
+        </div>
+      </div>
+      <div className="adm-dropdown-divider" />
+      <button
+        className="adm-dropdown-logout"
+        onClick={() => { onClose(); onLogoutRequest(); }}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Sign out
+      </button>
+    </div>
+  );
+}
+
 export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [activeNav, setActiveNav]           = useState<NavItem>("dashboard");
   const [searchQuery, setSearchQuery]       = useState("");
   const [mobileSearchOpen, setMobileSearch] = useState(false);
+  const [dropdownOpen, setDropdownOpen]     = useState(false);
+  const [logoutModalOpen, setLogoutModal]   = useState(false);
   const searchRef                           = useRef<HTMLInputElement>(null);
+  const dropdownRef                         = useRef<HTMLDivElement>(null);
 
   const today        = getTodayStr();
   const presentCount = EMPLOYEES.filter(e => e.status === "in").length;
@@ -242,6 +308,22 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     setSearchQuery("");
   }, []);
 
+  const requestLogout = useCallback(() => {
+    setDropdownOpen(false);
+    setLogoutModal(true);
+  }, []);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [dropdownOpen]);
+
   return (
     <div className="adm-root">
 
@@ -263,15 +345,6 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <span>{item.label}</span>
             </button>
           ))}
-        </div>
-
-        <div className="adm-sidebar-footer">
-          <button className="adm-sidebar-logout" onClick={onLogout}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            <span>Sign out</span>
-          </button>
         </div>
       </nav>
 
@@ -310,21 +383,29 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <span className="adm-notif-dot" />
             </button>
 
-            <div className="adm-profile-wrap" onClick={onLogout} title="Sign out">
-              <div className="adm-profile-avatar">A</div>
+            <div className="adm-profile-wrap" ref={dropdownRef}>
+              <div
+                className={`adm-profile-avatar${dropdownOpen ? " adm-profile-avatar-open" : ""}`}
+                onClick={() => setDropdownOpen(v => !v)}
+                title="Account"
+              >A</div>
+              {dropdownOpen && (
+                <AvatarDropdown
+                  onLogoutRequest={requestLogout}
+                  onClose={() => setDropdownOpen(false)}
+                />
+              )}
             </div>
           </div>
         </header>
 
         {/* ── Mobile sticky top bar ── */}
         <header className="adm-topbar">
-          {/* Logo group */}
           <div className={`adm-topbar-logo${mobileSearchOpen ? " adm-topbar-logo-hide" : ""}`}>
             <RestaurantLogo size={26} />
             <span className="adm-topbar-brand">MyRestaurant</span>
           </div>
 
-          {/* Expandable search */}
           <div className={`adm-topbar-search${mobileSearchOpen ? " adm-topbar-search-open" : ""}`}>
             <input
               ref={searchRef}
@@ -335,7 +416,6 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             />
           </div>
 
-          {/* Right actions */}
           <div className="adm-topbar-actions">
             <button
               className="adm-topbar-toggle"
@@ -343,18 +423,31 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               aria-label={mobileSearchOpen ? "Close search" : "Open search"}
             >
               {mobileSearchOpen ? (
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               ) : (
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
               )}
             </button>
-            <button className="adm-topbar-profile" onClick={onLogout} title="Sign out">
-              <div className="adm-topbar-profile-avatar">A</div>
-            </button>
+
+            <div className="adm-topbar-avatar-wrap" ref={dropdownRef as React.RefObject<HTMLDivElement>}>
+              <button
+                className={`adm-topbar-profile${dropdownOpen ? " adm-topbar-profile-open" : ""}`}
+                onClick={() => setDropdownOpen(v => !v)}
+                aria-label="Account"
+              >
+                <div className="adm-topbar-profile-avatar">A</div>
+              </button>
+              {dropdownOpen && (
+                <AvatarDropdown
+                  onLogoutRequest={requestLogout}
+                  onClose={() => setDropdownOpen(false)}
+                />
+              )}
+            </div>
           </div>
         </header>
 
@@ -389,19 +482,30 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
         {/* Bottom nav — mobile only */}
         <nav className="adm-bottom-nav">
-          {NAV_ITEMS.map(item => (
+          {BOTTOM_NAV_ITEMS.map(item => (
             <button
               key={item.id}
               className={`adm-bnav-item${activeNav === item.id ? " adm-bnav-active" : ""}`}
               onClick={() => setActiveNav(item.id)}
             >
-              <NavIcon id={item.id} />
+              <div className="adm-bnav-icon-wrap">
+                <NavIcon id={item.id} />
+                {item.id === "notifications" && <span className="adm-bnav-notif-dot" />}
+              </div>
               <span>{item.label}</span>
             </button>
           ))}
         </nav>
 
       </main>
+
+      {/* Logout confirmation modal */}
+      {logoutModalOpen && (
+        <LogoutModal
+          onConfirm={onLogout}
+          onCancel={() => setLogoutModal(false)}
+        />
+      )}
     </div>
   );
 }
