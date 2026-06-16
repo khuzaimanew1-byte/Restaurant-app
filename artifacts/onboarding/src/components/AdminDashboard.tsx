@@ -465,7 +465,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
 
         {/* ── Employee grid ── */}
-        <div className="adm-content">
+        <div key={activeNav} className="adm-content adm-content-enter">
           {filtered.length === 0 ? (
             <div className="adm-empty">No employees match your search.</div>
           ) : (
