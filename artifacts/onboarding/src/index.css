@@ -1495,11 +1495,11 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: 80px;
+  width: 68px;
   flex-shrink: 0;
   padding-right: 2px;
 }
-@media (min-width: 768px) { .adm-card-right { width: 100px; } }
+@media (min-width: 768px) { .adm-card-right { width: 72px; } }
 
 .adm-info-btn {
   position: absolute;
@@ -1533,9 +1533,8 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   overflow: hidden;
   background: rgba(255,255,255,.10);
   border: 1px solid rgba(255,255,255,.05);
-  width: 72px;
+  width: 100%;
 }
-@media (min-width: 768px) { .adm-progress-track { width: 82px; } }
 .adm-progress-fill {
   height: 100%;
   border-radius: 12px;
