@@ -237,10 +237,11 @@ const CHECKOUT_SVG = (
 );
 
 function EmployeeCard({
-  emp, idx, timing, isEditing, onCtxMenu, onLongPress, onEditSave,
+  emp, idx, timing, isEditing, isDimmed, onCtxMenu, onLongPress, onEditSave,
 }: {
   emp: Employee; idx: number; timing: OfficeTiming;
   isEditing: boolean;
+  isDimmed: boolean;
   onCtxMenu: (id: number, x: number, y: number) => void;
   onLongPress: (id: number, x: number, y: number) => void;
   onEditSave: (id: number, ci: string, co: string) => void;
@@ -313,7 +314,7 @@ function EmployeeCard({
 
   return (
     <div
-      className={`adm-card${isLeave ? " adm-card-absent" : ""}${isEditing ? " adm-card-editing" : ""}`}
+      className={`adm-card${isLeave ? " adm-card-absent" : ""}${isEditing ? " adm-card-editing" : ""}${isDimmed ? " adm-card-dimmed" : ""}`}
       style={{ animationDelay: `${idx * 70}ms` } as React.CSSProperties}
       onContextMenu={handleContextMenu}
       onTouchStart={isEditing ? undefined : handleTouchStart}
@@ -823,6 +824,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               {filtered.map((emp, i) => (
                 <EmployeeCard key={emp.id} emp={emp} idx={i} {...sharedCardProps}
                   isEditing={editingId === emp.id}
+                  isDimmed={editingId !== null && editingId !== emp.id}
                   onEditSave={handleEditSave}
                 />
               ))}

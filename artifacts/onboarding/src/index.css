@@ -1530,8 +1530,8 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .adm-info-btn-confirm:hover { color: var(--accent); background: rgba(196,122,58,.22); }
 
 /* Inline edit */
-.adm-inline-edit { display: flex; flex-direction: column; gap: 4px; margin-top: 5px; }
-.adm-inline-time-row { display: flex; align-items: center; gap: 10px; }
+.adm-inline-edit { display: flex; flex-direction: column; gap: 3px; margin-top: 3px; }
+.adm-inline-time-row { display: flex; align-items: center; gap: 8px; }
 .adm-inline-field {
   display: flex;
   align-items: center;
@@ -1561,8 +1561,16 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 
 /* Card editing state */
 .adm-card-editing {
-  border-color: rgba(196,122,58,.35) !important;
-  background: rgba(196,122,58,.04) !important;
+  border-color: rgba(196,122,58,.4) !important;
+  background: rgba(196,122,58,.05) !important;
+  z-index: 10;
+  box-shadow: 0 8px 28px rgba(0,0,0,.45);
+}
+.adm-card-dimmed {
+  filter: blur(1.5px);
+  opacity: 0.35;
+  pointer-events: none;
+  transition: filter 300ms ease, opacity 300ms ease;
 }
 
 /* Card right */
