@@ -169,6 +169,20 @@ function getTodayStr() {
 
 function normSalary(s: string) { return s.replace(/[$,]/g, ""); }
 
+function Highlight({ text, query = "" }: { text: string; query?: string }) {
+  const q = query.trim();
+  if (!q) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="adm-card-mark">{text.slice(idx, idx + q.length)}</mark>
+      {text.slice(idx + q.length)}
+    </>
+  );
+}
+
 // ── Seed data ──────────────────────────────────────────────────────────────
 
 const INITIAL_EMPLOYEES: Employee[] = [
@@ -264,10 +278,10 @@ const CHECKOUT_SVG = (
 );
 
 const EmployeeCard = memo(function EmployeeCard({
-  emp, idx, timing, isEditing, onCtxMenu, onLongPress, onEditSave,
+  emp, idx, timing, isEditing, query, onCtxMenu, onLongPress, onEditSave,
 }: {
   emp: Employee; idx: number; timing: OfficeTiming;
-  isEditing: boolean;
+  isEditing: boolean; query: string;
   onCtxMenu: (id: number, x: number, y: number) => void;
   onLongPress: (id: number, x: number, y: number) => void;
   onEditSave: (id: number, ci: string, co: string) => void;
@@ -360,9 +374,9 @@ const EmployeeCard = memo(function EmployeeCard({
         </div>
 
         <div className="adm-card-info">
-          <h3 className="adm-card-name">{emp.name}</h3>
-          <p className="adm-card-role">{emp.role}</p>
-          <p className="adm-card-salary">{emp.salary}</p>
+          <h3 className="adm-card-name"><Highlight text={emp.name} query={query} /></h3>
+          <p className="adm-card-role"><Highlight text={emp.role} query={query} /></p>
+          <p className="adm-card-salary"><Highlight text={emp.salary} query={query} /></p>
 
           {/* Inline edit mode */}
           {isEditing ? (
@@ -749,6 +763,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   const sharedCardProps = {
     timing: officeTiming,
+    query: debouncedQuery,
     onCtxMenu: (id: number, x: number, y: number) => setCtxMenu({ empId: id, x, y }),
     onLongPress: (id: number, x: number, y: number) => setCtxMenu({ empId: id, x, y }),
   };
