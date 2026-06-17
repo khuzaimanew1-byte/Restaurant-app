@@ -83,12 +83,13 @@ function to12h(t: string): string {
 }
 
 // Returns the color the CHECK-IN time should receive (arrival-based, independent of departure)
+// Only late arrivals get amber; early/on-time arrivals use default text color
 function getArrivalColor(emp: Employee, timing: OfficeTiming): string | null {
   if (!emp.checkIn) return null;
   const inM    = parseTimeMins(emp.checkIn);
   const startM = parseTimeMins(timing.start);
   if (inM === -1) return null;
-  return inM > startM ? "#F59E0B" : "#22C55E";
+  return inM > startM ? "#F59E0B" : null;
 }
 
 // Returns the color the CHECK-OUT time should receive (departure-based)
