@@ -1357,8 +1357,8 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .adm-card {
   position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: center;
+  justify-content: space-between;
   padding: 12px;
   border-radius: 12px;
   width: 100%;
@@ -1530,23 +1530,12 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .adm-info-btn-confirm:hover { color: var(--accent); background: rgba(196,122,58,.22); }
 
 /* Inline edit */
-.adm-card-row { display: flex; align-items: center; justify-content: space-between; }
-.adm-inline-edit { display: flex; flex-direction: column; gap: 2px; margin-top: 0; }
-.adm-inline-edit-top { padding-bottom: 7px; margin-bottom: 7px; border-bottom: 1px solid rgba(196,122,58,.18); }
-.adm-inline-time-row { display: flex; align-items: center; gap: 4px; }
-.adm-inline-label {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .06em;
-  color: var(--accent);
-  text-transform: uppercase;
-  flex-shrink: 0;
-  opacity: .85;
-}
+.adm-inline-edit { display: flex; flex-direction: column; gap: 4px; margin-top: 5px; }
+.adm-inline-time-row { display: flex; align-items: center; gap: 10px; }
 .adm-inline-field {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   flex: 1;
   color: var(--adm-text-muted);
 }
@@ -1560,32 +1549,6 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   padding: 0;
   min-width: 0;
 }
-.adm-inline-input::-webkit-datetime-edit { padding: 0; }
-.adm-inline-input::-webkit-datetime-edit-hour-field,
-.adm-inline-input::-webkit-datetime-edit-minute-field {
-  color: #F1F5F9;
-  font-weight: 600;
-  font-size: 12px;
-  padding: 0 1px;
-}
-.adm-inline-input::-webkit-datetime-edit-hour-field:focus,
-.adm-inline-input::-webkit-datetime-edit-minute-field:focus {
-  background: rgba(196,122,58,.25);
-  border-radius: 2px;
-  color: #fff;
-}
-.adm-inline-input::-webkit-datetime-edit-ampm-field {
-  color: var(--accent);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  padding: 0 1px;
-}
-.adm-inline-input::-webkit-datetime-edit-ampm-field:focus {
-  background: rgba(196,122,58,.25);
-  border-radius: 2px;
-}
-.adm-inline-input::-webkit-datetime-edit-text { color: rgba(148,163,184,.5); font-size: 10px; padding: 0; }
 .adm-inline-input::-webkit-calendar-picker-indicator {
   filter: invert(52%) sepia(40%) saturate(700%) hue-rotate(358deg) brightness(90%);
   cursor: pointer;
