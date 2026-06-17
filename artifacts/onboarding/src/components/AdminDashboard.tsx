@@ -243,35 +243,29 @@ function EmployeeCard({
   isEditing: boolean;
   onCtxMenu: (id: number, x: number, y: number) => void;
   onLongPress: (id: number, x: number, y: number) => void;
-  onEditSave: (id: number, ci: string, co: string, leaveStatus: LeaveStatus) => void;
+  onEditSave: (id: number, ci: string, co: string) => void;
 }) {
   const status  = getDisplayStatus(emp, timing);
   const isLeave = status === "leave" || status === "unauthorized-leave";
   const isHalf  = status === "half-day";
 
   // Inline edit local state
-  const [ci24,           setCi24]           = useState("");
-  const [co24,           setCo24]           = useState("");
-  const [editError,      setEditError]      = useState("");
-  const [editLeave,      setEditLeave]      = useState<LeaveStatus>(null);
+  const [ci24,      setCi24]      = useState("");
+  const [co24,      setCo24]      = useState("");
+  const [editError, setEditError] = useState("");
 
   useEffect(() => {
     if (isEditing) {
       setCi24(to24h(emp.checkIn));
       setCo24(to24h(emp.checkOut));
       setEditError("");
-      setEditLeave(emp.leaveStatus);
     }
-  }, [isEditing, emp.checkIn, emp.checkOut, emp.leaveStatus]);
-
-  function toggleEditLeave(val: LeaveStatus) {
-    setEditLeave(prev => prev === val ? null : val);
-  }
+  }, [isEditing, emp.checkIn, emp.checkOut]);
 
   function handleInlineSave() {
     if (co24 && !ci24) { setEditError("Check-in required first"); return; }
     if (ci24 && co24 && co24 <= ci24) { setEditError("Check-out must be after check-in"); return; }
-    onEditSave(emp.id, to12h(ci24), to12h(co24), editLeave);
+    onEditSave(emp.id, to12h(ci24), to12h(co24));
   }
 
   // Independent time colors — each slot gets its own status color
@@ -365,24 +359,6 @@ function EmployeeCard({
                   />
                 </div>
               </div>
-              <div className="adm-inline-status-row">
-                <button
-                  className={`adm-inline-status-btn${editLeave === "leave" ? " adm-inline-status-active adm-inline-status-leave" : ""}`}
-                  onClick={() => toggleEditLeave("leave")}
-                  type="button"
-                >Leave</button>
-                <button
-                  className={`adm-inline-status-btn${editLeave === "unauthorized-leave" ? " adm-inline-status-active adm-inline-status-unauth" : ""}`}
-                  onClick={() => toggleEditLeave("unauthorized-leave")}
-                  type="button"
-                >Unauth</button>
-                <button
-                  className={`adm-inline-status-btn${editLeave === "half-day" ? " adm-inline-status-active adm-inline-status-half" : ""}${!ci24 || !co24 ? " adm-inline-status-btn-disabled" : ""}`}
-                  onClick={() => (!ci24 || !co24) ? undefined : toggleEditLeave("half-day")}
-                  type="button"
-                  disabled={!ci24 || !co24}
-                >½ Day</button>
-              </div>
               {editError && <p className="adm-inline-error">{editError}</p>}
             </div>
           ) : isLeave ? (
@@ -442,15 +418,18 @@ function EmployeeCard({
 }
 
 function ContextMenu({
-  ctx, employees, timing, onAction, onClose,
+  ctx, employees, timing, onAction, onClose, isBeingEdited,
 }: {
   ctx: CtxMenu; employees: Employee[]; timing: OfficeTiming;
-  onAction: (id: number, action: "edit" | LeaveStatus) => void;
+  isBeingEdited: boolean;
+  onAction: (id: number, action: "edit" | LeaveStatus | "clear-early") => void;
   onClose: () => void;
 }) {
-  const emp      = employees.find(e => e.id === ctx.empId)!;
-  const halfOk   = canAssignHalfDay(emp, timing);
-  const menuRef  = useRef<HTMLDivElement>(null);
+  const emp        = employees.find(e => e.id === ctx.empId)!;
+  const halfOk     = canAssignHalfDay(emp, timing) || emp.leaveStatus === "half-day";
+  const status     = getDisplayStatus(emp, timing);
+  const isEarlyDep = status === "early-departure";
+  const menuRef    = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function down(e: MouseEvent) {
@@ -462,7 +441,7 @@ function ContextMenu({
     return () => { document.removeEventListener("mousedown", down); document.removeEventListener("keydown", key); };
   }, [onClose]);
 
-  const menuW = 196, menuH = 176;
+  const menuW = 196, menuH = 218;
   const left  = Math.min(ctx.x, window.innerWidth  - menuW - 8);
   const top   = Math.min(ctx.y, window.innerHeight - menuH - 8);
 
@@ -499,7 +478,7 @@ function ContextMenu({
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
         </svg>
-      ), () => { onAction(ctx.empId, "edit"); onClose(); })}
+      ), () => { onAction(ctx.empId, "edit"); onClose(); }, undefined, false, isBeingEdited)}
 
       <div className="adm-ctx-divider" />
 
@@ -520,6 +499,12 @@ function ContextMenu({
           <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20V2z" fill="currentColor" stroke="none"/>
         </svg>
       ), () => { onAction(ctx.empId, "half-day"); onClose(); }, "#14B8A6", !halfOk, emp.leaveStatus === "half-day")}
+
+      {item("Early Departure", (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      ), () => { onAction(ctx.empId, "clear-early"); onClose(); }, "#14B8A6", !isEarlyDep, isEarlyDep)}
     </div>
   );
 }
@@ -699,28 +684,39 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     return () => document.removeEventListener("mousedown", handle);
   }, [dropdownOpen]);
 
-  const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus) => {
+  const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus | "clear-early") => {
     if (action === "edit") {
       setEditingId(prev => prev === empId ? null : empId);
+    } else if (action === "clear-early") {
+      setEmployees(prev => prev.map(e =>
+        e.id !== empId ? e : { ...e, checkOut: officeTiming.end, leaveStatus: null }
+      ));
     } else {
       setEditingId(null);
       setEmployees(prev => prev.map(e => {
         if (e.id !== empId) return e;
-        const clearTimes = action === "leave" || action === "unauthorized-leave";
-        return { ...e, leaveStatus: action, checkIn: clearTimes ? "" : e.checkIn, checkOut: clearTimes ? "" : e.checkOut };
+        const newStatus: LeaveStatus = e.leaveStatus === action ? null : action;
+        const clearTimes     = newStatus === "leave" || newStatus === "unauthorized-leave";
+        const restoreDefaults = newStatus === null && !e.checkIn && !e.checkOut;
+        return {
+          ...e,
+          leaveStatus: newStatus,
+          checkIn:  clearTimes ? "" : (restoreDefaults ? officeTiming.start : e.checkIn),
+          checkOut: clearTimes ? "" : (restoreDefaults ? officeTiming.end   : e.checkOut),
+        };
       }));
     }
-  }, []);
+  }, [officeTiming]);
 
-  const handleEditSave = useCallback((id: number, ci: string, co: string, leaveStatus: LeaveStatus) => {
+  const handleEditSave = useCallback((id: number, ci: string, co: string) => {
     setEmployees(prev => prev.map(e => {
       if (e.id !== id) return e;
-      const clearTimes = leaveStatus === "leave" || leaveStatus === "unauthorized-leave";
+      const conflictsWithTimes = e.leaveStatus === "leave" || e.leaveStatus === "unauthorized-leave";
       return {
         ...e,
-        checkIn:     clearTimes ? "" : ci,
-        checkOut:    clearTimes ? "" : co,
-        leaveStatus,
+        checkIn:     ci,
+        checkOut:    co,
+        leaveStatus: conflictsWithTimes ? null : e.leaveStatus,
       };
     }));
     setEditingId(null);
@@ -886,6 +882,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       {ctxMenu && (
         <ContextMenu
           ctx={ctxMenu} employees={employees} timing={officeTiming}
+          isBeingEdited={editingId === ctxMenu.empId}
           onAction={handleCtxAction} onClose={() => setCtxMenu(null)}
         />
       )}
