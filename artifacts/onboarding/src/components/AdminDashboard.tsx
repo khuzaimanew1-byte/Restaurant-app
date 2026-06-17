@@ -39,40 +39,27 @@ const STATUS_LABEL: Record<DisplayStatus, string> = {
   "normal":             "No Check-in",
 };
 
-function sortPriority(emp: Employee, timing: OfficeTiming): number {
-  const status    = getDisplayStatus(emp, timing);
-  const hasCheckedOut = Boolean(emp.checkOut);
+// Priority when employee has NO checkout yet (odd slots 3,5,9 leave room for with-checkout)
+const SORT_NO_CHECKOUT: Record<DisplayStatus, number> = {
+  "unauthorized-leave": 0,
+  "leave":              1,
+  "late-arrival":       3,  // rank 3 — below half-day (2)
+  "arrival":            5,  // rank 4
+  "normal":             9,  // No Check-in, lowest
+  "half-day":           99, // shouldn't appear without checkout
+  "early-departure":    99, // shouldn't appear without checkout
+};
 
-  // 1. Unauthorized Leave — always highest priority
-  if (status === "unauthorized-leave") return 0;
-
-  // 2. On approved Leave
-  if (status === "leave") return 1;
-
-  // ── No-checkout group (still in office / never arrived) ──────────────────
-  if (!hasCheckedOut) {
-    // 3. Came in late, still present
-    if (status === "late-arrival") return 2;
-    // 4. On time, still present
-    if (status === "arrival") return 3;
-    // 5. Never checked in
-    if (status === "normal") return 4;
-  }
-
-  // ── With-checkout group (already left) ───────────────────────────────────
-  if (hasCheckedOut) {
-    // 6. Left before midpoint of shift
-    if (status === "half-day") return 5;
-    // 7. Left before end of shift
-    if (status === "early-departure") return 6;
-    // 8. Came in late but completed shift
-    if (status === "late-arrival") return 7;
-    // 9. Normal departure — on time in, on time out
-    if (status === "arrival") return 8;
-  }
-
-  return 9;
-}
+// Priority when employee HAS a checkout (even slots 2,4,6,7,10)
+const SORT_WITH_CHECKOUT: Record<DisplayStatus, number> = {
+  "unauthorized-leave": 0,
+  "leave":              1,
+  "half-day":           2,  // rank 3 — above late-arrival no-checkout (3)
+  "early-departure":    4,  // rank 4
+  "late-arrival":       6,  // rank 5 — below arrival no-checkout (5)
+  "arrival":            7,  // rank 6/7 — normal departure
+  "normal":             10, // edge case
+};
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -163,7 +150,13 @@ function canAssignHalfDay(emp: Employee, timing: OfficeTiming): boolean {
 }
 
 function sortedEmployees(emps: Employee[], timing: OfficeTiming): Employee[] {
-  return [...emps].sort((a, b) => sortPriority(a, timing) - sortPriority(b, timing));
+  return [...emps].sort((a, b) => {
+    const sa = getDisplayStatus(a, timing);
+    const sb = getDisplayStatus(b, timing);
+    const pa = (a.checkOut ? SORT_WITH_CHECKOUT : SORT_NO_CHECKOUT)[sa];
+    const pb = (b.checkOut ? SORT_WITH_CHECKOUT : SORT_NO_CHECKOUT)[sb];
+    return pa - pb;
+  });
 }
 
 function getTodayStr() {
