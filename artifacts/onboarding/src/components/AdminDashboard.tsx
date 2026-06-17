@@ -405,7 +405,7 @@ function EmployeeCard({
             </svg>
           )}
         </button>
-        <div className={`adm-bars${isLeave ? " adm-bars-muted" : ""}`}>
+        <div className="adm-bars">
           <div className="adm-bar-row">
             <div className="adm-bar-labels"><span>ATT</span><span>{emp.att}%</span></div>
             <ProgressBar value={emp.att} color="#E5E2E1" glow="rgba(229,226,225,0.3)" />
