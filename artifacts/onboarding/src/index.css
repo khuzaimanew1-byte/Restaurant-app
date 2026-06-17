@@ -1530,22 +1530,14 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .adm-info-btn-confirm:hover { color: var(--accent); background: rgba(196,122,58,.22); }
 
 /* Inline edit */
-.adm-inline-edit { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
-.adm-inline-time-row { display: flex; align-items: center; gap: 8px; }
+.adm-inline-edit { display: flex; flex-direction: column; gap: 4px; margin-top: 5px; }
+.adm-inline-time-row { display: flex; align-items: center; gap: 10px; }
 .adm-inline-field {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 8px;
-  padding: 4px 6px;
   flex: 1;
   color: var(--adm-text-muted);
-}
-.adm-inline-field:focus-within {
-  border-color: rgba(196,122,58,.5);
-  background: rgba(196,122,58,.07);
 }
 .adm-inline-input {
   background: none;
@@ -1557,7 +1549,13 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   padding: 0;
   min-width: 0;
 }
-.adm-inline-input::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; width: 10px; }
+.adm-inline-input::-webkit-calendar-picker-indicator {
+  filter: invert(52%) sepia(40%) saturate(700%) hue-rotate(358deg) brightness(90%);
+  cursor: pointer;
+  width: 10px;
+  opacity: 0.75;
+}
+.adm-inline-input::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 .adm-inline-input-disabled { opacity: .35; pointer-events: none; }
 .adm-inline-error { font-size: 10px; color: #FF5A5F; margin: 0; }
 
