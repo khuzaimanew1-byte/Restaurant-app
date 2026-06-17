@@ -126,9 +126,6 @@ externalPort = 3000
 [userenv.shared]
 ADMIN_GMAIL = "khuzaimanew1@gmail.com"
 SENDING_GMAIL = "usamasif090@gmail.com"
-JWT_SESSION = "V9#qL7@x!R2$wK8^mT4&zN1*Y6+pD3=JfH5_uC0~BgE9%SrX2?AnM7|QtW8:PkL4;ZvdfgergreHJASEY87%$%&*"
-GMAIL_APP_PASSWORD = "svwq tcfz rlzt youg"
-NEON_DATABASE_URL = "postgresql://neondb_owner:npg_unEr2WsbS4Hy@ep-dark-cloud-apc45f5z.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require"
 
 [nix]
 channel = "stable-25_05"
