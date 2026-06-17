@@ -24,7 +24,7 @@ const STATUS_COLOR: Record<DisplayStatus, string | null> = {
   "unauthorized-leave": "#FF5A5F",
   "leave":              "#94A3B8",
   "half-day":           "#14B8A6",
-  "early-departure":    "#A78BFA",
+  "early-departure":    "#14B8A6",
   "late-arrival":       "#F59E0B",
   "arrival":            "#22C55E",
   "normal":             null,
@@ -98,7 +98,7 @@ function getDepartureColor(emp: Employee, timing: OfficeTiming): string | null {
   const outM = parseTimeMins(emp.checkOut);
   const endM = parseTimeMins(timing.end);
   if (outM === -1) return null;
-  return outM < endM ? "#A78BFA" : null; // null = normal departure, no special color
+  return outM < endM ? "#14B8A6" : null; // null = normal departure, no special color
 }
 
 function getDisplayStatus(emp: Employee, timing: OfficeTiming): DisplayStatus {
@@ -251,7 +251,7 @@ function EmployeeCard({
   // Independent time colors — each slot gets its own status color
   // Half-day: check-in no color (arrived normally), check-out purple (early departure)
   const arrColor = isHalf ? null : (emp.leaveStatus ? null : getArrivalColor(emp, timing));
-  const depColor = isHalf ? "#A78BFA" : (emp.leaveStatus ? null : getDepartureColor(emp, timing));
+  const depColor = isHalf ? "#14B8A6" : (emp.leaveStatus ? null : getDepartureColor(emp, timing));
 
   // Dot color: checkout status takes priority when checkout exists; else arrival drives it
   let dotColor: string | null;
