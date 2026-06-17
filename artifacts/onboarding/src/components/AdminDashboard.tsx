@@ -14,8 +14,9 @@ interface Employee {
   att: number; perf: number; avatar: string; initials: string; color: string;
 }
 
-interface OfficeTiming { start: string; end: string; }
-interface CtxMenu     { empId: number; x: number; y: number; }
+interface OfficeTiming   { start: string; end: string; }
+interface CtxMenu        { empId: number; x: number; y: number; }
+interface EditModalState { empId: number; checkIn: string; checkOut: string; }
 
 // ── Status maps ────────────────────────────────────────────────────────────
 
@@ -607,6 +608,53 @@ function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel:
   );
 }
 
+function EditModal({ state, employees, onSave, onClose }: {
+  state: EditModalState;
+  employees: Employee[];
+  onSave: (id: number, ci: string, co: string) => void;
+  onClose: () => void;
+}) {
+  const emp = employees.find(e => e.id === state.empId);
+  const [ci, setCi] = useState(to24h(state.checkIn));
+  const [co, setCo] = useState(to24h(state.checkOut));
+
+  const handleSave = () => {
+    onSave(state.empId, to12h(ci), to12h(co));
+    onClose();
+  };
+
+  return (
+    <div className="adm-modal-overlay" onClick={onClose}>
+      <div className="adm-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </div>
+        <h3 className="adm-modal-title">Edit Attendance</h3>
+        <p className="adm-modal-body">{emp?.name ?? "Employee"}</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", marginBottom: "4px" }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", color: "var(--text-sub, #94A3B8)", textAlign: "left" }}>
+            Check-in
+            <input type="time" value={ci} onChange={e => setCi(e.target.value)}
+              style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "10px", padding: "10px 12px", color: "var(--text, #F1F5F9)", fontSize: "15px", outline: "none", width: "100%", boxSizing: "border-box" as React.CSSProperties["boxSizing"] }} />
+          </label>
+          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", color: "var(--text-sub, #94A3B8)", textAlign: "left" }}>
+            Check-out
+            <input type="time" value={co} onChange={e => setCo(e.target.value)}
+              style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "10px", padding: "10px 12px", color: "var(--text, #F1F5F9)", fontSize: "15px", outline: "none", width: "100%", boxSizing: "border-box" as React.CSSProperties["boxSizing"] }} />
+          </label>
+        </div>
+        <div className="adm-modal-actions">
+          <button className="adm-modal-cancel" onClick={onClose}>Cancel</button>
+          <button className="adm-modal-confirm" onClick={handleSave}>Save</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AvatarDropdown({ onLogoutRequest, onClose }: { onLogoutRequest: () => void; onClose: () => void }) {
   return (
     <div className="adm-avatar-dropdown">
@@ -640,6 +688,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [mobileSearchOpen, setMobileSearch] = useState(false);
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
+  const [editModal,      setEditModal]      = useState<EditModalState | null>(null);
   const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
   const [editingId,      setEditingId]      = useState<number | null>(null);
 
