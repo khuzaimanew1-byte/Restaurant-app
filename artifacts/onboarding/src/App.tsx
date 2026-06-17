@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { OnboardingFlow }      from "./components/OnboardingFlow";
 import { LoginFlow }           from "./components/LoginFlow";
 import { ResetPasswordScreen } from "./components/LoginFlow";
-import { AdminDashboard }      from "./components/AdminDashboard";
+
+const AdminDashboard = lazy(() =>
+  import("./components/AdminDashboard").then(m => ({ default: m.AdminDashboard }))
+);
 
 type View = "onboarding" | "login" | "admin-dashboard" | "new-password";
 
@@ -94,7 +97,9 @@ export default function App() {
 
   if (guardedView === "admin-dashboard") return (
     <div className={viewClass}>
-      <AdminDashboard onLogout={handleLogout} />
+      <Suspense fallback={<div className="adm-lazy-fallback" />}>
+        <AdminDashboard onLogout={handleLogout} />
+      </Suspense>
     </div>
   );
 

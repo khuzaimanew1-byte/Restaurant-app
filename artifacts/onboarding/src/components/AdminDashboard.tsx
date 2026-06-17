@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
+import { useDebounce } from "../hooks/useDebounce";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -166,6 +167,86 @@ function getTodayStr() {
   return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
 }
 
+// ── Search suggestion helpers ───────────────────────────────────────────────
+
+function normSalary(s: string) { return s.replace(/[$,]/g, ""); }
+
+function Highlight({ text, query }: { text: string; query: string }) {
+  const q = query.trim();
+  if (!q) return <>{text}</>;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark>{text.slice(idx, idx + q.length)}</mark>
+      {text.slice(idx + q.length)}
+    </>
+  );
+}
+
+interface SuggestItem { display: string; sub: string; select: string; }
+interface SuggestGroup { label: string; items: SuggestItem[]; }
+
+function buildSuggestions(employees: Employee[], query: string): SuggestGroup[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const qNorm = normSalary(q);
+
+  const nameGroup: SuggestItem[]   = [];
+  const roleGroup: SuggestItem[]   = [];
+  const salaryGroup: SuggestItem[] = [];
+  const seenRoles    = new Set<string>();
+  const seenSalaries = new Set<string>();
+
+  for (const e of employees) {
+    if (nameGroup.length < 3 && e.name.toLowerCase().includes(q))
+      nameGroup.push({ display: e.name, sub: "", select: e.name });
+    if (roleGroup.length < 3 && !seenRoles.has(e.role) && e.role.toLowerCase().includes(q)) {
+      seenRoles.add(e.role);
+      roleGroup.push({ display: e.role, sub: e.name, select: e.role });
+    }
+    if (salaryGroup.length < 3 && !seenSalaries.has(e.salary) && normSalary(e.salary).includes(qNorm)) {
+      seenSalaries.add(e.salary);
+      salaryGroup.push({ display: e.salary, sub: e.name, select: e.salary });
+    }
+  }
+
+  const groups: SuggestGroup[] = [];
+  if (nameGroup.length)   groups.push({ label: "Name",   items: nameGroup });
+  if (roleGroup.length)   groups.push({ label: "Role",   items: roleGroup });
+  if (salaryGroup.length) groups.push({ label: "Salary", items: salaryGroup });
+  return groups;
+}
+
+function SearchSuggestions({ groups, query, onSelect }: {
+  groups: SuggestGroup[]; query: string; onSelect: (v: string) => void;
+}) {
+  if (!groups.length) return null;
+  return (
+    <div className="adm-suggestions" role="listbox">
+      {groups.map((g, gi) => (
+        <div key={g.label}>
+          {gi > 0 && <div className="adm-suggest-divider" />}
+          <div className="adm-suggest-group-label">{g.label}</div>
+          {g.items.map((item, ii) => (
+            <button
+              key={ii} role="option"
+              className="adm-suggest-item"
+              onMouseDown={e => { e.preventDefault(); onSelect(item.select); }}
+            >
+              <span className="adm-suggest-value">
+                <Highlight text={item.display} query={query} />
+              </span>
+              {item.sub && <span className="adm-suggest-sub">{item.sub}</span>}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Seed data ──────────────────────────────────────────────────────────────
 
 const INITIAL_EMPLOYEES: Employee[] = [
@@ -224,7 +305,7 @@ const BOTTOM_NAV_ITEMS: { id: NavItem; label: string }[] = [
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function AvatarImg({ emp }: { emp: Employee }) {
+const AvatarImg = memo(function AvatarImg({ emp }: { emp: Employee }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
@@ -235,9 +316,9 @@ function AvatarImg({ emp }: { emp: Employee }) {
   }
   return (
     <img src={emp.avatar} alt={emp.name} className="adm-avatar-img"
-      onError={() => setFailed(true)} />
+      loading="lazy" onError={() => setFailed(true)} />
   );
-}
+});
 
 function ProgressBar({ value, color, glow }: { value: number; color: string; glow: string }) {
   return (
@@ -260,7 +341,7 @@ const CHECKOUT_SVG = (
   </svg>
 );
 
-function EmployeeCard({
+const EmployeeCard = memo(function EmployeeCard({
   emp, idx, timing, isEditing, onCtxMenu, onLongPress, onEditSave,
 }: {
   emp: Employee; idx: number; timing: OfficeTiming;
@@ -439,7 +520,7 @@ function EmployeeCard({
       </div>
     </div>
   );
-}
+});
 
 function ContextMenu({
   ctx, employees, timing, onAction, onClose, isBeingEdited,
@@ -663,32 +744,50 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [activeNav,      setActiveNav]      = useState<NavItem>("dashboard");
   const [employees,      setEmployees]      = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [officeTiming,   setOfficeTiming]   = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
-  const [searchQuery,    setSearchQuery]    = useState("");
+  const [rawQuery,       setRawQuery]       = useState("");
+  const [suggestOpen,    setSuggestOpen]    = useState(false);
   const [mobileSearchOpen, setMobileSearch] = useState(false);
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
   const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
   const [editingId,      setEditingId]      = useState<number | null>(null);
 
-  const searchRef         = useRef<HTMLInputElement>(null);
+  const debouncedQuery = useDebounce(rawQuery, 280);
+
+  const searchRef          = useRef<HTMLInputElement>(null);
+  const mobileSearchRef    = useRef<HTMLInputElement>(null);
+  const desktopSearchWrap  = useRef<HTMLDivElement>(null);
+  const mobileSearchWrap   = useRef<HTMLDivElement>(null);
   const desktopDropdownRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef  = useRef<HTMLDivElement>(null);
 
   const today        = getTodayStr();
-  const presentCount  = employees.filter(e => !e.leaveStatus && e.checkIn).length;
-  const halfDayCount  = employees.filter(e => e.leaveStatus === "half-day").length;
+  const presentCount  = useMemo(() => employees.filter(e => !e.leaveStatus && e.checkIn).length, [employees]);
+  const halfDayCount  = useMemo(() => employees.filter(e => e.leaveStatus === "half-day").length, [employees]);
   const totalCount    = employees.length;
 
-  const sorted   = sortedEmployees(employees, officeTiming);
-  const filtered = searchQuery.trim()
-    ? sorted.filter(e =>
-        e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        e.role.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : sorted;
+  const sorted = useMemo(() => sortedEmployees(employees, officeTiming), [employees, officeTiming]);
 
-  const openSearch  = useCallback(() => { setMobileSearch(true); setTimeout(() => searchRef.current?.focus(), 300); }, []);
-  const closeSearch = useCallback(() => { setMobileSearch(false); setSearchQuery(""); }, []);
+  const filtered = useMemo(() => {
+    const q = debouncedQuery.trim().toLowerCase();
+    if (!q) return sorted;
+    const qNorm = normSalary(q);
+    return sorted.filter(e =>
+      e.name.toLowerCase().includes(q) ||
+      e.role.toLowerCase().includes(q) ||
+      normSalary(e.salary).includes(qNorm)
+    );
+  }, [sorted, debouncedQuery]);
+
+  const suggestions = useMemo(() => buildSuggestions(employees, rawQuery), [employees, rawQuery]);
+
+  const handleSuggestSelect = useCallback((value: string) => {
+    setRawQuery(value);
+    setSuggestOpen(false);
+  }, []);
+
+  const openSearch  = useCallback(() => { setMobileSearch(true); setTimeout(() => mobileSearchRef.current?.focus(), 300); }, []);
+  const closeSearch = useCallback(() => { setMobileSearch(false); setRawQuery(""); setSuggestOpen(false); }, []);
   const requestLogout = useCallback(() => { setDropdownOpen(false); setLogoutModal(true); }, []);
 
   useEffect(() => {
@@ -701,6 +800,17 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
   }, [dropdownOpen]);
+
+  useEffect(() => {
+    if (!suggestOpen) return;
+    function handle(e: MouseEvent) {
+      const t = e.target as Node;
+      if (!desktopSearchWrap.current?.contains(t) && !mobileSearchWrap.current?.contains(t))
+        setSuggestOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [suggestOpen]);
 
   const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus) => {
     if (action === "edit") {
@@ -774,12 +884,24 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
           </div>
           <div className="adm-header-right">
-            <div className="adm-search-wrap">
+            <div className="adm-search-wrap" ref={desktopSearchWrap}>
               <svg className="adm-search-icon-inner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
-              <input className="adm-search-input" placeholder="Search employees..."
-                value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+              <input
+                ref={searchRef}
+                className="adm-search-input"
+                placeholder="Search employees..."
+                value={rawQuery}
+                autoComplete="off"
+                onChange={e => { setRawQuery(e.target.value); setSuggestOpen(true); }}
+                onFocus={() => rawQuery && setSuggestOpen(true)}
+                onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+                onKeyDown={e => { if (e.key === "Escape") { setSuggestOpen(false); setRawQuery(""); } }}
+              />
+              {suggestOpen && suggestions.length > 0 && (
+                <SearchSuggestions groups={suggestions} query={rawQuery} onSelect={handleSuggestSelect} />
+              )}
             </div>
             <button className="adm-notif-btn" aria-label="Notifications">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -804,9 +926,24 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             <RestaurantLogo size={26} />
             <span className="adm-topbar-brand">MyRestaurant</span>
           </div>
-          <div className={`adm-topbar-search${mobileSearchOpen ? " adm-topbar-search-open" : ""}`}>
-            <input ref={searchRef} className="adm-topbar-search-input" placeholder="Search staff..."
-              value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+          <div
+            ref={mobileSearchWrap}
+            className={`adm-topbar-search${mobileSearchOpen ? " adm-topbar-search-open" : ""}`}
+          >
+            <input
+              ref={mobileSearchRef}
+              className="adm-topbar-search-input"
+              placeholder="Search staff..."
+              value={rawQuery}
+              autoComplete="off"
+              onChange={e => { setRawQuery(e.target.value); setSuggestOpen(true); }}
+              onFocus={() => rawQuery && setSuggestOpen(true)}
+              onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+              onKeyDown={e => { if (e.key === "Escape") { setSuggestOpen(false); setRawQuery(""); } }}
+            />
+            {mobileSearchOpen && suggestOpen && suggestions.length > 0 && (
+              <SearchSuggestions groups={suggestions} query={rawQuery} onSelect={handleSuggestSelect} />
+            )}
           </div>
           <div className="adm-topbar-actions">
             <button className="adm-topbar-toggle"
