@@ -422,14 +422,12 @@ function ContextMenu({
 }: {
   ctx: CtxMenu; employees: Employee[]; timing: OfficeTiming;
   isBeingEdited: boolean;
-  onAction: (id: number, action: "edit" | LeaveStatus | "clear-early") => void;
+  onAction: (id: number, action: "edit" | LeaveStatus) => void;
   onClose: () => void;
 }) {
-  const emp        = employees.find(e => e.id === ctx.empId)!;
-  const halfOk     = canAssignHalfDay(emp, timing) || emp.leaveStatus === "half-day";
-  const status     = getDisplayStatus(emp, timing);
-  const isEarlyDep = status === "early-departure";
-  const menuRef    = useRef<HTMLDivElement>(null);
+  const emp     = employees.find(e => e.id === ctx.empId)!;
+  const halfOk  = canAssignHalfDay(emp, timing) || emp.leaveStatus === "half-day";
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function down(e: MouseEvent) {
@@ -441,7 +439,7 @@ function ContextMenu({
     return () => { document.removeEventListener("mousedown", down); document.removeEventListener("keydown", key); };
   }, [onClose]);
 
-  const menuW = 196, menuH = 218;
+  const menuW = 196, menuH = 178;
   const left  = Math.min(ctx.x, window.innerWidth  - menuW - 8);
   const top   = Math.min(ctx.y, window.innerHeight - menuH - 8);
 
@@ -500,11 +498,6 @@ function ContextMenu({
         </svg>
       ), () => { onAction(ctx.empId, "half-day"); }, "#14B8A6", !halfOk, emp.leaveStatus === "half-day")}
 
-      {item("Early Departure", (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-      ), () => { onAction(ctx.empId, "clear-early"); }, "#14B8A6", !isEarlyDep, isEarlyDep)}
     </div>
   );
 }
@@ -684,13 +677,9 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     return () => document.removeEventListener("mousedown", handle);
   }, [dropdownOpen]);
 
-  const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus | "clear-early") => {
+  const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus) => {
     if (action === "edit") {
       setEditingId(prev => prev === empId ? null : empId);
-    } else if (action === "clear-early") {
-      setEmployees(prev => prev.map(e =>
-        e.id !== empId ? e : { ...e, checkOut: officeTiming.end, leaveStatus: null }
-      ));
     } else {
       setEditingId(null);
       setEmployees(prev => prev.map(e => {
