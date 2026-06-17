@@ -1357,8 +1357,8 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .adm-card {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   padding: 12px;
   border-radius: 12px;
   width: 100%;
@@ -1530,8 +1530,14 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .adm-info-btn-confirm:hover { color: var(--accent); background: rgba(196,122,58,.22); }
 
 /* Inline edit */
-.adm-inline-edit { display: flex; flex-direction: column; gap: 3px; margin-top: 3px; }
+.adm-inline-edit { display: flex; flex-direction: column; gap: 3px; margin-top: 0; }
 .adm-inline-time-row { display: flex; align-items: center; gap: 8px; }
+.adm-inline-edit-top {
+  padding-bottom: 8px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(196,122,58,.18);
+}
+.adm-card-row { display: flex; align-items: center; justify-content: space-between; }
 .adm-inline-field {
   display: flex;
   align-items: center;
