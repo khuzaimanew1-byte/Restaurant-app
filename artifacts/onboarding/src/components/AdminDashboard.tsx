@@ -269,8 +269,8 @@ function EmployeeCard({
   }
 
   // Independent time colors — each slot gets its own status color
-  // arrColor: always reflect late-arrival amber regardless of half-day or leave status
-  const arrColor = getArrivalColor(emp, timing);
+  // Half-day: check-in no color (arrived normally), check-out purple (early departure)
+  const arrColor = isHalf ? null : (emp.leaveStatus ? null : getArrivalColor(emp, timing));
   const depColor = isHalf ? "#14B8A6" : (emp.leaveStatus ? null : getDepartureColor(emp, timing));
 
   // Dot color: checkout status takes priority when checkout exists; else arrival drives it
@@ -816,22 +816,17 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         <div className="adm-desktop-stats">
           <span className="adm-desktop-chip adm-desktop-chip-present">Present: {presentCount}</span>
           {halfDayCount > 0 && (
-            <span className="adm-desktop-chip adm-desktop-chip-half adm-desktop-chip-push-right">Half Day: {halfDayCount}</span>
+            <span className="adm-desktop-chip adm-desktop-chip-half">Half Day: {halfDayCount}</span>
           )}
         </div>
 
         {/* Mobile stats row */}
         <div className="adm-mobile-stats">
-          <div className="adm-mobile-dateline">
+          <div>
             <h2 className="adm-mobile-date">{today}</h2>
-            <div className="adm-mobile-dateline-right">
-              {halfDayCount > 0 && (
-                <span className="adm-mobile-chip adm-mobile-chip-half">Half Day: {halfDayCount}</span>
-              )}
-              <span className="adm-mobile-total">Total: {totalCount}</span>
-            </div>
+            <span className="adm-mobile-chip">Present: {presentCount}</span>
           </div>
-          <span className="adm-mobile-chip">Present: {presentCount}</span>
+          <span className="adm-mobile-total">Total: {totalCount}</span>
         </div>
 
         {/* ── Content area ── */}
