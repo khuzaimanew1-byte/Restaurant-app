@@ -651,8 +651,9 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const mobileDropdownRef  = useRef<HTMLDivElement>(null);
 
   const today        = getTodayStr();
-  const presentCount = employees.filter(e => !e.leaveStatus && e.checkIn).length;
-  const totalCount   = employees.length;
+  const presentCount  = employees.filter(e => !e.leaveStatus && e.checkIn).length;
+  const halfDayCount  = employees.filter(e => e.leaveStatus === "half-day").length;
+  const totalCount    = employees.length;
 
   const sorted   = sortedEmployees(employees, officeTiming);
   const filtered = searchQuery.trim()
@@ -744,10 +745,9 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         {/* Desktop top header */}
         <header className="adm-header">
           <div className="adm-header-left">
-            <h2 className="adm-header-date">{today}</h2>
-            <div className="adm-header-stats">
-              <span className="adm-stat-chip adm-stat-present">Present:&nbsp;<strong>{presentCount}</strong></span>
-              <span className="adm-stat-chip">Total: {totalCount}</span>
+            <div className="adm-header-date-row">
+              <h2 className="adm-header-date">{today}</h2>
+              <span className="adm-header-total">Total: {totalCount}</span>
             </div>
           </div>
           <div className="adm-header-right">
@@ -811,6 +811,14 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </div>
           </div>
         </header>
+
+        {/* Desktop stats bar — below header */}
+        <div className="adm-desktop-stats">
+          <span className="adm-desktop-chip adm-desktop-chip-present">Present: {presentCount}</span>
+          {halfDayCount > 0 && (
+            <span className="adm-desktop-chip adm-desktop-chip-half">Half Day: {halfDayCount}</span>
+          )}
+        </div>
 
         {/* Mobile stats row */}
         <div className="adm-mobile-stats">
