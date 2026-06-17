@@ -36,9 +36,26 @@ const STATUS_LABEL: Partial<Record<DisplayStatus, string>> = {
   "late-arrival":       "Late Arrival",
 };
 
-const STATUS_SORT: Record<DisplayStatus, number> = {
-  "unauthorized-leave": 0, "leave": 1, "half-day": 2,
-  "early-departure": 3, "late-arrival": 4, "arrival": 5, "normal": 6,
+// Priority when employee has NO checkout yet
+const SORT_NO_CHECKOUT: Record<DisplayStatus, number> = {
+  "unauthorized-leave": 0,
+  "leave":              1,
+  "late-arrival":       2,
+  "arrival":            3,
+  "normal":             4,  // no check-in
+  "half-day":           5,
+  "early-departure":    6,
+};
+
+// Priority when employee HAS a checkout
+const SORT_WITH_CHECKOUT: Record<DisplayStatus, number> = {
+  "unauthorized-leave": 0,
+  "leave":              1,
+  "half-day":           2,
+  "early-departure":    3,
+  "late-arrival":       4,
+  "arrival":            5,  // normal departure
+  "normal":             6,
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -130,9 +147,13 @@ function canAssignHalfDay(emp: Employee, timing: OfficeTiming): boolean {
 }
 
 function sortedEmployees(emps: Employee[], timing: OfficeTiming): Employee[] {
-  return [...emps].sort((a, b) =>
-    STATUS_SORT[getDisplayStatus(a, timing)] - STATUS_SORT[getDisplayStatus(b, timing)]
-  );
+  return [...emps].sort((a, b) => {
+    const sa = getDisplayStatus(a, timing);
+    const sb = getDisplayStatus(b, timing);
+    const pa = (a.checkOut ? SORT_WITH_CHECKOUT : SORT_NO_CHECKOUT)[sa];
+    const pb = (b.checkOut ? SORT_WITH_CHECKOUT : SORT_NO_CHECKOUT)[sb];
+    return pa - pb;
+  });
 }
 
 function getTodayStr() {
