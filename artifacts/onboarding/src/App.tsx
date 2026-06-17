@@ -7,10 +7,27 @@ import { AdminDashboard }      from "./components/AdminDashboard";
 type View = "onboarding" | "login" | "admin-dashboard" | "new-password";
 
 const SESSION_KEY = "reset_token";
+const AUTH_KEY    = "auth_token";
+
+function getValidToken(): string | null {
+  const token = localStorage.getItem(AUTH_KEY);
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]!)) as { exp?: number };
+    if (payload.exp && Date.now() / 1000 >= payload.exp) {
+      localStorage.removeItem(AUTH_KEY);
+      return null;
+    }
+    return token;
+  } catch {
+    localStorage.removeItem(AUTH_KEY);
+    return null;
+  }
+}
 
 function getInitialView(): View {
   const path = window.location.pathname;
-  if (localStorage.getItem("auth_token")) {
+  if (getValidToken()) {
     window.history.replaceState({}, "", "/admin/dashboard");
     return "admin-dashboard";
   }
@@ -41,7 +58,7 @@ export default function App() {
     return m ? Math.max(0, Math.min(parseInt(m[1]!), 2)) : 0;
   });
 
-  const token        = localStorage.getItem("auth_token");
+  const token        = getValidToken();
   const guardedView: View = token
     ? "admin-dashboard"
     : view === "admin-dashboard" ? "login" : view;
@@ -69,7 +86,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("auth_token");
+    localStorage.removeItem(AUTH_KEY);
     goTo("login", "back");
   };
 
