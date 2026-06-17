@@ -39,26 +39,26 @@ const STATUS_LABEL: Record<DisplayStatus, string> = {
   "normal":             "No Check-in",
 };
 
-// Priority when employee has NO checkout yet (odd slots 3,5,9 leave room for with-checkout)
+// No-checkout group: 0–49 (still present / absent — higher urgency)
 const SORT_NO_CHECKOUT: Record<DisplayStatus, number> = {
   "unauthorized-leave": 0,
   "leave":              1,
-  "late-arrival":       3,  // rank 3 — below half-day (2)
-  "arrival":            5,  // rank 4
-  "normal":             9,  // No Check-in, lowest
+  "late-arrival":       20, // rank 3
+  "arrival":            30, // rank 4
+  "normal":             40, // rank 5 — No Check-in (lowest in group)
   "half-day":           99, // shouldn't appear without checkout
   "early-departure":    99, // shouldn't appear without checkout
 };
 
-// Priority when employee HAS a checkout (even slots 2,4,6,7,10)
+// With-checkout group: 50–99 (already left — lower urgency)
 const SORT_WITH_CHECKOUT: Record<DisplayStatus, number> = {
-  "unauthorized-leave": 0,
-  "leave":              1,
-  "half-day":           2,  // rank 3 — above late-arrival no-checkout (3)
-  "early-departure":    4,  // rank 4
-  "late-arrival":       6,  // rank 5 — below arrival no-checkout (5)
-  "arrival":            7,  // rank 6/7 — normal departure
-  "normal":             10, // edge case
+  "unauthorized-leave": 0,  // always no-checkout in practice
+  "leave":              1,  // always no-checkout in practice
+  "half-day":           52, // rank 3
+  "early-departure":    53, // rank 4
+  "late-arrival":       54, // rank 5
+  "arrival":            55, // rank 6 — Normal Departure
+  "normal":             56, // edge case
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
