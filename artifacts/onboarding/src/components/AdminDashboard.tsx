@@ -39,27 +39,40 @@ const STATUS_LABEL: Record<DisplayStatus, string> = {
   "normal":             "No Check-in",
 };
 
-// No-checkout group: 0–49 (still present / absent — higher urgency)
-const SORT_NO_CHECKOUT: Record<DisplayStatus, number> = {
-  "unauthorized-leave": 0,
-  "leave":              1,
-  "late-arrival":       20, // rank 3
-  "arrival":            30, // rank 4
-  "normal":             40, // rank 5 — No Check-in (lowest in group)
-  "half-day":           99, // shouldn't appear without checkout
-  "early-departure":    99, // shouldn't appear without checkout
-};
+function sortPriority(emp: Employee, timing: OfficeTiming): number {
+  const status    = getDisplayStatus(emp, timing);
+  const hasCheckedOut = Boolean(emp.checkOut);
 
-// With-checkout group: 50–99 (already left — lower urgency)
-const SORT_WITH_CHECKOUT: Record<DisplayStatus, number> = {
-  "unauthorized-leave": 0,  // always no-checkout in practice
-  "leave":              1,  // always no-checkout in practice
-  "half-day":           52, // rank 3
-  "early-departure":    53, // rank 4
-  "late-arrival":       54, // rank 5
-  "arrival":            55, // rank 6 — Normal Departure
-  "normal":             56, // edge case
-};
+  // 1. Unauthorized Leave — always highest priority
+  if (status === "unauthorized-leave") return 0;
+
+  // 2. On approved Leave
+  if (status === "leave") return 1;
+
+  // ── No-checkout group (still in office / never arrived) ──────────────────
+  if (!hasCheckedOut) {
+    // 3. Came in late, still present
+    if (status === "late-arrival") return 2;
+    // 4. On time, still present
+    if (status === "arrival") return 3;
+    // 5. Never checked in
+    if (status === "normal") return 4;
+  }
+
+  // ── With-checkout group (already left) ───────────────────────────────────
+  if (hasCheckedOut) {
+    // 6. Left before midpoint of shift
+    if (status === "half-day") return 5;
+    // 7. Left before end of shift
+    if (status === "early-departure") return 6;
+    // 8. Came in late but completed shift
+    if (status === "late-arrival") return 7;
+    // 9. Normal departure — on time in, on time out
+    if (status === "arrival") return 8;
+  }
+
+  return 9;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -150,13 +163,7 @@ function canAssignHalfDay(emp: Employee, timing: OfficeTiming): boolean {
 }
 
 function sortedEmployees(emps: Employee[], timing: OfficeTiming): Employee[] {
-  return [...emps].sort((a, b) => {
-    const sa = getDisplayStatus(a, timing);
-    const sb = getDisplayStatus(b, timing);
-    const pa = (a.checkOut ? SORT_WITH_CHECKOUT : SORT_NO_CHECKOUT)[sa];
-    const pb = (b.checkOut ? SORT_WITH_CHECKOUT : SORT_NO_CHECKOUT)[sb];
-    return pa - pb;
-  });
+  return [...emps].sort((a, b) => sortPriority(a, timing) - sortPriority(b, timing));
 }
 
 function getTodayStr() {
