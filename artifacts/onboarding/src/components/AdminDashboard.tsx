@@ -237,10 +237,11 @@ const CHECKOUT_SVG = (
 );
 
 function EmployeeCard({
-  emp, idx, timing, isEditing, onCtxMenu, onLongPress, onEditSave,
+  emp, idx, timing, isEditing, isDimmed, onCtxMenu, onLongPress, onEditSave,
 }: {
   emp: Employee; idx: number; timing: OfficeTiming;
   isEditing: boolean;
+  isDimmed: boolean;
   onCtxMenu: (id: number, x: number, y: number) => void;
   onLongPress: (id: number, x: number, y: number) => void;
   onEditSave: (id: number, ci: string, co: string) => void;
@@ -313,106 +314,103 @@ function EmployeeCard({
 
   return (
     <div
-      className={`adm-card${isLeave ? " adm-card-absent" : ""}${isEditing ? " adm-card-editing" : ""}`}
+      className={`adm-card${isLeave ? " adm-card-absent" : ""}${isEditing ? " adm-card-editing" : ""}${isDimmed ? " adm-card-dimmed" : ""}`}
       style={{ animationDelay: `${idx * 70}ms` } as React.CSSProperties}
       onContextMenu={handleContextMenu}
       onTouchStart={isEditing ? undefined : handleTouchStart}
       onTouchEnd={isEditing ? undefined : clearTimer}
       onTouchMove={isEditing ? undefined : clearTimer}
     >
-      <div className="adm-card-left">
-        <div className="adm-avatar-wrap">
-          <AvatarImg emp={emp} />
-          <span
-            className={`adm-dot${shouldPulse ? " adm-dot-pulse" : ""}`}
-            style={dotColor
-              ? { background: dotColor, boxShadow: `0 0 6px ${dotColor}99` } as React.CSSProperties
-              : { background: "rgba(148,163,184,0.22)" }
-            }
-          />
-        </div>
-
-        <div className="adm-card-info">
-          <h3 className="adm-card-name">{emp.name}</h3>
-          <p className="adm-card-role">{emp.role}</p>
-          <p className="adm-card-salary">
-            {emp.salary}
-            {isHalf && <span className="adm-half-badge"><span className="adm-half-badge-frac">½</span> Day</span>}
-          </p>
-
-          {/* Inline edit mode */}
-          {isEditing ? (
-            <div className="adm-inline-edit">
-              <div className="adm-inline-time-row">
-                <div className="adm-inline-field">
-                  {CHECKIN_SVG}
-                  <input
-                    className="adm-inline-input"
-                    type="time" value={ci24}
-                    onChange={e => { setCi24(e.target.value); setEditError(""); }}
-                    autoFocus
-                  />
-                </div>
-                <div className="adm-inline-field">
-                  {CHECKOUT_SVG}
-                  <input
-                    className={`adm-inline-input${!ci24 ? " adm-inline-input-disabled" : ""}`}
-                    type="time" value={co24} disabled={!ci24}
-                    onChange={e => { setCo24(e.target.value); setEditError(""); }}
-                  />
-                </div>
-              </div>
-              {editError && <p className="adm-inline-error">{editError}</p>}
+      {isEditing && (
+        <div className="adm-inline-edit adm-inline-edit-top">
+          <div className="adm-inline-time-row">
+            <div className="adm-inline-field">
+              <span className="adm-inline-label">IN</span>
+              <input
+                className="adm-inline-input"
+                type="time" value={ci24}
+                onChange={e => { setCi24(e.target.value); setEditError(""); }}
+                autoFocus
+              />
             </div>
-          ) : isLeave ? (
-            <div className="adm-status-label" style={{ color: STATUS_COLOR[status]! } as React.CSSProperties}>
-              {STATUS_LABEL[status]}
+            <div className="adm-inline-field">
+              <span className="adm-inline-label">OUT</span>
+              <input
+                className={`adm-inline-input${!ci24 ? " adm-inline-input-disabled" : ""}`}
+                type="time" value={co24} disabled={!ci24}
+                onChange={e => { setCo24(e.target.value); setEditError(""); }}
+              />
             </div>
-          ) : (
-            <div className="adm-times">
-              <span
-                className="adm-time-in"
-                style={arrColor ? { color: arrColor } as React.CSSProperties : undefined}
-              >
-                {CHECKIN_SVG}
-                <span className={emp.checkIn ? "" : "adm-time-placeholder"}>{displayIn}</span>
-              </span>
-              <span
-                className="adm-time-out"
-                style={depColor ? { color: depColor } as React.CSSProperties : undefined}
-              >
-                {CHECKOUT_SVG}
-                <span className={emp.checkOut ? "" : "adm-time-placeholder"}>{displayOut}</span>
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="adm-card-right">
-        <button
-          className={`adm-info-btn${isEditing ? " adm-info-btn-confirm" : ""}`}
-          aria-label={isEditing ? "Confirm" : "Info"}
-          onClick={isEditing ? handleInlineSave : undefined}
-        >
-          {isEditing ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-            </svg>
-          )}
-        </button>
-        <div className="adm-bars">
-          <div className="adm-bar-row">
-            <div className="adm-bar-labels"><span>ATT</span><span>{emp.att}%</span></div>
-            <ProgressBar value={emp.att} color="#E5E2E1" glow="rgba(229,226,225,0.3)" />
           </div>
-          <div className="adm-bar-row">
-            <div className="adm-bar-labels"><span>PERF</span><span>{emp.perf}%</span></div>
-            <ProgressBar value={emp.perf} color="#D4AF37" glow="rgba(212,175,55,0.4)" />
+          {editError && <p className="adm-inline-error">{editError}</p>}
+        </div>
+      )}
+
+      <div className="adm-card-row">
+        <div className="adm-card-left">
+          <div className="adm-avatar-wrap">
+            <AvatarImg emp={emp} />
+            <span
+              className={`adm-dot${shouldPulse ? " adm-dot-pulse" : ""}`}
+              style={dotColor
+                ? { background: dotColor, boxShadow: `0 0 6px ${dotColor}99` } as React.CSSProperties
+                : { background: "rgba(148,163,184,0.22)" }
+              }
+            />
+          </div>
+
+          <div className="adm-card-info">
+            <h3 className="adm-card-name">{emp.name}</h3>
+            <p className="adm-card-role">{emp.role}</p>
+            <p className="adm-card-salary">
+              {emp.salary}
+              {isHalf && <span className="adm-half-badge"><span className="adm-half-badge-frac">½</span> Day</span>}
+            </p>
+
+            {!isEditing && (isLeave ? (
+              <div className="adm-status-label" style={{ color: STATUS_COLOR[status]! } as React.CSSProperties}>
+                {STATUS_LABEL[status]}
+              </div>
+            ) : (
+              <div className="adm-times">
+                <span className="adm-time-in" style={arrColor ? { color: arrColor } as React.CSSProperties : undefined}>
+                  {CHECKIN_SVG}
+                  <span className={emp.checkIn ? "" : "adm-time-placeholder"}>{displayIn}</span>
+                </span>
+                <span className="adm-time-out" style={depColor ? { color: depColor } as React.CSSProperties : undefined}>
+                  {CHECKOUT_SVG}
+                  <span className={emp.checkOut ? "" : "adm-time-placeholder"}>{displayOut}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="adm-card-right">
+          <button
+            className={`adm-info-btn${isEditing ? " adm-info-btn-confirm" : ""}`}
+            aria-label={isEditing ? "Confirm" : "Info"}
+            onClick={isEditing ? handleInlineSave : undefined}
+          >
+            {isEditing ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            )}
+          </button>
+          <div className="adm-bars">
+            <div className="adm-bar-row">
+              <div className="adm-bar-labels"><span>ATT</span><span>{emp.att}%</span></div>
+              <ProgressBar value={emp.att} color="#E5E2E1" glow="rgba(229,226,225,0.3)" />
+            </div>
+            <div className="adm-bar-row">
+              <div className="adm-bar-labels"><span>PERF</span><span>{emp.perf}%</span></div>
+              <ProgressBar value={emp.perf} color="#D4AF37" glow="rgba(212,175,55,0.4)" />
+            </div>
           </div>
         </div>
       </div>
@@ -823,6 +821,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               {filtered.map((emp, i) => (
                 <EmployeeCard key={emp.id} emp={emp} idx={i} {...sharedCardProps}
                   isEditing={editingId === emp.id}
+                  isDimmed={editingId !== null && editingId !== emp.id}
                   onEditSave={handleEditSave}
                 />
               ))}
