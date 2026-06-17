@@ -1479,6 +1479,24 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   color: rgba(255,255,255,.25);
 }
 
+/* Half-day inline badge (next to salary) */
+.adm-half-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: #14B8A6;
+  background: rgba(20,184,166,.14);
+  border: 1px solid rgba(20,184,166,.30);
+  vertical-align: middle;
+  line-height: 1.6;
+}
+
 /* Card right */
 .adm-card-right {
   display: flex;

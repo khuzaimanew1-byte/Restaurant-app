@@ -248,8 +248,9 @@ function EmployeeCard({
   const isHalf  = status === "half-day";
 
   // Independent time colors — each slot gets its own status color
+  // Half-day: check-in = teal (half-day), check-out = purple (early departure aspect)
   const arrColor = isHalf ? "#14B8A6" : (emp.leaveStatus ? null : getArrivalColor(emp, timing));
-  const depColor = isHalf ? "#14B8A6" : (emp.leaveStatus ? null : getDepartureColor(emp, timing));
+  const depColor = isHalf ? "#A78BFA" : (emp.leaveStatus ? null : getDepartureColor(emp, timing));
 
   // Dot color: checkout status takes priority when checkout exists; else arrival drives it
   let dotColor: string | null;
@@ -313,7 +314,10 @@ function EmployeeCard({
         <div className="adm-card-info">
           <h3 className="adm-card-name">{emp.name}</h3>
           <p className="adm-card-role">{emp.role}</p>
-          <p className="adm-card-salary">{emp.salary}</p>
+          <p className="adm-card-salary">
+            {emp.salary}
+            {isHalf && <span className="adm-half-badge">½ Day</span>}
+          </p>
 
           {/* Leave states: label only, no times */}
           {isLeave ? (
