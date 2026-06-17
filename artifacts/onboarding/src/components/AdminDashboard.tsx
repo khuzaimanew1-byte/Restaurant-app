@@ -16,7 +16,6 @@ interface Employee {
 
 interface OfficeTiming { start: string; end: string; }
 interface CtxMenu     { empId: number; x: number; y: number; }
-interface EditState   { empId: number; checkIn: string; checkOut: string; }
 
 // ── Status maps ────────────────────────────────────────────────────────────
 
@@ -238,15 +237,37 @@ const CHECKOUT_SVG = (
 );
 
 function EmployeeCard({
-  emp, idx, timing, onCtxMenu, onLongPress,
+  emp, idx, timing, isEditing, onCtxMenu, onLongPress, onEditSave, onEditCancel,
 }: {
   emp: Employee; idx: number; timing: OfficeTiming;
+  isEditing: boolean;
   onCtxMenu: (id: number, x: number, y: number) => void;
   onLongPress: (id: number, x: number, y: number) => void;
+  onEditSave: (id: number, ci: string, co: string) => void;
+  onEditCancel: () => void;
 }) {
   const status  = getDisplayStatus(emp, timing);
   const isLeave = status === "leave" || status === "unauthorized-leave";
   const isHalf  = status === "half-day";
+
+  // Inline edit local state
+  const [ci24,      setCi24]      = useState("");
+  const [co24,      setCo24]      = useState("");
+  const [editError, setEditError] = useState("");
+
+  useEffect(() => {
+    if (isEditing) {
+      setCi24(to24h(emp.checkIn));
+      setCo24(to24h(emp.checkOut));
+      setEditError("");
+    }
+  }, [isEditing, emp.checkIn, emp.checkOut]);
+
+  function handleInlineSave() {
+    if (co24 && !ci24) { setEditError("Check-in required first"); return; }
+    if (ci24 && co24 && co24 <= ci24) { setEditError("Check-out must be after check-in"); return; }
+    onEditSave(emp.id, to12h(ci24), to12h(co24));
+  }
 
   // Independent time colors — each slot gets its own status color
   // Half-day: check-in no color (arrived normally), check-out purple (early departure)
@@ -287,18 +308,19 @@ function EmployeeCard({
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
+    if (isEditing) return;
     e.preventDefault();
     onCtxMenu(emp.id, e.clientX, e.clientY);
   };
 
   return (
     <div
-      className={`adm-card${isLeave ? " adm-card-absent" : ""}`}
+      className={`adm-card${isLeave ? " adm-card-absent" : ""}${isEditing ? " adm-card-editing" : ""}`}
       style={{ animationDelay: `${idx * 70}ms` } as React.CSSProperties}
       onContextMenu={handleContextMenu}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={clearTimer}
-      onTouchMove={clearTimer}
+      onTouchStart={isEditing ? undefined : handleTouchStart}
+      onTouchEnd={isEditing ? undefined : clearTimer}
+      onTouchMove={isEditing ? undefined : clearTimer}
     >
       <div className="adm-card-left">
         <div className="adm-avatar-wrap">
@@ -320,31 +342,55 @@ function EmployeeCard({
             {isHalf && <span className="adm-half-badge"><span className="adm-half-badge-frac">½</span> Day</span>}
           </p>
 
-          {/* Leave states: label only, no times */}
-          {isLeave ? (
+          {/* Inline edit mode */}
+          {isEditing ? (
+            <div className="adm-inline-edit">
+              <div className="adm-inline-time-row">
+                <div className="adm-inline-field">
+                  {CHECKIN_SVG}
+                  <input
+                    className="adm-inline-input"
+                    type="time" value={ci24}
+                    onChange={e => { setCi24(e.target.value); setEditError(""); }}
+                    autoFocus
+                  />
+                </div>
+                <div className="adm-inline-field">
+                  {CHECKOUT_SVG}
+                  <input
+                    className={`adm-inline-input${!ci24 ? " adm-inline-input-disabled" : ""}`}
+                    type="time" value={co24} disabled={!ci24}
+                    onChange={e => { setCo24(e.target.value); setEditError(""); }}
+                  />
+                </div>
+              </div>
+              {editError && <p className="adm-inline-error">{editError}</p>}
+              <div className="adm-inline-actions">
+                <button className="adm-inline-cancel" onClick={onEditCancel}>Cancel</button>
+                <button className="adm-inline-save"   onClick={handleInlineSave}>Save</button>
+              </div>
+            </div>
+          ) : isLeave ? (
             <div className="adm-status-label" style={{ color: STATUS_COLOR[status]! } as React.CSSProperties}>
               {STATUS_LABEL[status]}
             </div>
           ) : (
-            <>
-              {/* Both time slots — always visible, --:-- when not yet recorded */}
-              <div className="adm-times">
-                <span
-                  className="adm-time-in"
-                  style={arrColor ? { color: arrColor } as React.CSSProperties : undefined}
-                >
-                  {CHECKIN_SVG}
-                  <span className={emp.checkIn ? "" : "adm-time-placeholder"}>{displayIn}</span>
-                </span>
-                <span
-                  className="adm-time-out"
-                  style={depColor ? { color: depColor } as React.CSSProperties : undefined}
-                >
-                  {CHECKOUT_SVG}
-                  <span className={emp.checkOut ? "" : "adm-time-placeholder"}>{displayOut}</span>
-                </span>
-              </div>
-            </>
+            <div className="adm-times">
+              <span
+                className="adm-time-in"
+                style={arrColor ? { color: arrColor } as React.CSSProperties : undefined}
+              >
+                {CHECKIN_SVG}
+                <span className={emp.checkIn ? "" : "adm-time-placeholder"}>{displayIn}</span>
+              </span>
+              <span
+                className="adm-time-out"
+                style={depColor ? { color: depColor } as React.CSSProperties : undefined}
+              >
+                {CHECKOUT_SVG}
+                <span className={emp.checkOut ? "" : "adm-time-placeholder"}>{displayOut}</span>
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -449,68 +495,6 @@ function ContextMenu({
           <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20V2z" fill="currentColor" stroke="none"/>
         </svg>
       ), () => { onAction(ctx.empId, "half-day"); onClose(); }, "#14B8A6", !halfOk, emp.leaveStatus === "half-day")}
-    </div>
-  );
-}
-
-function EditModal({
-  state, employees, onSave, onClose,
-}: {
-  state: EditState; employees: Employee[];
-  onSave: (id: number, ci: string, co: string) => void;
-  onClose: () => void;
-}) {
-  const emp = employees.find(e => e.id === state.empId)!;
-  // Store as 24h strings for <input type="time">; convert display times on open
-  const [ci24, setCi24] = useState(to24h(state.checkIn));
-  const [co24, setCo24] = useState(to24h(state.checkOut));
-  const [error, setError] = useState("");
-
-  function handleSave() {
-    if (co24 && !ci24) { setError("Check-in is required before check-out"); return; }
-    if (ci24 && co24 && co24 <= ci24) { setError("Check-out must be after check-in"); return; }
-    onSave(state.empId, to12h(ci24), to12h(co24));
-    onClose();
-  }
-
-  return (
-    <div className="adm-modal-overlay" onClick={onClose}>
-      <div className="adm-modal adm-edit-modal" onClick={e => e.stopPropagation()}>
-        <div className="adm-modal-icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </div>
-        <h3 className="adm-modal-title">Edit Attendance</h3>
-        <p className="adm-modal-body">{emp.name} · {emp.role}</p>
-        <div className="adm-edit-fields">
-          <div className="adm-edit-field">
-            <label className="adm-edit-label">Check-in</label>
-            <input
-              className="adm-edit-input adm-edit-input-time"
-              type="time"
-              value={ci24}
-              onChange={e => { setCi24(e.target.value); setError(""); }}
-            />
-          </div>
-          <div className="adm-edit-field">
-            <label className="adm-edit-label">Check-out</label>
-            <input
-              className={`adm-edit-input adm-edit-input-time${!ci24 ? " adm-edit-input-disabled" : ""}`}
-              type="time"
-              value={co24}
-              onChange={e => { setCo24(e.target.value); setError(""); }}
-              disabled={!ci24}
-            />
-          </div>
-        </div>
-        {error && <p className="adm-edit-error">{error}</p>}
-        <div className="adm-modal-actions">
-          <button className="adm-modal-cancel"  onClick={onClose}>Cancel</button>
-          <button className="adm-modal-confirm" onClick={handleSave}>Save</button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -657,7 +641,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
   const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
-  const [editModal,      setEditModal]      = useState<EditState | null>(null);
+  const [editingId,      setEditingId]      = useState<number | null>(null);
 
   const searchRef         = useRef<HTMLInputElement>(null);
   const desktopDropdownRef = useRef<HTMLDivElement>(null);
