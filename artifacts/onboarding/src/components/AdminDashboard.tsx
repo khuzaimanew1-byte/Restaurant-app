@@ -187,37 +187,37 @@ function Highlight({ text, query = "" }: { text: string; query?: string }) {
 
 const INITIAL_EMPLOYEES: Employee[] = [
   {
-    id: 1, name: "Alex Rivera", role: "Senior Developer", salary: "$4,500/mo",
+    id: 1, name: "Alex Rivera", role: "Senior Developer", salary: "$4,500",
     checkIn: "09:15 AM", checkOut: "", leaveStatus: null, att: 80, perf: 60,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuD1bgJ9ObEX7Vmu2iodeu7ANsiyGaq3QqIV4cWRXrFs7iNvfixN5Pi1Bd0quN2nwqIw47xRZYRE_WzrWhIpY95KrALTGanCnM79dPhYaNbEntw6yMmqhc9yPEQMeBjjQL83NbIEAJdYjx18JZ_I7VSjZ2Rocv6HMa4IZ4yZdzdiCaRFiW5bxwaFqVEJSHL1CiynOn7vyhIM7-bWKBHQ13pcg-OGh7iAVXOyZkHm8muL1o5y52Qi9RRVShyLSHtedEfxYYYqjvqGnHMJ",
     initials: "AR", color: "#3B5BDB",
   },
   {
-    id: 2, name: "Sarah Chen", role: "UX Designer", salary: "$5,200/mo",
+    id: 2, name: "Sarah Chen", role: "UX Designer", salary: "$5,200",
     checkIn: "07:50 AM", checkOut: "04:30 PM", leaveStatus: null, att: 80, perf: 80,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBn9FUaoKfhISyk0i7541LCL_Wne8GVJqIZ5Kh4R4-k1T2CNR9nrJseDhLdCVFn0IVlGMCi3ObqXLAW1heQFm2c3UAy58EAoLwiIvUyFxWlz0MnUYbGctN9HdTwRXf0JXR5U-IMcikQ6OzWsuSLyz8xCd74xF4ZOlicwh4v0K4Wntug0_hOAQg190FMP14qIg74oI478NPbXIiNLNjMhaIrWFNdZrVKsLWc7eTn_715wWnZK8ESsznSD5kJOA_BmCV3zQcCgm1s5-S5r",
     initials: "SC", color: "#E64980",
   },
   {
-    id: 3, name: "James Wilson", role: "Product Manager", salary: "$8,000/mo",
+    id: 3, name: "James Wilson", role: "Product Manager", salary: "$8,000",
     checkIn: "07:55 AM", checkOut: "06:20 PM", leaveStatus: null, att: 80, perf: 60,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDGR-7KzB18GmbpFkcXIIJMyEUWFY775MUOd3in9mdiC64fEbW2izZElN0zMWzbAIMH_NbyLfMBMSbHw9m2538zMnueCnlKR0jPgxCp1uo9XxImLja5La8-39M4tkLlG4qH0R_wKpN1p-GDAFAugZCssgOZi2wTYqSfw3feLrw21TKm4rFZPPGWzQRyt6qt6cHUcnXNo5WvVJdiov02YET-3LvBWRQzTe3eu4wG-XzRXj1rfZ6xxMjaoyVN_XrVjQVLTPfhNp7ovBw6",
     initials: "JW", color: "#7048E8",
   },
   {
-    id: 4, name: "Elena Rodriguez", role: "Data Analyst", salary: "$3,300/mo",
+    id: 4, name: "Elena Rodriguez", role: "Data Analyst", salary: "$3,300",
     checkIn: "", checkOut: "", leaveStatus: "leave", att: 90, perf: 80,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDXVk__1uWGE-_CAuEpIOAUKhi20HsF9WuN6Qx7TL9YYdcJVifaE1Jc_jTe-zfvjWK6DYPwnbK17Wikld6ZBfkESaJ_7FS3OQdmeM-mQgsmySemoJrnvtmCU7jz-XIdRCCIiPVRUvxEwVOP6MFN8q1Z26T5LgcEa8cl24Y48c7cblxVTXtI651wkF7h6ePBkaFDUdtMgDNPdPOc3IM4_3p9rLjIKyoyt6Tgz1_G49HYO9UwrDN9QJkykxr26tYr4Z7HtBles9yVUY4x",
     initials: "ER", color: "#2B8A3E",
   },
   {
-    id: 5, name: "Michael Chang", role: "Sous Chef", salary: "$4,800/mo",
+    id: 5, name: "Michael Chang", role: "Sous Chef", salary: "$4,800",
     checkIn: "", checkOut: "", leaveStatus: "unauthorized-leave", att: 95, perf: 85,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDLTNppDitBL-LUEeaxBCqc0mH7i9QNK5oXjv0WIk341piN1t1jbHb_IiDU04tNJXpFJovS2b8M761eF09xTFFthfLHinU7eKP65ofovLvikYSEaSPFseO02sWYQYARhRoo15vG0yN0jewg5gcaa4fxf_-cBnElNRwmC-4YfqjKa4FVucFFkp18q_EIMojqUWDtPykXs7ZeaGL_RSlhAx2Jywp_otPpLFm3B-H1sXV4W6-Cc3RxMQQeW07COmY1OMZQf-BYyLCBrNKo",
     initials: "MC", color: "#C92A2A",
   },
   {
-    id: 6, name: "Olivia Smith", role: "Restaurant Manager", salary: "$6,000/mo",
+    id: 6, name: "Olivia Smith", role: "Restaurant Manager", salary: "$6,000",
     checkIn: "07:30 AM", checkOut: "06:30 PM", leaveStatus: null, att: 100, perf: 90,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBn9FUaoKfhISyk0i7541LCL_Wne8GVJqIZ5Kh4R4-k1T2CNR9nrJseDhLdCVFn0IVlGMCi3ObqXLAW1heQFm2c3UAy58EAoLwiIvUyFxWlz0MnUYbGctN9HdTwRXf0JXR5U-IMcikQ6OzWsuSLyz8xCd74xF4ZOlicwh4v0K4Wntug0_hOAQg190FMP14qIg74oI478NPbXIiNLNjMhaIrWFNdZrVKsLWc7eTn_715wWnZK8ESsznSD5kJOA_BmCV3zQcCgm1s5-S5r",
     initials: "OS", color: "#1098AD",
