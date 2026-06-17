@@ -1483,23 +1483,44 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .adm-half-badge {
   display: inline-flex;
   align-items: center;
-  gap: 1px;
-  margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.35);
-  background: rgba(20,184,166,.10);
-  border: 1px solid rgba(20,184,166,.25);
+  gap: 2px;
+  margin-left: 7px;
+  padding: 2px 7px 2px 5px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: rgba(255,255,255,.40);
+  background: rgba(20,184,166,.08);
+  border: 1px solid rgba(20,184,166,.22);
   vertical-align: middle;
-  line-height: 1.6;
+  line-height: 1.5;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
 }
 .adm-half-badge-frac {
+  font-size: 12px;
+  font-weight: 700;
   color: #14B8A6;
+  line-height: 1;
 }
+
+/* Info button (top-right of card) */
+.adm-info-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: var(--adm-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 180ms ease, transform 120ms cubic-bezier(.22,1,.36,1);
+}
+.adm-info-btn:hover { color: rgba(255,255,255,.75); }
+.adm-info-btn:active { transform: scale(.82); }
 
 /* Card right */
 .adm-card-right {
