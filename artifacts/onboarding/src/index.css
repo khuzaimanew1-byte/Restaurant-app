@@ -1099,7 +1099,11 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   border-color: rgba(20,184,166,.30);
   background: rgba(20,184,166,.08);
 }
-.adm-desktop-chip-push-right { margin-left: auto; }
+.adm-desktop-stats-total {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--adm-text-dim);
+}
 
 .adm-header-right { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
 
@@ -1329,10 +1333,10 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   align-items: center;
   justify-content: space-between;
 }
-.adm-mobile-dateline-right {
+.adm-mobile-chips-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
 }
 .adm-mobile-date {
   font-size: 17px; font-weight: 500;

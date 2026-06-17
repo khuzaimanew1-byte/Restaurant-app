@@ -747,7 +747,6 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           <div className="adm-header-left">
             <div className="adm-header-date-row">
               <h2 className="adm-header-date">{today}</h2>
-              <span className="adm-header-total">Total: {totalCount}</span>
             </div>
           </div>
           <div className="adm-header-right">
@@ -812,26 +811,27 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           </div>
         </header>
 
-        {/* Desktop stats bar — below header */}
+        {/* Desktop stats bar — below header: pills left, Total right */}
         <div className="adm-desktop-stats">
           <span className="adm-desktop-chip adm-desktop-chip-present">Present: {presentCount}</span>
           {halfDayCount > 0 && (
-            <span className="adm-desktop-chip adm-desktop-chip-half adm-desktop-chip-push-right">Half Day: {halfDayCount}</span>
+            <span className="adm-desktop-chip adm-desktop-chip-half">Half Day: {halfDayCount}</span>
           )}
+          <span className="adm-desktop-stats-total">Total: {totalCount}</span>
         </div>
 
-        {/* Mobile stats row */}
+        {/* Mobile stats row: date + Total on top, Present left / Half Day right */}
         <div className="adm-mobile-stats">
           <div className="adm-mobile-dateline">
             <h2 className="adm-mobile-date">{today}</h2>
-            <div className="adm-mobile-dateline-right">
-              {halfDayCount > 0 && (
-                <span className="adm-mobile-chip adm-mobile-chip-half">Half Day: {halfDayCount}</span>
-              )}
-              <span className="adm-mobile-total">Total: {totalCount}</span>
-            </div>
+            <span className="adm-mobile-total">Total: {totalCount}</span>
           </div>
-          <span className="adm-mobile-chip">Present: {presentCount}</span>
+          <div className="adm-mobile-chips-row">
+            <span className="adm-mobile-chip">Present: {presentCount}</span>
+            {halfDayCount > 0 && (
+              <span className="adm-mobile-chip adm-mobile-chip-half">Half Day: {halfDayCount}</span>
+            )}
+          </div>
         </div>
 
         {/* ── Content area ── */}
