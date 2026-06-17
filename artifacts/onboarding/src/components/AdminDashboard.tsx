@@ -14,9 +14,8 @@ interface Employee {
   att: number; perf: number; avatar: string; initials: string; color: string;
 }
 
-interface OfficeTiming   { start: string; end: string; }
-interface CtxMenu        { empId: number; x: number; y: number; }
-interface EditModalState { empId: number; checkIn: string; checkOut: string; }
+interface OfficeTiming { start: string; end: string; }
+interface CtxMenu     { empId: number; x: number; y: number; }
 
 // ── Status maps ────────────────────────────────────────────────────────────
 
@@ -238,14 +237,13 @@ const CHECKOUT_SVG = (
 );
 
 function EmployeeCard({
-  emp, idx, timing, isEditing, onCtxMenu, onLongPress, onEditSave, onEditCancel,
+  emp, idx, timing, isEditing, onCtxMenu, onLongPress, onEditSave,
 }: {
   emp: Employee; idx: number; timing: OfficeTiming;
   isEditing: boolean;
   onCtxMenu: (id: number, x: number, y: number) => void;
   onLongPress: (id: number, x: number, y: number) => void;
   onEditSave: (id: number, ci: string, co: string) => void;
-  onEditCancel: () => void;
 }) {
   const status  = getDisplayStatus(emp, timing);
   const isLeave = status === "leave" || status === "unauthorized-leave";
@@ -309,7 +307,6 @@ function EmployeeCard({
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
-    if (isEditing) return;
     e.preventDefault();
     onCtxMenu(emp.id, e.clientX, e.clientY);
   };
@@ -366,10 +363,6 @@ function EmployeeCard({
                 </div>
               </div>
               {editError && <p className="adm-inline-error">{editError}</p>}
-              <div className="adm-inline-actions">
-                <button className="adm-inline-cancel" onClick={onEditCancel}>Cancel</button>
-                <button className="adm-inline-save"   onClick={handleInlineSave}>Save</button>
-              </div>
             </div>
           ) : isLeave ? (
             <div className="adm-status-label" style={{ color: STATUS_COLOR[status]! } as React.CSSProperties}>
@@ -397,10 +390,20 @@ function EmployeeCard({
       </div>
 
       <div className="adm-card-right">
-        <button className="adm-info-btn" aria-label="Info">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-          </svg>
+        <button
+          className={`adm-info-btn${isEditing ? " adm-info-btn-confirm" : ""}`}
+          aria-label={isEditing ? "Confirm" : "Info"}
+          onClick={isEditing ? handleInlineSave : undefined}
+        >
+          {isEditing ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          )}
         </button>
         <div className={`adm-bars${isLeave ? " adm-bars-muted" : ""}`}>
           <div className="adm-bar-row">
@@ -608,53 +611,6 @@ function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel:
   );
 }
 
-function EditModal({ state, employees, onSave, onClose }: {
-  state: EditModalState;
-  employees: Employee[];
-  onSave: (id: number, ci: string, co: string) => void;
-  onClose: () => void;
-}) {
-  const emp = employees.find(e => e.id === state.empId);
-  const [ci, setCi] = useState(to24h(state.checkIn));
-  const [co, setCo] = useState(to24h(state.checkOut));
-
-  const handleSave = () => {
-    onSave(state.empId, to12h(ci), to12h(co));
-    onClose();
-  };
-
-  return (
-    <div className="adm-modal-overlay" onClick={onClose}>
-      <div className="adm-modal" onClick={e => e.stopPropagation()}>
-        <div className="adm-modal-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </div>
-        <h3 className="adm-modal-title">Edit Attendance</h3>
-        <p className="adm-modal-body">{emp?.name ?? "Employee"}</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", marginBottom: "4px" }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", color: "var(--text-sub, #94A3B8)", textAlign: "left" }}>
-            Check-in
-            <input type="time" value={ci} onChange={e => setCi(e.target.value)}
-              style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "10px", padding: "10px 12px", color: "var(--text, #F1F5F9)", fontSize: "15px", outline: "none", width: "100%", boxSizing: "border-box" as React.CSSProperties["boxSizing"] }} />
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px", color: "var(--text-sub, #94A3B8)", textAlign: "left" }}>
-            Check-out
-            <input type="time" value={co} onChange={e => setCo(e.target.value)}
-              style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "10px", padding: "10px 12px", color: "var(--text, #F1F5F9)", fontSize: "15px", outline: "none", width: "100%", boxSizing: "border-box" as React.CSSProperties["boxSizing"] }} />
-          </label>
-        </div>
-        <div className="adm-modal-actions">
-          <button className="adm-modal-cancel" onClick={onClose}>Cancel</button>
-          <button className="adm-modal-confirm" onClick={handleSave}>Save</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function AvatarDropdown({ onLogoutRequest, onClose }: { onLogoutRequest: () => void; onClose: () => void }) {
   return (
     <div className="adm-avatar-dropdown">
@@ -688,7 +644,6 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [mobileSearchOpen, setMobileSearch] = useState(false);
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
-  const [editModal,      setEditModal]      = useState<EditModalState | null>(null);
   const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
   const [editingId,      setEditingId]      = useState<number | null>(null);
 
@@ -725,21 +680,22 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus) => {
     if (action === "edit") {
-      const emp = employees.find(e => e.id === empId)!;
-      setEditModal({ empId, checkIn: emp.checkIn, checkOut: emp.checkOut });
+      setEditingId(prev => prev === empId ? null : empId);
     } else {
+      setEditingId(null);
       setEmployees(prev => prev.map(e => {
         if (e.id !== empId) return e;
         const clearTimes = action === "leave" || action === "unauthorized-leave";
         return { ...e, leaveStatus: action, checkIn: clearTimes ? "" : e.checkIn, checkOut: clearTimes ? "" : e.checkOut };
       }));
     }
-  }, [employees]);
+  }, []);
 
   const handleEditSave = useCallback((id: number, ci: string, co: string) => {
     setEmployees(prev => prev.map(e =>
       e.id === id ? { ...e, checkIn: ci, checkOut: co, leaveStatus: null } : e
     ));
+    setEditingId(null);
   }, []);
 
   const sharedCardProps = {
@@ -865,7 +821,10 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           ) : (
             <div className="adm-grid">
               {filtered.map((emp, i) => (
-                <EmployeeCard key={emp.id} emp={emp} idx={i} {...sharedCardProps} />
+                <EmployeeCard key={emp.id} emp={emp} idx={i} {...sharedCardProps}
+                  isEditing={editingId === emp.id}
+                  onEditSave={handleEditSave}
+                />
               ))}
             </div>
           )}
@@ -900,14 +859,6 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         <ContextMenu
           ctx={ctxMenu} employees={employees} timing={officeTiming}
           onAction={handleCtxAction} onClose={() => setCtxMenu(null)}
-        />
-      )}
-
-      {/* Edit attendance modal */}
-      {editModal && (
-        <EditModal
-          state={editModal} employees={employees}
-          onSave={handleEditSave} onClose={() => setEditModal(null)}
         />
       )}
 
