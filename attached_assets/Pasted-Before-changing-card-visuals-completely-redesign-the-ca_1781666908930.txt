@@ -1,0 +1,454 @@
+Before changing card visuals, completely redesign the card state system.
+
+The current implementation mixes arrival status, departure status, leave status, and attendance metrics inside the same visual layer, creating overlapping conditions and weak hierarchy.
+
+Create a proper status-priority architecture first.
+
+==================================================
+TIME & LEAVE PAGE
+=================
+
+Rename page:
+
+Leave
+→
+Time & Leave
+
+At the top of the page display only:
+
+Office Timing
+08:00 AM – 06:00 PM
+
+This section must be editable.
+
+No widgets, stats, counters, charts, summaries, or additional sections above it.
+
+Office Timing acts as the global attendance rule.
+
+==================================================
+CARD STATUS SYSTEM
+==================
+
+A card can contain:
+
+* Arrival Status
+* Departure Status
+* Leave Status
+
+These are separate systems.
+
+Do not mix them.
+
+Only the highest-priority state may be visually displayed.
+
+==================================================
+ARRIVAL STATUS RULES
+====================
+
+Arrival status is evaluated only when Check-in exists.
+
+If Check-in is empty:
+
+No arrival status exists.
+
+Arrival states:
+
+1. Arrival
+2. Late Arrival
+
+Arrival combines:
+
+* Early Arrival
+* On-Time Arrival
+
+Do not create separate Early Arrival or On-Time Arrival states.
+
+Arrival:
+
+Dot Color:
+Green (#22C55E)
+
+Check-in Time Color:
+Green (#22C55E)
+
+Late Arrival:
+
+Dot Color:
+Amber (#F59E0B)
+
+Check-in Time Color:
+Amber (#F59E0B)
+
+Check-in time color must always match arrival status color.
+
+==================================================
+DEPARTURE STATUS RULES
+======================
+
+Departure status must never be evaluated until Checkout exists.
+
+If Checkout is empty:
+
+No departure status exists.
+
+Departure states:
+
+1. Early Departure
+2. Normal Departure
+
+Early Departure:
+
+Dot Color:
+Purple (#A78BFA)
+
+Check-out Time Color:
+Purple (#A78BFA)
+
+Normal Departure:
+
+No status color.
+
+Check-out time uses default text color.
+
+==================================================
+LEAVE STATES
+============
+
+Leave states override attendance states.
+
+Possible leave states:
+
+1. Leave
+2. Unauthorized Leave
+3. Half Day
+
+Leave:
+
+Dot Color:
+Muted Gray (#94A3B8)
+
+Label Color:
+Muted Gray (#94A3B8)
+
+Unauthorized Leave:
+
+Dot Color:
+Coral Red (#FF5A5F)
+
+Label Color:
+Coral Red (#FF5A5F)
+
+Half Day:
+
+Dot Color:
+Teal (#14B8A6)
+
+Label Color:
+Teal (#14B8A6)
+
+Check-in Time Color:
+Teal (#14B8A6)
+
+Check-out Time Color:
+Teal (#14B8A6)
+
+Remove all Half Day badges.
+
+Half Day must rely only on its status color and label.
+
+==================================================
+STATUS COLOR SYNCHRONIZATION
+============================
+
+Status color must always be applied consistently.
+
+Whenever a status is active:
+
+* Status Dot
+* Status Label
+* Check-in Time
+* Check-out Time
+
+must visually follow the active status color whenever those elements exist.
+
+Examples:
+
+Arrival
+
+Green Dot
+Green Check-in Time
+
+Late Arrival
+
+Amber Dot
+Amber Check-in Time
+
+Early Departure
+
+Purple Dot
+Purple Check-out Time
+
+Leave
+
+Gray Dot
+Gray Label
+
+Unauthorized Leave
+
+Coral Red Dot
+Coral Red Label
+
+Half Day
+
+Teal Dot
+Teal Label
+Teal Check-in Time
+Teal Check-out Time
+
+Never mix status colors with default colors when a status color exists.
+
+==================================================
+HALF DAY RULES
+==============
+
+Half Day is a controlled attendance state.
+
+Half Day option remains disabled unless:
+
+* Check-in exists
+* Check-out exists
+* Employee qualifies as Early Departure
+
+All three conditions must be true.
+
+Only then may Half Day be assigned.
+
+If employee does not qualify for Early Departure:
+
+Half Day option must remain disabled.
+
+Half Day may contain:
+
+* Check-in
+* Check-out
+
+Half Day is the only leave-related state allowed to coexist with attendance times.
+
+==================================================
+STATUS PRIORITY
+===============
+
+Display only one state.
+
+Never stack multiple states.
+
+Priority:
+
+Unauthorized Leave
+
+Leave
+
+Half Day
+
+Early Departure
+
+Late Arrival
+
+Arrival
+
+Normal
+
+==================================================
+ARRIVAL SORTING
+===============
+
+When displaying arrival cards:
+
+Top:
+
+Unauthorized Leave
+
+Then:
+
+Leave
+
+Then:
+
+Half Day
+
+Then:
+
+Late Arrival
+
+Then:
+
+Arrival
+
+Bottom:
+
+Normal
+
+==================================================
+DEPARTURE SORTING
+=================
+
+When displaying departure cards:
+
+Top:
+
+Unauthorized Leave
+
+Then:
+
+Leave
+
+Then:
+
+Half Day
+
+Then:
+
+Early Departure
+
+Then:
+
+Normal Departure
+
+Bottom:
+
+No Check-out
+
+==================================================
+DATA VALIDATION
+===============
+
+Check-out cannot exist before Check-in.
+
+User must enter Check-in first.
+
+Only after Check-in exists:
+
+Check-out becomes editable.
+
+Only after Check-out exists:
+
+Departure rules may be evaluated.
+
+Prevent all invalid attendance sequences.
+
+==================================================
+CARD VISUAL CLEANUP
+===================
+
+Remove all conflicting demo states.
+
+A card must never simultaneously display:
+
+Leave + Check-in
+
+Unauthorized Leave + Check-in
+
+Leave + Check-out
+
+Unauthorized Leave + Check-out
+
+unless explicitly supported by Half Day logic.
+
+==================================================
+CONTEXT MENU
+============
+
+Desktop:
+
+Right-click card
+→ Open context menu
+
+Mobile:
+
+Long press card (500–700ms)
+→ Open same context menu
+
+Normal tap must continue opening employee details.
+
+Menu Items:
+
+• Edit
+• Leave
+• Unauthorized Leave
+• Half Day
+
+==================================================
+EDIT ACTION
+===========
+
+Edit opens:
+
+* Check-in Time
+* Check-out Time
+
+User can modify both values.
+
+==================================================
+STATE ACTIONS
+=============
+
+Leave:
+
+Immediately convert employee to Leave state.
+
+Unauthorized Leave:
+
+Immediately convert employee to Unauthorized Leave state.
+
+Half Day:
+
+Only enabled when employee qualifies for Early Departure.
+
+When selected:
+
+Immediately convert employee to Half Day state.
+
+==================================================
+VISUAL REFINEMENT
+=================
+
+Keep the existing luxury restaurant styling.
+
+Employee identity remains the primary element.
+
+Status state becomes the strongest visual indicator.
+
+Attendance metrics become secondary.
+
+Prevent status colors from competing with performance bars.
+
+Performance bars must never use attendance-state colors.
+
+Status colors must always be more visually important than performance indicators.
+
+==================================================
+FINAL STATUS COLOR SYSTEM
+=========================
+
+Arrival
+Green (#22C55E)
+
+Late Arrival
+Amber (#F59E0B)
+
+Early Departure
+Purple (#A78BFA)
+
+Half Day
+Teal (#14B8A6)
+
+Leave
+Muted Gray (#94A3B8)
+
+Unauthorized Leave
+Coral Red (#FF5A5F)
+
+Normal Departure
+Default Text Color
+
+Use these colors consistently throughout the entire Time & Leave page.

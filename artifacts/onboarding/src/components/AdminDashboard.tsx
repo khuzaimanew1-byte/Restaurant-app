@@ -1,93 +1,160 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
-type Status = "in" | "out" | "late" | "leave" | "leave-denied";
+// ── Types ──────────────────────────────────────────────────────────────────
+
+type LeaveStatus = "leave" | "unauthorized-leave" | "half-day" | null;
+type DisplayStatus =
+  | "unauthorized-leave" | "leave" | "half-day"
+  | "early-departure" | "late-arrival" | "arrival" | "normal";
 type NavItem = "dashboard" | "leave" | "analytics" | "settings" | "notifications";
 
 interface Employee {
-  id: number;
-  name: string;
-  role: string;
-  salary: string;
-  checkIn: string;
-  checkOut: string;
-  status: Status;
-  att: number;
-  perf: number;
-  avatar: string;
-  initials: string;
-  color: string;
+  id: number; name: string; role: string; salary: string;
+  checkIn: string; checkOut: string; leaveStatus: LeaveStatus;
+  att: number; perf: number; avatar: string; initials: string; color: string;
 }
 
-const EMPLOYEES: Employee[] = [
+interface OfficeTiming { start: string; end: string; }
+interface CtxMenu     { empId: number; x: number; y: number; }
+interface EditState   { empId: number; checkIn: string; checkOut: string; }
+
+// ── Status maps ────────────────────────────────────────────────────────────
+
+const STATUS_COLOR: Record<DisplayStatus, string | null> = {
+  "unauthorized-leave": "#FF5A5F",
+  "leave":              "#94A3B8",
+  "half-day":           "#14B8A6",
+  "early-departure":    "#A78BFA",
+  "late-arrival":       "#F59E0B",
+  "arrival":            "#22C55E",
+  "normal":             null,
+};
+
+const STATUS_LABEL: Partial<Record<DisplayStatus, string>> = {
+  "unauthorized-leave": "Unauthorized Leave",
+  "leave":              "On Leave",
+  "half-day":           "Half Day",
+  "late-arrival":       "Late Arrival",
+};
+
+const STATUS_SORT: Record<DisplayStatus, number> = {
+  "unauthorized-leave": 0, "leave": 1, "half-day": 2,
+  "early-departure": 3, "late-arrival": 4, "arrival": 5, "normal": 6,
+};
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function parseTimeMins(t: string): number {
+  if (!t) return -1;
+  const m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return -1;
+  let h = parseInt(m[1]);
+  const min = parseInt(m[2]);
+  const p = m[3].toUpperCase();
+  if (p === "PM" && h !== 12) h += 12;
+  if (p === "AM" && h === 12) h = 0;
+  return h * 60 + min;
+}
+
+function getDisplayStatus(emp: Employee, timing: OfficeTiming): DisplayStatus {
+  if (emp.leaveStatus === "unauthorized-leave") return "unauthorized-leave";
+  if (emp.leaveStatus === "leave")              return "leave";
+  if (emp.leaveStatus === "half-day")           return "half-day";
+  const startM = parseTimeMins(timing.start);
+  const endM   = parseTimeMins(timing.end);
+  if (emp.checkOut) {
+    const outM = parseTimeMins(emp.checkOut);
+    if (outM !== -1 && outM < endM) return "early-departure";
+    if (emp.checkIn) {
+      const inM = parseTimeMins(emp.checkIn);
+      return (inM !== -1 && inM > startM) ? "late-arrival" : "arrival";
+    }
+    return "normal";
+  }
+  if (emp.checkIn) {
+    const inM = parseTimeMins(emp.checkIn);
+    return (inM !== -1 && inM > startM) ? "late-arrival" : "arrival";
+  }
+  return "normal";
+}
+
+function canAssignHalfDay(emp: Employee, timing: OfficeTiming): boolean {
+  if (!emp.checkIn || !emp.checkOut) return false;
+  const outM = parseTimeMins(emp.checkOut);
+  const endM = parseTimeMins(timing.end);
+  return outM !== -1 && endM !== -1 && outM < endM;
+}
+
+function sortedEmployees(emps: Employee[], timing: OfficeTiming): Employee[] {
+  return [...emps].sort((a, b) =>
+    STATUS_SORT[getDisplayStatus(a, timing)] - STATUS_SORT[getDisplayStatus(b, timing)]
+  );
+}
+
+function getTodayStr() {
+  const d = new Date();
+  const days   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+}
+
+// ── Seed data ──────────────────────────────────────────────────────────────
+
+const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: 1, name: "Alex Rivera", role: "Senior Developer", salary: "$4,500/mo",
-    checkIn: "08:45 AM", checkOut: "--:--", status: "in", att: 80, perf: 60,
+    checkIn: "09:15 AM", checkOut: "", leaveStatus: null, att: 80, perf: 60,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuD1bgJ9ObEX7Vmu2iodeu7ANsiyGaq3QqIV4cWRXrFs7iNvfixN5Pi1Bd0quN2nwqIw47xRZYRE_WzrWhIpY95KrALTGanCnM79dPhYaNbEntw6yMmqhc9yPEQMeBjjQL83NbIEAJdYjx18JZ_I7VSjZ2Rocv6HMa4IZ4yZdzdiCaRFiW5bxwaFqVEJSHL1CiynOn7vyhIM7-bWKBHQ13pcg-OGh7iAVXOyZkHm8muL1o5y52Qi9RRVShyLSHtedEfxYYYqjvqGnHMJ",
     initials: "AR", color: "#3B5BDB",
   },
   {
     id: 2, name: "Sarah Chen", role: "UX Designer", salary: "$5,200/mo",
-    checkIn: "09:00 AM", checkOut: "05:30 PM", status: "out", att: 80, perf: 80,
+    checkIn: "07:50 AM", checkOut: "04:30 PM", leaveStatus: null, att: 80, perf: 80,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBn9FUaoKfhISyk0i7541LCL_Wne8GVJqIZ5Kh4R4-k1T2CNR9nrJseDhLdCVFn0IVlGMCi3ObqXLAW1heQFm2c3UAy58EAoLwiIvUyFxWlz0MnUYbGctN9HdTwRXf0JXR5U-IMcikQ6OzWsuSLyz8xCd74xF4ZOlicwh4v0K4Wntug0_hOAQg190FMP14qIg74oI478NPbXIiNLNjMhaIrWFNdZrVKsLWc7eTn_715wWnZK8ESsznSD5kJOA_BmCV3zQcCgm1s5-S5r",
     initials: "SC", color: "#E64980",
   },
   {
     id: 3, name: "James Wilson", role: "Product Manager", salary: "$8,000/mo",
-    checkIn: "08:45 AM", checkOut: "--:--", status: "late", att: 80, perf: 60,
+    checkIn: "07:55 AM", checkOut: "06:20 PM", leaveStatus: null, att: 80, perf: 60,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDGR-7KzB18GmbpFkcXIIJMyEUWFY775MUOd3in9mdiC64fEbW2izZElN0zMWzbAIMH_NbyLfMBMSbHw9m2538zMnueCnlKR0jPgxCp1uo9XxImLja5La8-39M4tkLlG4qH0R_wKpN1p-GDAFAugZCssgOZi2wTYqSfw3feLrw21TKm4rFZPPGWzQRyt6qt6cHUcnXNo5WvVJdiov02YET-3LvBWRQzTe3eu4wG-XzRXj1rfZ6xxMjaoyVN_XrVjQVLTPfhNp7ovBw6",
     initials: "JW", color: "#7048E8",
   },
   {
     id: 4, name: "Elena Rodriguez", role: "Data Analyst", salary: "$3,300/mo",
-    checkIn: "--:--", checkOut: "--:--", status: "leave", att: 90, perf: 80,
+    checkIn: "", checkOut: "", leaveStatus: "leave", att: 90, perf: 80,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDXVk__1uWGE-_CAuEpIOAUKhi20HsF9WuN6Qx7TL9YYdcJVifaE1Jc_jTe-zfvjWK6DYPwnbK17Wikld6ZBfkESaJ_7FS3OQdmeM-mQgsmySemoJrnvtmCU7jz-XIdRCCIiPVRUvxEwVOP6MFN8q1Z26T5LgcEa8cl24Y48c7cblxVTXtI651wkF7h6ePBkaFDUdtMgDNPdPOc3IM4_3p9rLjIKyoyt6Tgz1_G49HYO9UwrDN9QJkykxr26tYr4Z7HtBles9yVUY4x",
     initials: "ER", color: "#2B8A3E",
   },
   {
     id: 5, name: "Michael Chang", role: "Sous Chef", salary: "$4,800/mo",
-    checkIn: "--:--", checkOut: "--:--", status: "leave-denied", att: 95, perf: 85,
+    checkIn: "", checkOut: "", leaveStatus: "unauthorized-leave", att: 95, perf: 85,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDLTNppDitBL-LUEeaxBCqc0mH7i9QNK5oXjv0WIk341piN1t1jbHb_IiDU04tNJXpFJovS2b8M761eF09xTFFthfLHinU7eKP65ofovLvikYSEaSPFseO02sWYQYARhRoo15vG0yN0jewg5gcaa4fxf_-cBnElNRwmC-4YfqjKa4FVucFFkp18q_EIMojqUWDtPykXs7ZeaGL_RSlhAx2Jywp_otPpLFm3B-H1sXV4W6-Cc3RxMQQeW07COmY1OMZQf-BYyLCBrNKo",
     initials: "MC", color: "#C92A2A",
   },
   {
     id: 6, name: "Olivia Smith", role: "Restaurant Manager", salary: "$6,000/mo",
-    checkIn: "07:30 AM", checkOut: "--:--", status: "in", att: 100, perf: 90,
+    checkIn: "07:30 AM", checkOut: "06:30 PM", leaveStatus: null, att: 100, perf: 90,
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBn9FUaoKfhISyk0i7541LCL_Wne8GVJqIZ5Kh4R4-k1T2CNR9nrJseDhLdCVFn0IVlGMCi3ObqXLAW1heQFm2c3UAy58EAoLwiIvUyFxWlz0MnUYbGctN9HdTwRXf0JXR5U-IMcikQ6OzWsuSLyz8xCd74xF4ZOlicwh4v0K4Wntug0_hOAQg190FMP14qIg74oI478NPbXIiNLNjMhaIrWFNdZrVKsLWc7eTn_715wWnZK8ESsznSD5kJOA_BmCV3zQcCgm1s5-S5r",
     initials: "OS", color: "#1098AD",
   },
 ];
 
 const NAV_ITEMS: { id: NavItem; label: string }[] = [
-  { id: "dashboard",     label: "Dashboard" },
-  { id: "leave",         label: "Leave" },
-  { id: "analytics",     label: "Analytics" },
-  { id: "settings",      label: "Settings" },
+  { id: "dashboard",  label: "Dashboard"    },
+  { id: "leave",      label: "Time & Leave" },
+  { id: "analytics",  label: "Analytics"    },
+  { id: "settings",   label: "Settings"     },
 ];
 
 const BOTTOM_NAV_ITEMS: { id: NavItem; label: string }[] = [
   { id: "dashboard",     label: "Dashboard" },
-  { id: "leave",         label: "Leave" },
-  { id: "notifications", label: "Alerts" },
+  { id: "leave",         label: "Time"      },
+  { id: "notifications", label: "Alerts"    },
   { id: "analytics",     label: "Analytics" },
-  { id: "settings",      label: "Settings" },
+  { id: "settings",      label: "Settings"  },
 ];
 
-function getTodayStr() {
-  const d = new Date();
-  const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
-}
-
-function getStatusDotClass(s: Status) {
-  switch (s) {
-    case "in":           return "adm-dot adm-dot-green adm-dot-pulse";
-    case "out":          return "adm-dot adm-dot-red";
-    case "late":         return "adm-dot adm-dot-orange";
-    case "leave":        return "adm-dot adm-dot-grey";
-    case "leave-denied": return "adm-dot adm-dot-red";
-  }
-}
+// ── Sub-components ─────────────────────────────────────────────────────────
 
 function AvatarImg({ emp }: { emp: Employee }) {
   const [failed, setFailed] = useState(false);
@@ -99,76 +166,141 @@ function AvatarImg({ emp }: { emp: Employee }) {
     );
   }
   return (
-    <img
-      src={emp.avatar}
-      alt={emp.name}
-      className="adm-avatar-img"
-      onError={() => setFailed(true)}
-    />
+    <img src={emp.avatar} alt={emp.name} className="adm-avatar-img"
+      onError={() => setFailed(true)} />
   );
 }
 
 function ProgressBar({ value, color, glow }: { value: number; color: string; glow: string }) {
   return (
     <div className="adm-progress-track">
-      <div
-        className="adm-progress-fill"
+      <div className="adm-progress-fill"
         style={{ width: `${value}%`, backgroundColor: color, boxShadow: `0 0 8px ${glow}` } as React.CSSProperties}
       />
     </div>
   );
 }
 
-function EmployeeCard({ emp, idx }: { emp: Employee; idx: number }) {
-  const isAbsent = emp.status === "leave" || emp.status === "leave-denied";
+function EmployeeCard({
+  emp, idx, timing, onCtxMenu, onLongPress,
+}: {
+  emp: Employee; idx: number; timing: OfficeTiming;
+  onCtxMenu: (id: number, x: number, y: number) => void;
+  onLongPress: (id: number, x: number, y: number) => void;
+}) {
+  const status   = getDisplayStatus(emp, timing);
+  const color    = STATUS_COLOR[status];
+  const label    = STATUS_LABEL[status];
+  const isLeave  = status === "leave" || status === "unauthorized-leave";
+  const isHalf   = status === "half-day";
+
+  const checkInColor  = (status === "arrival" || status === "late-arrival" || isHalf) ? color : null;
+  const checkOutColor = (status === "early-departure" || isHalf)                      ? color : null;
+
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const posRef   = useRef({ x: 0, y: 0 });
+  const prevented = useRef(false);
+
+  const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    prevented.current = false;
+    const t = e.touches[0];
+    posRef.current = { x: t.clientX, y: t.clientY };
+    timerRef.current = setTimeout(() => {
+      prevented.current = true;
+      onLongPress(emp.id, posRef.current.x, posRef.current.y);
+    }, 600);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onCtxMenu(emp.id, e.clientX, e.clientY);
+  };
+
   return (
     <div
-      className={`adm-card${isAbsent ? " adm-card-absent" : ""}`}
+      className={`adm-card${isLeave ? " adm-card-absent" : ""}`}
       style={{ animationDelay: `${idx * 70}ms` } as React.CSSProperties}
+      onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={clearTimer}
+      onTouchMove={clearTimer}
     >
       <div className="adm-card-left">
         <div className="adm-avatar-wrap">
           <AvatarImg emp={emp} />
-          <span className={getStatusDotClass(emp.status)} />
+          <span
+            className={`adm-dot${status === "arrival" ? " adm-dot-pulse" : ""}`}
+            style={color
+              ? { background: color, boxShadow: `0 0 6px ${color}99` } as React.CSSProperties
+              : { background: "rgba(148,163,184,0.35)" }
+            }
+          />
         </div>
+
         <div className="adm-card-info">
           <h3 className="adm-card-name">{emp.name}</h3>
           <p className="adm-card-role">{emp.role}</p>
           <p className="adm-card-salary">{emp.salary}</p>
-          {emp.status === "leave" ? (
-            <div className="adm-leave-badge">
-              LEAVE
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="3" y1="3" x2="21" y2="21"/>
-              </svg>
+
+          {isLeave ? (
+            <div className="adm-status-label" style={{ color: color! } as React.CSSProperties}>
+              {label}
             </div>
-          ) : emp.status === "leave-denied" ? (
-            <div className="adm-leave-denied-badge">LEAVE NOT APPROVED</div>
+          ) : isHalf ? (
+            <>
+              <div className="adm-status-label" style={{ color: color! } as React.CSSProperties}>
+                {label}
+              </div>
+              <div className="adm-times">
+                {emp.checkIn && (
+                  <span className="adm-time-in" style={{ color: color! } as React.CSSProperties}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                    </svg>
+                    {emp.checkIn}
+                  </span>
+                )}
+                {emp.checkOut && (
+                  <span className="adm-time-out" style={{ color: color! } as React.CSSProperties}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
+                    </svg>
+                    {emp.checkOut}
+                  </span>
+                )}
+              </div>
+            </>
           ) : (
             <div className="adm-times">
-              <span className="adm-time-in">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-                </svg>
-                {emp.checkIn}
-              </span>
-              <span className="adm-time-out">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
-                </svg>
-                {emp.checkOut}
-              </span>
+              {emp.checkIn ? (
+                <span className="adm-time-in"
+                  style={checkInColor ? { color: checkInColor } as React.CSSProperties : undefined}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                  </svg>
+                  {emp.checkIn}
+                </span>
+              ) : (
+                <span className="adm-time-not-in">Not checked in</span>
+              )}
+              {emp.checkOut && (
+                <span className="adm-time-out"
+                  style={checkOutColor ? { color: checkOutColor } as React.CSSProperties : undefined}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
+                  </svg>
+                  {emp.checkOut}
+                </span>
+              )}
             </div>
           )}
         </div>
       </div>
+
       <div className="adm-card-right">
-        <button className="adm-info-btn" aria-label="Info">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-          </svg>
-        </button>
-        <div className={`adm-bars${isAbsent ? " adm-bars-muted" : ""}`}>
+        <div className={`adm-bars${isLeave ? " adm-bars-muted" : ""}`}>
           <div className="adm-bar-row">
             <div className="adm-bar-labels"><span>ATT</span><span>{emp.att}%</span></div>
             <ProgressBar value={emp.att} color="#E5E2E1" glow="rgba(229,226,225,0.3)" />
@@ -183,18 +315,192 @@ function EmployeeCard({ emp, idx }: { emp: Employee; idx: number }) {
   );
 }
 
+function ContextMenu({
+  ctx, employees, timing, onAction, onClose,
+}: {
+  ctx: CtxMenu; employees: Employee[]; timing: OfficeTiming;
+  onAction: (id: number, action: "edit" | LeaveStatus) => void;
+  onClose: () => void;
+}) {
+  const emp      = employees.find(e => e.id === ctx.empId)!;
+  const halfOk   = canAssignHalfDay(emp, timing);
+  const menuRef  = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function down(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
+    }
+    function key(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    document.addEventListener("mousedown", down);
+    document.addEventListener("keydown", key);
+    return () => { document.removeEventListener("mousedown", down); document.removeEventListener("keydown", key); };
+  }, [onClose]);
+
+  const menuW = 196, menuH = 176;
+  const left  = Math.min(ctx.x, window.innerWidth  - menuW - 8);
+  const top   = Math.min(ctx.y, window.innerHeight - menuH - 8);
+
+  const item = (label: string, icon: React.ReactNode, action: () => void, color?: string, disabled?: boolean) => (
+    <button
+      className={`adm-ctx-item${disabled ? " adm-ctx-item-disabled" : ""}`}
+      style={color && !disabled ? { color } as React.CSSProperties : undefined}
+      onClick={disabled ? undefined : action}
+      disabled={disabled}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+
+  return (
+    <div ref={menuRef} className="adm-ctx-menu" style={{ left, top } as React.CSSProperties}>
+      {item("Edit", (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      ), () => { onAction(ctx.empId, "edit"); onClose(); })}
+
+      <div className="adm-ctx-divider" />
+
+      {item("Leave", (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      ), () => { onAction(ctx.empId, "leave"); onClose(); }, "#94A3B8")}
+
+      {item("Unauthorized Leave", (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      ), () => { onAction(ctx.empId, "unauthorized-leave"); onClose(); }, "#FF5A5F")}
+
+      {item("Half Day", (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20V2z" fill="currentColor" stroke="none"/>
+        </svg>
+      ), () => { onAction(ctx.empId, "half-day"); onClose(); }, "#14B8A6", !halfOk)}
+    </div>
+  );
+}
+
+function EditModal({
+  state, employees, onSave, onClose,
+}: {
+  state: EditState; employees: Employee[];
+  onSave: (id: number, ci: string, co: string) => void;
+  onClose: () => void;
+}) {
+  const emp = employees.find(e => e.id === state.empId)!;
+  const [checkIn,  setCheckIn]  = useState(state.checkIn);
+  const [checkOut, setCheckOut] = useState(state.checkOut);
+  const [error,    setError]    = useState("");
+
+  function handleSave() {
+    if (checkOut && !checkIn) { setError("Check-in required before check-out"); return; }
+    if (checkIn && checkOut) {
+      const inM  = parseTimeMins(checkIn);
+      const outM = parseTimeMins(checkOut);
+      if (inM !== -1 && outM !== -1 && outM <= inM) { setError("Check-out must be after check-in"); return; }
+    }
+    onSave(state.empId, checkIn, checkOut);
+    onClose();
+  }
+
+  return (
+    <div className="adm-modal-overlay" onClick={onClose}>
+      <div className="adm-modal adm-edit-modal" onClick={e => e.stopPropagation()}>
+        <div className="adm-modal-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h3 className="adm-modal-title">Edit Attendance</h3>
+        <p className="adm-modal-body">{emp.name} · {emp.role}</p>
+        <div className="adm-edit-fields">
+          <div className="adm-edit-field">
+            <label className="adm-edit-label">Check-in</label>
+            <input
+              className="adm-edit-input"
+              type="text"
+              value={checkIn}
+              onChange={e => { setCheckIn(e.target.value); setError(""); }}
+              placeholder="08:00 AM"
+            />
+          </div>
+          <div className="adm-edit-field">
+            <label className="adm-edit-label">Check-out</label>
+            <input
+              className={`adm-edit-input${!checkIn ? " adm-edit-input-disabled" : ""}`}
+              type="text"
+              value={checkOut}
+              onChange={e => { setCheckOut(e.target.value); setError(""); }}
+              placeholder="06:00 PM"
+              disabled={!checkIn}
+            />
+          </div>
+        </div>
+        {error && <p className="adm-edit-error">{error}</p>}
+        <div className="adm-modal-actions">
+          <button className="adm-modal-cancel"  onClick={onClose}>Cancel</button>
+          <button className="adm-modal-confirm" onClick={handleSave}>Save</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OfficeTimingHeader({ timing, onUpdate }: {
+  timing: OfficeTiming;
+  onUpdate: (t: OfficeTiming) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [start,   setStart]   = useState(timing.start);
+  const [end,     setEnd]     = useState(timing.end);
+
+  function save() { onUpdate({ start, end }); setEditing(false); }
+  function cancel() { setStart(timing.start); setEnd(timing.end); setEditing(false); }
+
+  return (
+    <div className="adm-office-timing">
+      <span className="adm-office-timing-label">Office Timing</span>
+      {editing ? (
+        <div className="adm-timing-edit-row">
+          <input className="adm-timing-input" value={start} onChange={e => setStart(e.target.value)} />
+          <span className="adm-timing-dash">–</span>
+          <input className="adm-timing-input" value={end}   onChange={e => setEnd(e.target.value)}   />
+          <button className="adm-timing-save"   onClick={save}>Save</button>
+          <button className="adm-timing-cancel" onClick={cancel}>✕</button>
+        </div>
+      ) : (
+        <div className="adm-timing-display-row">
+          <span className="adm-timing-value">{timing.start} – {timing.end}</span>
+          <button className="adm-timing-edit-btn" onClick={() => setEditing(true)} aria-label="Edit timing">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NavIcon({ id }: { id: NavItem }) {
   switch (id) {
     case "dashboard":
       return (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
         </svg>
       );
     case "leave":
       return (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
       );
     case "analytics":
@@ -222,7 +528,8 @@ function NavIcon({ id }: { id: NavItem }) {
 
 function RestaurantLogo({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#D4AF37" }}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#D4AF37" }}>
       <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
       <path d="M7 2v20"/>
       <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
@@ -237,14 +544,13 @@ function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel:
         <div className="adm-modal-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
+            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
           </svg>
         </div>
         <h3 className="adm-modal-title">Sign out?</h3>
         <p className="adm-modal-body">You'll need to sign in again to access the dashboard.</p>
         <div className="adm-modal-actions">
-          <button className="adm-modal-cancel" onClick={onCancel}>Cancel</button>
+          <button className="adm-modal-cancel"  onClick={onCancel}>Cancel</button>
           <button className="adm-modal-confirm" onClick={onConfirm}>Sign out</button>
         </div>
       </div>
@@ -263,14 +569,11 @@ function AvatarDropdown({ onLogoutRequest, onClose }: { onLogoutRequest: () => v
         </div>
       </div>
       <div className="adm-dropdown-divider" />
-      <button
-        className="adm-dropdown-logout"
-        onClick={() => { onClose(); onLogoutRequest(); }}
-      >
+      <button className="adm-dropdown-logout"
+        onClick={() => { onClose(); onLogoutRequest(); }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
+          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
         </svg>
         Sign out
       </button>
@@ -278,55 +581,74 @@ function AvatarDropdown({ onLogoutRequest, onClose }: { onLogoutRequest: () => v
   );
 }
 
+// ── Main Dashboard ─────────────────────────────────────────────────────────
+
 export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
-  const [activeNav, setActiveNav]           = useState<NavItem>("dashboard");
-  const [searchQuery, setSearchQuery]       = useState("");
+  const [activeNav,      setActiveNav]      = useState<NavItem>("dashboard");
+  const [employees,      setEmployees]      = useState<Employee[]>(INITIAL_EMPLOYEES);
+  const [officeTiming,   setOfficeTiming]   = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
+  const [searchQuery,    setSearchQuery]    = useState("");
   const [mobileSearchOpen, setMobileSearch] = useState(false);
-  const [dropdownOpen, setDropdownOpen]     = useState(false);
+  const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
-  const searchRef                           = useRef<HTMLInputElement>(null);
-  const desktopDropdownRef                  = useRef<HTMLDivElement>(null);
-  const mobileDropdownRef                   = useRef<HTMLDivElement>(null);
+  const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
+  const [editModal,      setEditModal]      = useState<EditState | null>(null);
+
+  const searchRef         = useRef<HTMLInputElement>(null);
+  const desktopDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef  = useRef<HTMLDivElement>(null);
 
   const today        = getTodayStr();
-  const presentCount = EMPLOYEES.filter(e => e.status === "in").length;
-  const totalCount   = EMPLOYEES.length;
+  const presentCount = employees.filter(e => !e.leaveStatus && e.checkIn).length;
+  const totalCount   = employees.length;
 
+  const sorted   = sortedEmployees(employees, officeTiming);
   const filtered = searchQuery.trim()
-    ? EMPLOYEES.filter(e =>
+    ? sorted.filter(e =>
         e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.role.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : EMPLOYEES;
+    : sorted;
 
-  const openSearch = useCallback(() => {
-    setMobileSearch(true);
-    setTimeout(() => searchRef.current?.focus(), 300);
-  }, []);
-
-  const closeSearch = useCallback(() => {
-    setMobileSearch(false);
-    setSearchQuery("");
-  }, []);
-
-  const requestLogout = useCallback(() => {
-    setDropdownOpen(false);
-    setLogoutModal(true);
-  }, []);
+  const openSearch  = useCallback(() => { setMobileSearch(true); setTimeout(() => searchRef.current?.focus(), 300); }, []);
+  const closeSearch = useCallback(() => { setMobileSearch(false); setSearchQuery(""); }, []);
+  const requestLogout = useCallback(() => { setDropdownOpen(false); setLogoutModal(true); }, []);
 
   useEffect(() => {
     if (!dropdownOpen) return;
-    function handleClick(e: MouseEvent) {
-      const target = e.target as Node;
-      const insideDesktop = desktopDropdownRef.current?.contains(target);
-      const insideMobile  = mobileDropdownRef.current?.contains(target);
-      if (!insideDesktop && !insideMobile) {
+    function handle(e: MouseEvent) {
+      const t = e.target as Node;
+      if (!desktopDropdownRef.current?.contains(t) && !mobileDropdownRef.current?.contains(t))
         setDropdownOpen(false);
-      }
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
   }, [dropdownOpen]);
+
+  const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus) => {
+    if (action === "edit") {
+      const emp = employees.find(e => e.id === empId)!;
+      setEditModal({ empId, checkIn: emp.checkIn, checkOut: emp.checkOut });
+    } else {
+      setEmployees(prev => prev.map(e => {
+        if (e.id !== empId) return e;
+        const clearTimes = action === "leave" || action === "unauthorized-leave";
+        return { ...e, leaveStatus: action, checkIn: clearTimes ? "" : e.checkIn, checkOut: clearTimes ? "" : e.checkOut };
+      }));
+    }
+  }, [employees]);
+
+  const handleEditSave = useCallback((id: number, ci: string, co: string) => {
+    setEmployees(prev => prev.map(e =>
+      e.id === id ? { ...e, checkIn: ci, checkOut: co, leaveStatus: null } : e
+    ));
+  }, []);
+
+  const sharedCardProps = {
+    timing: officeTiming,
+    onCtxMenu: (id: number, x: number, y: number) => setCtxMenu({ empId: id, x, y }),
+    onLongPress: (id: number, x: number, y: number) => setCtxMenu({ empId: id, x, y }),
+  };
 
   return (
     <div className="adm-root">
@@ -337,14 +659,11 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           <RestaurantLogo size={30} />
           <h1 className="adm-sidebar-brand">MyRestaurant</h1>
         </div>
-
         <div className="adm-sidebar-nav">
           {NAV_ITEMS.map(item => (
-            <button
-              key={item.id}
+            <button key={item.id}
               className={`adm-nav-item${activeNav === item.id ? " adm-nav-active" : ""}`}
-              onClick={() => setActiveNav(item.id)}
-            >
+              onClick={() => setActiveNav(item.id)}>
               <NavIcon id={item.id} />
               <span>{item.label}</span>
             </button>
@@ -360,72 +679,49 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           <div className="adm-header-left">
             <h2 className="adm-header-date">{today}</h2>
             <div className="adm-header-stats">
-              <span className="adm-stat-chip adm-stat-present">
-                Present:&nbsp;<strong>{presentCount}</strong>
-              </span>
+              <span className="adm-stat-chip adm-stat-present">Present:&nbsp;<strong>{presentCount}</strong></span>
               <span className="adm-stat-chip">Total: {totalCount}</span>
             </div>
           </div>
-
           <div className="adm-header-right">
             <div className="adm-search-wrap">
               <svg className="adm-search-icon-inner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
-              <input
-                className="adm-search-input"
-                placeholder="Search employees..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
+              <input className="adm-search-input" placeholder="Search employees..."
+                value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
             </div>
-
             <button className="adm-notif-btn" aria-label="Notifications">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
               </svg>
               <span className="adm-notif-dot" />
             </button>
-
             <div className="adm-profile-wrap" ref={desktopDropdownRef}>
               <div
                 className={`adm-profile-avatar${dropdownOpen ? " adm-profile-avatar-open" : ""}`}
-                onClick={() => setDropdownOpen(v => !v)}
-                title="Account"
-              >A</div>
+                onClick={() => setDropdownOpen(v => !v)} title="Account">A</div>
               {dropdownOpen && (
-                <AvatarDropdown
-                  onLogoutRequest={requestLogout}
-                  onClose={() => setDropdownOpen(false)}
-                />
+                <AvatarDropdown onLogoutRequest={requestLogout} onClose={() => setDropdownOpen(false)} />
               )}
             </div>
           </div>
         </header>
 
-        {/* ── Mobile sticky top bar ── */}
+        {/* Mobile sticky top bar */}
         <header className="adm-topbar">
           <div className={`adm-topbar-logo${mobileSearchOpen ? " adm-topbar-logo-hide" : ""}`}>
             <RestaurantLogo size={26} />
             <span className="adm-topbar-brand">MyRestaurant</span>
           </div>
-
           <div className={`adm-topbar-search${mobileSearchOpen ? " adm-topbar-search-open" : ""}`}>
-            <input
-              ref={searchRef}
-              className="adm-topbar-search-input"
-              placeholder="Search staff..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
+            <input ref={searchRef} className="adm-topbar-search-input" placeholder="Search staff..."
+              value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
           </div>
-
           <div className="adm-topbar-actions">
-            <button
-              className="adm-topbar-toggle"
+            <button className="adm-topbar-toggle"
               onClick={mobileSearchOpen ? closeSearch : openSearch}
-              aria-label={mobileSearchOpen ? "Close search" : "Open search"}
-            >
+              aria-label={mobileSearchOpen ? "Close search" : "Open search"}>
               {mobileSearchOpen ? (
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -436,20 +732,14 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 </svg>
               )}
             </button>
-
             <div className="adm-topbar-avatar-wrap" ref={mobileDropdownRef}>
               <button
                 className={`adm-topbar-profile${dropdownOpen ? " adm-topbar-profile-open" : ""}`}
-                onClick={() => setDropdownOpen(v => !v)}
-                aria-label="Account"
-              >
+                onClick={() => setDropdownOpen(v => !v)} aria-label="Account">
                 <div className="adm-topbar-profile-avatar">A</div>
               </button>
               {dropdownOpen && (
-                <AvatarDropdown
-                  onLogoutRequest={requestLogout}
-                  onClose={() => setDropdownOpen(false)}
-                />
+                <AvatarDropdown onLogoutRequest={requestLogout} onClose={() => setDropdownOpen(false)} />
               )}
             </div>
           </div>
@@ -464,14 +754,20 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           <span className="adm-mobile-total">Total: {totalCount}</span>
         </div>
 
-        {/* ── Employee grid ── */}
+        {/* ── Content area ── */}
         <div key={activeNav} className="adm-content adm-content-enter">
+
+          {/* Time & Leave page: office timing header */}
+          {activeNav === "leave" && (
+            <OfficeTimingHeader timing={officeTiming} onUpdate={setOfficeTiming} />
+          )}
+
           {filtered.length === 0 ? (
             <div className="adm-empty">No employees match your search.</div>
           ) : (
             <div className="adm-grid">
               {filtered.map((emp, i) => (
-                <EmployeeCard key={emp.id} emp={emp} idx={i} />
+                <EmployeeCard key={emp.id} emp={emp} idx={i} {...sharedCardProps} />
               ))}
             </div>
           )}
@@ -487,11 +783,9 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         {/* Bottom nav — mobile only */}
         <nav className="adm-bottom-nav">
           {BOTTOM_NAV_ITEMS.map(item => (
-            <button
-              key={item.id}
+            <button key={item.id}
               className={`adm-bnav-item${activeNav === item.id ? " adm-bnav-active" : ""}`}
-              onClick={() => setActiveNav(item.id)}
-            >
+              onClick={() => setActiveNav(item.id)}>
               <div className="adm-bnav-icon-wrap">
                 <NavIcon id={item.id} />
                 {item.id === "notifications" && <span className="adm-bnav-notif-dot" />}
@@ -503,12 +797,25 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
       </main>
 
-      {/* Logout confirmation modal */}
-      {logoutModalOpen && (
-        <LogoutModal
-          onConfirm={onLogout}
-          onCancel={() => setLogoutModal(false)}
+      {/* Context menu */}
+      {ctxMenu && (
+        <ContextMenu
+          ctx={ctxMenu} employees={employees} timing={officeTiming}
+          onAction={handleCtxAction} onClose={() => setCtxMenu(null)}
         />
+      )}
+
+      {/* Edit attendance modal */}
+      {editModal && (
+        <EditModal
+          state={editModal} employees={employees}
+          onSave={handleEditSave} onClose={() => setEditModal(null)}
+        />
+      )}
+
+      {/* Logout modal */}
+      {logoutModalOpen && (
+        <LogoutModal onConfirm={onLogout} onCancel={() => setLogoutModal(false)} />
       )}
     </div>
   );

@@ -1433,14 +1433,10 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   position: absolute;
   bottom: -1px; right: -1px;
 }
-.adm-dot-green  { background: var(--adm-green);  box-shadow: 0 0 5px rgba(74,222,128,.5); }
-.adm-dot-red    { background: var(--adm-red);    box-shadow: 0 0 5px rgba(248,113,113,.5); }
-.adm-dot-orange { background: var(--adm-orange); box-shadow: 0 0 5px rgba(251,191,36,.5); }
-.adm-dot-grey   { background: var(--adm-grey); }
-.adm-dot-pulse  { animation: adm-pulse 2.2s ease-in-out infinite; }
+.adm-dot-pulse { animation: adm-pulse 2.2s ease-in-out infinite; }
 @keyframes adm-pulse {
-  0%,100% { box-shadow: 0 0 5px rgba(74,222,128,.5); }
-  50%     { box-shadow: 0 0 10px rgba(74,222,128,.85), 0 0 0 4px rgba(74,222,128,.18); }
+  0%,100% { filter: brightness(1); }
+  50%     { filter: brightness(1.5) drop-shadow(0 0 5px currentColor); }
 }
 
 /* Card info */
@@ -1465,29 +1461,25 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   color: var(--adm-text-muted);
 }
 @media (min-width: 768px) { .adm-time-in, .adm-time-out { font-size: 11px; } }
-.adm-time-in svg { color: var(--adm-gold); }
+.adm-time-in svg, .adm-time-out svg { opacity: .7; }
 
-.adm-leave-badge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .10em;
+/* Status label (leave / unauthorized-leave / half-day) */
+.adm-status-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
   text-transform: uppercase;
-  color: var(--adm-gold);
   margin-top: 4px;
+  opacity: .9;
 }
-.adm-leave-denied-badge {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--adm-red);
+@media (min-width: 768px) { .adm-status-label { font-size: 11px; } }
+
+/* "Not checked in" placeholder */
+.adm-time-not-in {
+  font-size: 10px;
+  color: rgba(255,255,255,.22);
   margin-top: 4px;
-}
-@media (min-width: 768px) {
-  .adm-leave-badge, .adm-leave-denied-badge { font-size: 10px; }
+  font-style: italic;
 }
 
 /* Card right */
@@ -1500,19 +1492,6 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   padding-right: 2px;
 }
 @media (min-width: 768px) { .adm-card-right { width: 72px; } }
-
-.adm-info-btn {
-  position: absolute;
-  top: 10px; right: 10px;
-  color: var(--adm-text-muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px;
-  display: flex;
-  transition: color 180ms ease;
-}
-.adm-info-btn:hover { color: white; }
 
 .adm-bars { display: flex; flex-direction: column; gap: 7px; margin-top: 20px; }
 .adm-bars-muted { opacity: .50; }
@@ -1859,14 +1838,190 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 }
 .adm-notif-btn:active { transform: scale(.88); }
 
-/* ── Info button micro-animation ─────────────────────── */
-.adm-info-btn {
-  transition: color 180ms ease, transform 120ms cubic-bezier(.22,1,.36,1);
-}
-.adm-info-btn:active { transform: scale(.85); }
-
 /* ── FAB micro-animation ─────────────────────────────── */
 .adm-fab svg {
   transition: transform 200ms cubic-bezier(.22,1,.36,1);
 }
 .adm-fab:active svg { transform: rotate(90deg) scale(.9); }
+
+/* ── Context menu ──────────────────────────────────────────── */
+.adm-ctx-menu {
+  position: fixed;
+  z-index: 9000;
+  background: #1e2128;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 10px;
+  padding: 5px;
+  min-width: 196px;
+  box-shadow: 0 16px 40px rgba(0,0,0,.55), 0 4px 12px rgba(0,0,0,.35);
+  animation: adm-ctx-in 160ms cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes adm-ctx-in {
+  from { opacity: 0; transform: scale(.94) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0);    }
+}
+.adm-ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,.82);
+  font-family: 'Geist', 'Inter', sans-serif;
+  text-align: left;
+  transition: background 140ms ease, color 140ms ease;
+}
+.adm-ctx-item:hover:not(.adm-ctx-item-disabled) { background: rgba(255,255,255,.07); }
+.adm-ctx-item:active:not(.adm-ctx-item-disabled) { transform: scale(.98); }
+.adm-ctx-item-disabled {
+  color: rgba(255,255,255,.25) !important;
+  cursor: not-allowed;
+}
+.adm-ctx-divider {
+  height: 1px;
+  background: rgba(255,255,255,.07);
+  margin: 4px 8px;
+}
+
+/* ── Edit attendance modal extras ──────────────────────────── */
+.adm-edit-modal {
+  max-width: 360px;
+  width: calc(100vw - 32px);
+}
+.adm-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0 4px;
+}
+.adm-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.adm-edit-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--adm-text-muted);
+}
+.adm-edit-input {
+  padding: 9px 12px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-family: 'Geist', 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 180ms ease;
+}
+.adm-edit-input:focus { border-color: var(--adm-gold); }
+.adm-edit-input-disabled {
+  opacity: .35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.adm-edit-error {
+  font-size: 12px;
+  color: #FF5A5F;
+  margin: 4px 0 0;
+}
+
+/* ── Office timing header (Time & Leave page) ──────────────── */
+.adm-office-timing {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.adm-office-timing-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--adm-text-muted);
+  flex-shrink: 0;
+}
+.adm-timing-display-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.adm-timing-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--adm-gold);
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 768px) { .adm-timing-value { font-size: 15px; } }
+.adm-timing-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--adm-text-muted);
+  padding: 4px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  transition: color 160ms ease;
+}
+.adm-timing-edit-btn:hover { color: white; }
+
+.adm-timing-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.adm-timing-input {
+  padding: 6px 10px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(212,175,55,.35);
+  border-radius: 7px;
+  color: white;
+  font-size: 13px;
+  font-family: 'Geist', 'Inter', sans-serif;
+  width: 96px;
+  outline: none;
+  transition: border-color 180ms ease;
+}
+.adm-timing-input:focus { border-color: var(--adm-gold); }
+.adm-timing-dash { color: var(--adm-text-muted); font-size: 13px; }
+.adm-timing-save {
+  padding: 6px 14px;
+  background: var(--adm-gold);
+  border: none;
+  border-radius: 7px;
+  color: #181A1F;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Geist', 'Inter', sans-serif;
+  transition: opacity 150ms ease;
+}
+.adm-timing-save:hover { opacity: .85; }
+.adm-timing-cancel {
+  background: none;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 7px;
+  color: var(--adm-text-muted);
+  font-size: 13px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: 'Geist', 'Inter', sans-serif;
+  transition: color 150ms ease;
+}
+.adm-timing-cancel:hover { color: white; }
