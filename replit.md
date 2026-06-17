@@ -90,6 +90,16 @@ These rules apply to **all code in this project** automatically, without needing
 - Shared UI atoms: `Chip`, `GlassBubble`, `NotifBubble`, `BadgeLabel` — define once, reuse everywhere.
 - Shared CSS utilities: `.glass-card`, `.chip`, `.notif-bubble`, `.badge-label`, `.bar`, `.ring`.
 
+### 2a. Dual-Display Rule (Admin Dashboard)
+
+Every new UI element added to the Admin Dashboard **must work on both mobile and desktop** by default, unless the task explicitly says otherwise.
+
+**How to implement:**
+- Write the base style for mobile first (no breakpoint).
+- Use `@media (min-width: 768px)` to adjust position, size, or spacing for desktop — never to hide the element.
+- If an element is mobile-only or desktop-only by design, mark it with a comment `/* mobile-only */` or `/* desktop-only */` so future work knows it was intentional.
+- The FAB (`.adm-fab`) is the canonical example: same element, `bottom: 88px right: 20px` on mobile (above bottom-nav), `bottom: 32px right: 32px` on desktop.
+
 ### 3. Modals & Overlays — Smart Hybrid Mount
 
 Any element that opens/closes (modal, sheet, bottom-drawer, tooltip) **must** follow this lifecycle:
