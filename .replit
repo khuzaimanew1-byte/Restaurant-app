@@ -20,6 +20,14 @@ author = "agent"
 task = "workflow.run"
 args = "artifacts/mockup-sandbox: Component Preview Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "API Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
 [[workflows.workflow]]
 name = "artifacts/mockup-sandbox: Component Preview Server"
 author = "agent"
@@ -32,6 +40,30 @@ waitForPort = 3000
 [workflows.workflow.metadata]
 outputType = "console"
 isCanvasWorkflow = true
+
+[[workflows.workflow]]
+name = "API Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 pnpm --filter @workspace/api-server run start"
+waitForPort = 8080
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=5000 BASE_PATH=/ pnpm --filter @workspace/onboarding run dev"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
@@ -94,9 +126,6 @@ externalPort = 3000
 [userenv.shared]
 ADMIN_GMAIL = "khuzaimanew1@gmail.com"
 SENDING_GMAIL = "usamasif090@gmail.com"
-NEON_DATABASE_URL = "postgresql://neondb_owner:npg_unEr2WsbS4Hy@ep-dark-cloud-apc45f5z.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require"
-GMAIL_APP_PASSWORD = "svwq tcfz rlzt youg"
-JWT_SESSION = "V9#qL7@x!R2$wK8^mT4&zN1*Y6+pD3=JfH5_uC0~BgE9%SrX2?AnM7|QtW8:PkL4;ZvdfgergreHJASEY87%$%&*"
 
 [nix]
 channel = "stable-25_05"
