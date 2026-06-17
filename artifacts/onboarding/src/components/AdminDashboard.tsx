@@ -345,7 +345,6 @@ function EmployeeCard({
             <div className="adm-inline-edit">
               <div className="adm-inline-time-row">
                 <div className="adm-inline-field">
-                  {CHECKIN_SVG}
                   <input
                     className="adm-inline-input"
                     type="time" value={ci24}
@@ -354,7 +353,6 @@ function EmployeeCard({
                   />
                 </div>
                 <div className="adm-inline-field">
-                  {CHECKOUT_SVG}
                   <input
                     className={`adm-inline-input${!ci24 ? " adm-inline-input-disabled" : ""}`}
                     type="time" value={co24} disabled={!ci24}
