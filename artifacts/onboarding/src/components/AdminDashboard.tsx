@@ -249,8 +249,8 @@ function EmployeeCard({
   const isHalf  = status === "half-day";
 
   // Independent time colors — each slot gets its own status color
-  // Half-day: check-in = teal (half-day), check-out = purple (early departure aspect)
-  const arrColor = isHalf ? "#14B8A6" : (emp.leaveStatus ? null : getArrivalColor(emp, timing));
+  // Half-day: check-in no color (arrived normally), check-out purple (early departure)
+  const arrColor = isHalf ? null : (emp.leaveStatus ? null : getArrivalColor(emp, timing));
   const depColor = isHalf ? "#A78BFA" : (emp.leaveStatus ? null : getDepartureColor(emp, timing));
 
   // Dot color: checkout status takes priority when checkout exists; else arrival drives it
@@ -317,7 +317,7 @@ function EmployeeCard({
           <p className="adm-card-role">{emp.role}</p>
           <p className="adm-card-salary">
             {emp.salary}
-            {isHalf && <span className="adm-half-badge">½ Day</span>}
+            {isHalf && <span className="adm-half-badge"><span className="adm-half-badge-frac">½</span> Day</span>}
           </p>
 
           {/* Leave states: label only, no times */}
@@ -327,12 +327,6 @@ function EmployeeCard({
             </div>
           ) : (
             <>
-              {/* Half Day label above times */}
-              {isHalf && (
-                <div className="adm-status-label" style={{ color: "#14B8A6" } as React.CSSProperties}>
-                  Half Day
-                </div>
-              )}
               {/* Both time slots — always visible, --:-- when not yet recorded */}
               <div className="adm-times">
                 <span

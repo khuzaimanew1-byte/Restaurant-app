@@ -1483,6 +1483,7 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .adm-half-badge {
   display: inline-flex;
   align-items: center;
+  gap: 1px;
   margin-left: 6px;
   padding: 1px 6px;
   border-radius: 4px;
@@ -1490,11 +1491,14 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   font-weight: 700;
   letter-spacing: .07em;
   text-transform: uppercase;
-  color: #14B8A6;
-  background: rgba(20,184,166,.14);
-  border: 1px solid rgba(20,184,166,.30);
+  color: rgba(255,255,255,.35);
+  background: rgba(20,184,166,.10);
+  border: 1px solid rgba(20,184,166,.25);
   vertical-align: middle;
   line-height: 1.6;
+}
+.adm-half-badge-frac {
+  color: #14B8A6;
 }
 
 /* Card right */
