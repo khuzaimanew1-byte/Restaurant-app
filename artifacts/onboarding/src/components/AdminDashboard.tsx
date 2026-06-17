@@ -243,29 +243,35 @@ function EmployeeCard({
   isEditing: boolean;
   onCtxMenu: (id: number, x: number, y: number) => void;
   onLongPress: (id: number, x: number, y: number) => void;
-  onEditSave: (id: number, ci: string, co: string) => void;
+  onEditSave: (id: number, ci: string, co: string, leaveStatus: LeaveStatus) => void;
 }) {
   const status  = getDisplayStatus(emp, timing);
   const isLeave = status === "leave" || status === "unauthorized-leave";
   const isHalf  = status === "half-day";
 
   // Inline edit local state
-  const [ci24,      setCi24]      = useState("");
-  const [co24,      setCo24]      = useState("");
-  const [editError, setEditError] = useState("");
+  const [ci24,           setCi24]           = useState("");
+  const [co24,           setCo24]           = useState("");
+  const [editError,      setEditError]      = useState("");
+  const [editLeave,      setEditLeave]      = useState<LeaveStatus>(null);
 
   useEffect(() => {
     if (isEditing) {
       setCi24(to24h(emp.checkIn));
       setCo24(to24h(emp.checkOut));
       setEditError("");
+      setEditLeave(emp.leaveStatus);
     }
-  }, [isEditing, emp.checkIn, emp.checkOut]);
+  }, [isEditing, emp.checkIn, emp.checkOut, emp.leaveStatus]);
+
+  function toggleEditLeave(val: LeaveStatus) {
+    setEditLeave(prev => prev === val ? null : val);
+  }
 
   function handleInlineSave() {
     if (co24 && !ci24) { setEditError("Check-in required first"); return; }
     if (ci24 && co24 && co24 <= ci24) { setEditError("Check-out must be after check-in"); return; }
-    onEditSave(emp.id, to12h(ci24), to12h(co24));
+    onEditSave(emp.id, to12h(ci24), to12h(co24), editLeave);
   }
 
   // Independent time colors — each slot gets its own status color
@@ -335,16 +341,14 @@ function EmployeeCard({
         <div className="adm-card-info">
           <h3 className="adm-card-name">{emp.name}</h3>
           <p className="adm-card-role">{emp.role}</p>
-          <p className="adm-card-salary">
-            {emp.salary}
-            {isHalf && <span className="adm-half-badge"><span className="adm-half-badge-frac">½</span> Day</span>}
-          </p>
+          <p className="adm-card-salary">{emp.salary}</p>
 
           {/* Inline edit mode */}
           {isEditing ? (
             <div className="adm-inline-edit">
               <div className="adm-inline-time-row">
                 <div className="adm-inline-field">
+                  <span className="adm-inline-icon">{CHECKIN_SVG}</span>
                   <input
                     className="adm-inline-input"
                     type="time" value={ci24}
@@ -353,12 +357,31 @@ function EmployeeCard({
                   />
                 </div>
                 <div className="adm-inline-field">
+                  <span className="adm-inline-icon">{CHECKOUT_SVG}</span>
                   <input
                     className={`adm-inline-input${!ci24 ? " adm-inline-input-disabled" : ""}`}
                     type="time" value={co24} disabled={!ci24}
                     onChange={e => { setCo24(e.target.value); setEditError(""); }}
                   />
                 </div>
+              </div>
+              <div className="adm-inline-status-row">
+                <button
+                  className={`adm-inline-status-btn${editLeave === "leave" ? " adm-inline-status-active adm-inline-status-leave" : ""}`}
+                  onClick={() => toggleEditLeave("leave")}
+                  type="button"
+                >Leave</button>
+                <button
+                  className={`adm-inline-status-btn${editLeave === "unauthorized-leave" ? " adm-inline-status-active adm-inline-status-unauth" : ""}`}
+                  onClick={() => toggleEditLeave("unauthorized-leave")}
+                  type="button"
+                >Unauth</button>
+                <button
+                  className={`adm-inline-status-btn${editLeave === "half-day" ? " adm-inline-status-active adm-inline-status-half" : ""}${!ci24 || !co24 ? " adm-inline-status-btn-disabled" : ""}`}
+                  onClick={() => (!ci24 || !co24) ? undefined : toggleEditLeave("half-day")}
+                  type="button"
+                  disabled={!ci24 || !co24}
+                >½ Day</button>
               </div>
               {editError && <p className="adm-inline-error">{editError}</p>}
             </div>
@@ -689,10 +712,17 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     }
   }, []);
 
-  const handleEditSave = useCallback((id: number, ci: string, co: string) => {
-    setEmployees(prev => prev.map(e =>
-      e.id === id ? { ...e, checkIn: ci, checkOut: co, leaveStatus: null } : e
-    ));
+  const handleEditSave = useCallback((id: number, ci: string, co: string, leaveStatus: LeaveStatus) => {
+    setEmployees(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      const clearTimes = leaveStatus === "leave" || leaveStatus === "unauthorized-leave";
+      return {
+        ...e,
+        checkIn:     clearTimes ? "" : ci,
+        checkOut:    clearTimes ? "" : co,
+        leaveStatus,
+      };
+    }));
     setEditingId(null);
   }, []);
 
