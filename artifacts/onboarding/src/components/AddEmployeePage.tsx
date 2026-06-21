@@ -208,12 +208,6 @@ export function AddEmployeePage({
       <div className="ae-scroll">
         <div className="ae-content">
 
-          {/* ── Ambient depth ── */}
-          <div className="ae-geo-bg" aria-hidden>
-            <div className="ae-gtr" />
-            <div className="ae-gbl" />
-          </div>
-
           {/* ── Avatar ── */}
           <div className="ae-av-sec">
             <div className="ae-av-halo">
