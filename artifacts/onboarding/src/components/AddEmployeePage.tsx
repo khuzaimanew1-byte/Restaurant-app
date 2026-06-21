@@ -21,6 +21,7 @@ const MailSVG     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="
 const GlobeSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
 const CalSVG      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 const PinSVG      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+const ClockSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 const CameraSVG   = () => <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
 const CameraSmSVG = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
 const CheckSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
@@ -86,8 +87,10 @@ export function AddEmployeePage({
   const salSizerRef = useRef<HTMLSpanElement>(null);
 
   // Date input refs — for programmatic showPicker() via icon click
-  const dobRef      = useRef<HTMLInputElement>(null);
-  const joiningRef  = useRef<HTMLInputElement>(null);
+  const dobRef        = useRef<HTMLInputElement>(null);
+  const joiningRef    = useRef<HTMLInputElement>(null);
+  const shiftStartRef = useRef<HTMLInputElement>(null);
+  const shiftEndRef   = useRef<HTMLInputElement>(null);
 
   // Core fields
   const [name,        setName]        = useState("");
@@ -101,6 +104,8 @@ export function AddEmployeePage({
   const [dob,         setDob]         = useState("");
   const [joiningDate, setJoiningDate] = useState("");
   const [address,     setAddress]     = useState("");
+  const [shiftStart,  setShiftStart]  = useState("");
+  const [shiftEnd,    setShiftEnd]    = useState("");
 
   // Salary pill auto-resize — runs after salary state is declared
   useLayoutEffect(() => {
@@ -379,6 +384,34 @@ export function AddEmployeePage({
                   className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
                   type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
                 {!joiningDate && <span className="ae-date-ph">Joining Date</span>}
+              </div>
+            </div>
+
+            {/* Shift Timing — full width, start → end */}
+            <div className="ae-field ae-span-full">
+              <div className="ae-fi-wrap ae-shift-wrap">
+                <span className="ae-date-ico" onClick={() => shiftStartRef.current?.showPicker?.()}>
+                  <ClockSVG />
+                </span>
+                <div className="ae-shift-pair">
+                  <div className="ae-shift-slot">
+                    <input
+                      ref={shiftStartRef}
+                      className={`ae-fi ae-time${!shiftStart ? " ae-date-empty" : ""}`}
+                      type="time" value={shiftStart} onChange={e => setShiftStart(e.target.value)}
+                    />
+                    {!shiftStart && <span className="ae-shift-ph">Start Time</span>}
+                  </div>
+                  <span className="ae-shift-sep">—</span>
+                  <div className="ae-shift-slot">
+                    <input
+                      ref={shiftEndRef}
+                      className={`ae-fi ae-time${!shiftEnd ? " ae-date-empty" : ""}`}
+                      type="time" value={shiftEnd} onChange={e => setShiftEnd(e.target.value)}
+                    />
+                    {!shiftEnd && <span className="ae-shift-ph">End Time</span>}
+                  </div>
+                </div>
               </div>
             </div>
 
