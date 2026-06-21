@@ -2244,30 +2244,27 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   font-family: 'Inter', sans-serif;
 }
 
-/* Shift timing — dashboard inline-edit style with bottom underline */
+/* Shift timing — single underline field */
 .ae-shift-row {
-  display: flex; align-items: center; gap: 8px;
+  position: relative; display: flex; align-items: center; gap: 6px;
+  padding-bottom: 8px;
 }
-.ae-shift-field {
-  position: relative; display: flex; align-items: center; gap: 4px;
-  flex: 1; padding-bottom: 7px;
-}
-.ae-shift-field::before {
+.ae-shift-row::before {
   content: ''; position: absolute; bottom: 0; left: 0; right: 0;
   height: 1.5px; background: rgba(226,232,240,.14);
 }
-.ae-shift-field::after {
+.ae-shift-row::after {
   content: ''; position: absolute; bottom: 0; left: 0; width: 100%;
   height: 2px; background: var(--adm-gold);
   transform: scaleX(0); transform-origin: left;
   transition: transform .35s cubic-bezier(0.16,1,0.3,1);
 }
-.ae-shift-field:focus-within::after { transform: scaleX(1); }
+.ae-shift-row:focus-within::after { transform: scaleX(1); }
 .ae-shift-ico {
   display: flex; align-items: center;
   color: rgba(148,163,184,.55); flex-shrink: 0;
 }
-.ae-shift-field:focus-within .ae-shift-ico { color: var(--adm-gold); }
+.ae-shift-row:focus-within .ae-shift-ico { color: var(--adm-gold); }
 .ae-shift-time-inp {
   background: transparent; border: none; outline: none;
   color: var(--adm-text); font-family: 'Inter', sans-serif;
@@ -2281,10 +2278,6 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .ae-shift-time-inp::-webkit-datetime-edit-minute-field  { color: var(--adm-text); }
 .ae-shift-time-inp::-webkit-datetime-edit-ampm-field    { color: var(--adm-gold); font-size: 9px; font-weight: 700; letter-spacing: .03em; }
 .ae-shift-time-inp::-webkit-datetime-edit-text          { color: rgba(226,232,240,.28); }
-.ae-shift-between {
-  color: rgba(226,232,240,.28); font-size: 13px;
-  font-family: 'Inter', sans-serif; flex-shrink: 0; padding-bottom: 7px;
-}
 
 /* Gender dropdown */
 .ae-csel { flex: 1; outline: none; }
