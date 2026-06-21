@@ -209,20 +209,49 @@ Back is the exact reverse of each forward arrow.
 - Flutter: all top-level pages registered in `app_router.dart` with a named path (e.g. `/login`, `/otp`, `/admin`, `/admin/add-employee`).
 - Sub-panels/overlays that slide over a page are **not** separate routes — they use URL sync via `pushState`/`popState`.
 
-### 7. Performance — Always On
+### 7. Performance — Always On (SSOT — no exceptions)
 
-Apply automatically on every new component or page:
+Apply automatically on every new component, page, or asset. Violations are treated the same as broken code.
 
-**React:**
+#### 7a. React rendering
+
 - Expensive derived data → `useMemo([deps])`
 - Stable callbacks passed as props → `useCallback([deps])`
 - Pure presentational components → `React.memo()`
-- Heavy/rare components → `React.lazy()` + `<Suspense>`
-- Images → `loading="lazy"` + explicit `width`/`height`
+- Heavy/rare components → `React.lazy()` + `<Suspense fallback={<div className="adm-lazy-fallback" />}>`
+- **Every top-level route component in `App.tsx` must be lazy-imported.** Never eagerly import a page component at the top of `App.tsx`.
 - Lists → stable `key` prop (never array index for dynamic lists)
 - Search/resize inputs → debounce (`280–300 ms`)
 
-**Flutter:**
+#### 7b. Code splitting (Vite build)
+
+- `vite.config.ts` `rollupOptions.output.manualChunks` must always have at minimum:
+  ```
+  "vendor-react":  ["react", "react-dom"]
+  "vendor-motion": ["framer-motion"]
+  "vendor-query":  ["@tanstack/react-query"]
+  ```
+- Adding a new heavy lib (>50 kB) → add it to `manualChunks` as its own entry.
+- Never merge large vendor libs back into the main bundle.
+
+#### 7c. Fonts
+
+- Fonts are loaded **non-blocking** via `<link media="print" onload="this.media='all'">` in `index.html`.
+- **No `@import url(...)` in any CSS file** — CSS `@import` is render-blocking.
+- Only load font weights that are actually used in CSS. Adding a new weight → update the `index.html` `<link>` URL only.
+- Currently used: Inter 400/500/600/700/800 · Geist 400/500/600/700 · Playfair Display 600/700 · DM Serif Display.
+
+#### 7d. Images (SSOT — enforced at upload time)
+
+- **Every uploaded image must be resized before storage.** Max height: **160 px**, aspect ratio preserved.
+- Resize implementation: `canvas.toDataURL("image/webp", 0.82)` — always output WebP at 82% quality.
+- Use `URL.createObjectURL` + `URL.revokeObjectURL` for the resize read step — never `FileReader` for images.
+- Never store a full-resolution upload. Never scale images down with CSS alone.
+- Always provide explicit `width` + `height` on `<img>` tags to prevent layout shift.
+- Use `loading="lazy"` on every `<img>` not in the above-the-fold critical path.
+
+#### 7e. Flutter performance
+
 - Use `const` constructors everywhere possible
 - Extract widgets and use `select()` on Riverpod providers to minimize rebuilds
 - Images → `CachedNetworkImage` with placeholder

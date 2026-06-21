@@ -1,0 +1,36 @@
+Deeply audit and optimize the entire application for performance, loading speed, bundle size, rendering efficiency, asset delivery, image handling, and scalability.
+
+Requirements:
+
+* Follow and enforce all optimization decisions through SSOT rules so future development cannot reintroduce performance issues.
+* Remove render-blocking resources and duplicate asset loading.
+* Ensure screens load only the code, styles, assets, fonts, and logic they actually use.
+* Implement proper code splitting, lazy loading, CSS splitting, asset splitting, tree shaking, caching, compression, preloading, prefetching, and bundle optimization where beneficial.
+* Identify and eliminate unnecessary global imports, oversized bundles, dead code, unused dependencies, redundant processing, excessive re-renders, unnecessary network requests, and avoidable runtime overhead.
+* Optimize images using responsive sizing, lazy loading, thumbnail generation, modern formats, layout-shift prevention, efficient decoding, and context-aware delivery.
+* Reduce network payloads, parsing costs, execution costs, memory usage, rendering overhead, and asset transfer sizes.
+* Verify and optimize production-build performance, not development-mode metrics.
+
+Image Rules (SSOT):
+
+* Every uploaded image must be automatically resized and compressed before storage.
+* Regardless of original dimensions or file size, the stored master image must never exceed 160px height while preserving aspect ratio.
+* Use modern compressed formats where supported.
+* Generate optimized image variants and thumbnails for different display contexts when beneficial.
+* Images must be stored, delivered, requested, decoded, and rendered according to their actual display size and device pixel ratio.
+* The frontend must always use the smallest suitable image variant for the target UI context.
+* Do not download, decode, render, or cache images significantly larger than their displayed dimensions require.
+* Avoid downloading large images and scaling them down purely through CSS.
+* Always provide explicit image dimensions to minimize layout shifts.
+* Never store original-resolution uploads unless explicitly required by a documented business need.
+
+Restrictions:
+
+* Do not load fonts, styles, assets, components, modules, feature code, or data globally if they are not required globally.
+* Do not load assets for screens, routes, or features that are not currently being used.
+* Do not load full-resolution images when optimized versions are sufficient.
+* Do not store oversized uploaded images.
+* Do not introduce optimizations that increase complexity without measurable performance benefits.
+* Do not change UI design, layout, styling, animations, interactions, workflows, functionality, or business logic.
+
+Focus only on high-impact optimizations that produce measurable real-world performance improvements while preserving the exact user experience.

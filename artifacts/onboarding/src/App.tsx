@@ -1,8 +1,18 @@
 import { useState, lazy, Suspense } from "react";
-import { WelcomeFlow }         from "./components/WelcomeFlow";
-import { LoginFlow }           from "./components/LoginFlow";
-import { ResetPasswordScreen } from "./components/LoginFlow";
 
+/* ── Route-level code splitting ─────────────────────────────────────────────
+   Every top-level page is lazy-loaded so the initial JS bundle only contains
+   the router shell. Chunks are loaded on first navigation to that route and
+   then cached. Never import page components eagerly at the top of App.tsx.  */
+const WelcomeFlow = lazy(() =>
+  import("./components/WelcomeFlow").then(m => ({ default: m.WelcomeFlow }))
+);
+const LoginFlow = lazy(() =>
+  import("./components/LoginFlow").then(m => ({ default: m.LoginFlow }))
+);
+const ResetPasswordScreen = lazy(() =>
+  import("./components/LoginFlow").then(m => ({ default: m.ResetPasswordScreen }))
+);
 const AdminDashboard = lazy(() =>
   import("./components/AdminDashboard").then(m => ({ default: m.AdminDashboard }))
 );
@@ -31,7 +41,6 @@ function getValidToken(): string | null {
 function getInitialView(): View {
   const path = window.location.pathname;
   if (getValidToken()) {
-    // keep /admin/* paths as-is; admin-dashboard renders the overlay for add-employee
     if (!path.startsWith("/admin/")) {
       window.history.replaceState({}, "", "/admin/dashboard");
     }
@@ -114,12 +123,14 @@ export default function App() {
         <div className="login">
           <div className="ob__bg-glow" />
           <div className="login__inner">
-            <ResetPasswordScreen
-              resetToken={resetToken}
-              enterDir="fwd"
-              onBack={leaveNewPassword}
-              onDone={leaveNewPassword}
-            />
+            <Suspense fallback={<div className="adm-lazy-fallback" />}>
+              <ResetPasswordScreen
+                resetToken={resetToken}
+                enterDir="fwd"
+                onBack={leaveNewPassword}
+                onDone={leaveNewPassword}
+              />
+            </Suspense>
           </div>
         </div>
       </div>
@@ -128,18 +139,22 @@ export default function App() {
 
   if (guardedView === "login") return (
     <div className={viewClass}>
-      <LoginFlow
-        onLoggedIn={() => goTo("admin-dashboard", "fwd")}
-        onResetVerified={handleResetVerified}
-      />
+      <Suspense fallback={<div className="adm-lazy-fallback" />}>
+        <LoginFlow
+          onLoggedIn={() => goTo("admin-dashboard", "fwd")}
+          onResetVerified={handleResetVerified}
+        />
+      </Suspense>
     </div>
   );
 
   return (
-    <WelcomeFlow
-      initialSlide={slide}
-      onSlideChange={n => setSlide(n)}
-      onGetStarted={() => goTo("login", "fwd")}
-    />
+    <Suspense fallback={<div className="adm-lazy-fallback" />}>
+      <WelcomeFlow
+        initialSlide={slide}
+        onSlideChange={n => setSlide(n)}
+        onGetStarted={() => goTo("login", "fwd")}
+      />
+    </Suspense>
   );
 }

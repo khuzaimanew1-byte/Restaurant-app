@@ -57,6 +57,19 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    /* ── Chunk splitting (SSOT) ───────────────────────────────────────────
+       Heavy vendor libs land in dedicated chunks so they can be cached
+       independently of app code changes. Never merge large vendor libs
+       back into the main bundle — cache invalidation defeats the purpose. */
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react":  ["react", "react-dom"],
+          "vendor-motion": ["framer-motion"],
+          "vendor-query":  ["@tanstack/react-query"],
+        },
+      },
+    },
   },
   server: {
     port,

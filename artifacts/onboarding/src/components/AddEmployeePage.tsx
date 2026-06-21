@@ -140,12 +140,24 @@ export function AddEmployeePage({
     toastTimer.current = setTimeout(() => setToast(""), 2800);
   }, []);
 
-  // Avatar handlers
+  // Avatar handlers — resize to max 160px height before storing (SSOT image rule)
   function applyImageFile(file: File) {
     if (!file?.type.startsWith("image/")) return;
-    const r = new FileReader();
-    r.onload = e => setAvatarUrl(e.target!.result as string);
-    r.readAsDataURL(file);
+    const img = new Image();
+    const blobUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(blobUrl);
+      const MAX_H = 160;
+      const scale = img.naturalHeight > MAX_H ? MAX_H / img.naturalHeight : 1;
+      const w = Math.round(img.naturalWidth  * scale);
+      const h = Math.round(img.naturalHeight * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width  = w;
+      canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      setAvatarUrl(canvas.toDataURL("image/webp", 0.82));
+    };
+    img.src = blobUrl;
   }
 
   // Salary — digits only, comma-formatted
