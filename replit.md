@@ -223,22 +223,31 @@ Apply automatically on every new component or page:
 - **No "onboarding" naming** in restaurant app code — the welcome/splash screens are `WelcomeFlow`, employee forms are in `employees/`, dashboard in `dashboard/`.
 - Workspace-level folder names (`artifacts/onboarding/`, `flutter_onboarding/`) are legacy constraints — internal code must not mirror them.
 
-### 10. Global UI Elements — SSOT Classes
+### 10. CSS Class Composition — Single-Class Rule
 
-Any element that appears on more than one page **must** use a shared global CSS class. Never create page-scoped styling for elements that repeat across pages.
+**If multiple classes always co-exist on the same element and neither is used independently elsewhere, merge them into one class.** Only keep separate classes when the same style block is genuinely reused independently across different elements.
 
-| Element | Global class | Where defined | Usage |
-|---------|-------------|---------------|-------|
-| Page topbar chrome | `.pg-topbar` | `index.css` GLOBAL section | Every full-screen page with a topbar — add alongside page-specific class |
-| 38×38 icon button | `.pg-icon-btn` | `index.css` GLOBAL section | Back arrows, close (×), toggle buttons on any page |
+```
+WRONG: <header class="ae-topbar pg-topbar">   ← two classes always together
+RIGHT: <header class="ae-topbar">             ← single class, vars carry SSOT
+```
+
+### 10a. Global UI Elements — SSOT Classes
+
+Any repeated visual pattern must have one SSOT. For topbars the SSOT is the CSS variables; for icon buttons it is the shared class.
+
+| Element | SSOT mechanism | Usage |
+|---------|---------------|-------|
+| Page topbar chrome | `--topbar-bg` / `--topbar-bd` / `--topbar-shadow` / `--topbar-h` in `:root` | Each page's topbar class copies the "shared chrome" comment block and uses these vars directly — **single class per element, no `.pg-topbar` class in HTML** |
+| 38×38 icon button | `.pg-icon-btn` in `index.css` GLOBAL section | Back arrows, close (×), toggle buttons — single class, no companion class |
 
 **Topbar token SSOT** (in `:root` — never hardcode these per-page):
 - `--topbar-bg` / `--topbar-bd` / `--topbar-shadow` / `--topbar-h`
 
 **Rules:**
-- New page with a topbar → use `className="<page-prefix>-topbar pg-topbar"`. The page class only adds layout overrides (padding, gap, position).
-- New icon button (back, close, toggle) → use `className="pg-icon-btn"`. Override only `border-radius` if a circle shape is needed.
-- Adding a new repeated element → define it in the `GLOBAL SHARED UI ELEMENTS` CSS section first, then reference it per-page.
+- New page with a topbar → define `.<page>-topbar` in CSS with the `/* shared topbar chrome */` comment block using `--topbar-*` vars. Use only that one class in HTML.
+- New icon button (back, close, toggle) → use `className="pg-icon-btn"`. Override only `border-radius` if a round shape is needed.
+- Adding a new repeated element → ask: is it always used with another class, or truly standalone? If standalone → create one shared class. If always paired → merge and use CSS vars for shared values.
 
 ### 9. Code Hygiene
 

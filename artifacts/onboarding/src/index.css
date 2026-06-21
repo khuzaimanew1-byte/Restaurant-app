@@ -140,28 +140,27 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SHARED UI ELEMENTS — SSOT
    ──────────────────────────────────────────────────────────────
-   These classes MUST be used on every matching element across all
-   pages. Never re-implement these styles per-page.
-   • .pg-topbar   — topbar chrome on every full-screen page
-   • .pg-icon-btn — 38×38 icon button (back, close, toggle)
+   CSS COMPOSITION RULE (enforced):
+   If multiple classes always co-exist on the same element and
+   neither appears independently elsewhere → merge into ONE class.
+   Only create a separate class when that exact style block is
+   genuinely reused independently across different elements.
+
+   TOPBAR pattern:
+     • --topbar-* vars (in :root) are the SSOT for topbar chrome.
+     • Each page's topbar class includes those vars directly — no
+       separate .pg-topbar class in HTML. Single class per element.
+     • New page topbar: copy the "shared chrome" comment block and
+       use --topbar-* vars. One class, one element.
+
+   ICON BUTTON (.pg-icon-btn):
+     • Single class, used standalone — no companion class needed.
+     • Valid use: <button class="pg-icon-btn"> (never alongside
+       a duplicate class that adds the same dimensions/states).
 ═══════════════════════════════════════════════════════════════ */
 
-/* Every page topbar uses the same chrome; only content differs per page.
-   Add pg-topbar alongside any page-specific class (e.g. "ae-topbar pg-topbar"). */
-.pg-topbar {
-  display: flex;
-  align-items: center;
-  height: var(--topbar-h);
-  flex-shrink: 0;
-  background: var(--topbar-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--topbar-bd);
-  box-shadow: var(--topbar-shadow);
-}
-
-/* 38×38 icon button — back arrows, close (×), and toggle buttons on any page.
-   Override only border-radius if a round shape is needed (e.g. border-radius:50%). */
+/* 38×38 icon button — back arrows, close (×), toggle buttons on any page.
+   Override only border-radius when a round shape is needed (e.g. border-radius:50%). */
 .pg-icon-btn {
   display: flex; align-items: center; justify-content: center;
   width: 38px; height: 38px; flex-shrink: 0;
@@ -1263,13 +1262,19 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   box-shadow: 0 0 24px rgba(212,175,55,.40);
 }
 
-/* ── Mobile top bar — chrome from .pg-topbar; layout below ── */
+/* ── Mobile top bar ── */
 .adm-topbar {
+  /* shared topbar chrome — matches all page topbars via --topbar-* vars (SSOT) */
+  display: flex; align-items: center;
+  height: var(--topbar-h); flex-shrink: 0;
+  background: var(--topbar-bg);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--topbar-bd);
+  box-shadow: var(--topbar-shadow);
+  /* page-specific layout */
   justify-content: space-between;
   padding: 0 16px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
+  position: sticky; top: 0; z-index: 50;
   gap: 8px;
 }
 @media (min-width: 768px) { .adm-topbar { display: none; } }
@@ -2084,8 +2089,16 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   to   { transform: translateX(100%); opacity: 0; }
 }
 
-/* ── Top bar — chrome from .pg-topbar; layout below ── */
+/* ── Top bar ── */
 .ae-topbar {
+  /* shared topbar chrome — matches all page topbars via --topbar-* vars (SSOT) */
+  display: flex; align-items: center;
+  height: var(--topbar-h); flex-shrink: 0;
+  background: var(--topbar-bg);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--topbar-bd);
+  box-shadow: var(--topbar-shadow);
+  /* page-specific layout */
   gap: 12px;
   padding: 0 20px;
   position: relative; z-index: 2;

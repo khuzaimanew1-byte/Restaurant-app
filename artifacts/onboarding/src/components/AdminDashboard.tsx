@@ -882,8 +882,8 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           </div>
         </header>
 
-        {/* Mobile sticky top bar — .pg-topbar provides shared chrome (SSOT Rule 10) */}
-        <header className="adm-topbar pg-topbar">
+        {/* Mobile sticky top bar */}
+        <header className="adm-topbar">
           <div className={`adm-topbar-logo${mobileSearchOpen ? " adm-topbar-logo-hide" : ""}`}>
             <RestaurantLogo size={26} />
             <span className="adm-topbar-brand">MyRestaurant</span>
