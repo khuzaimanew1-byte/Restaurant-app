@@ -76,9 +76,11 @@ const BulletList = memo(function BulletList({
 export function AddEmployeePage({
   onClose,
   onSave,
+  isOpen = true,
 }: {
   onClose: () => void;
   onSave: (data: NewEmployeeData) => void;
+  isOpen?: boolean;
 }) {
   // Avatar
   const [avatarUrl,   setAvatarUrl]   = useState("");
@@ -187,11 +189,11 @@ export function AddEmployeePage({
   }
 
   return (
-    <div className="ae-root">
+    <div className={`ae-root${!isOpen ? " ae-root--closing" : ""}`}>
 
-      {/* ── Top bar ── */}
-      <header className="ae-topbar">
-        <button className="ae-back-btn" onClick={onClose} aria-label="Back">
+      {/* ── Top bar — .pg-topbar provides shared chrome (SSOT Rule 10) ── */}
+      <header className="ae-topbar pg-topbar">
+        <button className="pg-icon-btn" onClick={onClose} aria-label="Back">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>

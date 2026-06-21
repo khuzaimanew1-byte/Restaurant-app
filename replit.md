@@ -223,6 +223,23 @@ Apply automatically on every new component or page:
 - **No "onboarding" naming** in restaurant app code — the welcome/splash screens are `WelcomeFlow`, employee forms are in `employees/`, dashboard in `dashboard/`.
 - Workspace-level folder names (`artifacts/onboarding/`, `flutter_onboarding/`) are legacy constraints — internal code must not mirror them.
 
+### 10. Global UI Elements — SSOT Classes
+
+Any element that appears on more than one page **must** use a shared global CSS class. Never create page-scoped styling for elements that repeat across pages.
+
+| Element | Global class | Where defined | Usage |
+|---------|-------------|---------------|-------|
+| Page topbar chrome | `.pg-topbar` | `index.css` GLOBAL section | Every full-screen page with a topbar — add alongside page-specific class |
+| 38×38 icon button | `.pg-icon-btn` | `index.css` GLOBAL section | Back arrows, close (×), toggle buttons on any page |
+
+**Topbar token SSOT** (in `:root` — never hardcode these per-page):
+- `--topbar-bg` / `--topbar-bd` / `--topbar-shadow` / `--topbar-h`
+
+**Rules:**
+- New page with a topbar → use `className="<page-prefix>-topbar pg-topbar"`. The page class only adds layout overrides (padding, gap, position).
+- New icon button (back, close, toggle) → use `className="pg-icon-btn"`. Override only `border-radius` if a circle shape is needed.
+- Adding a new repeated element → define it in the `GLOBAL SHARED UI ELEMENTS` CSS section first, then reference it per-page.
+
 ### 9. Code Hygiene
 
 - **`console.log` is forbidden** — remove before committing.

@@ -882,8 +882,8 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           </div>
         </header>
 
-        {/* Mobile sticky top bar */}
-        <header className="adm-topbar">
+        {/* Mobile sticky top bar — .pg-topbar provides shared chrome (SSOT Rule 10) */}
+        <header className="adm-topbar pg-topbar">
           <div className={`adm-topbar-logo${mobileSearchOpen ? " adm-topbar-logo-hide" : ""}`}>
             <RestaurantLogo size={26} />
             <span className="adm-topbar-brand">MyRestaurant</span>
@@ -1012,6 +1012,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       {/* Add Employee page — /admin/add-employee — kept mounted 60 s after close (Rule 3) */}
       {shouldRenderAddEmp && (
         <AddEmployeePage
+          isOpen={showAddEmployee}
           onClose={closeAddEmployee}
           onSave={handleAddEmployee}
         />
