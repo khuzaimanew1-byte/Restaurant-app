@@ -264,12 +264,13 @@ export function AddEmployeePage({
               </div>
             </div>
 
-            {/* Position / Role */}
+            {/* Date of Birth */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
-                <BriefSVG />
-                <input className="ae-fi" type="text" placeholder="Position / Role"
-                  value={role} onChange={e => setRole(e.target.value)} />
+                <CalSVG />
+                <input className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
+                  type="date" value={dob} onChange={e => setDob(e.target.value)} />
+                {!dob && <span className="ae-date-ph">Date of Birth</span>}
               </div>
             </div>
 
@@ -352,13 +353,12 @@ export function AddEmployeePage({
               )}
             </div>
 
-            {/* Date of Birth */}
+            {/* Position / Role */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
-                <CalSVG />
-                <input className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
-                  type="date" value={dob} onChange={e => setDob(e.target.value)} />
-                {!dob && <span className="ae-date-ph">Date of Birth</span>}
+                <BriefSVG />
+                <input className="ae-fi" type="text" placeholder="Position / Role"
+                  value={role} onChange={e => setRole(e.target.value)} />
               </div>
             </div>
 
