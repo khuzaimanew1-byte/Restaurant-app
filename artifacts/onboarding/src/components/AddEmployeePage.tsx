@@ -387,31 +387,26 @@ export function AddEmployeePage({
               </div>
             </div>
 
-            {/* Shift Timing — 1 column */}
+            {/* Shift Timing — pill card */}
             <div className="ae-field">
-              <div className="ae-fi-wrap ae-shift-wrap">
-                <span className="ae-date-ico" onClick={() => shiftStartRef.current?.showPicker?.()}>
+              <div className="ae-shift-pill">
+                <span className="ae-shift-pill-ico" onClick={() => shiftStartRef.current?.showPicker?.()}>
                   <ClockSVG />
                 </span>
-                <div className="ae-shift-pair">
-                  <div className="ae-shift-slot">
-                    <input
-                      ref={shiftStartRef}
-                      className={`ae-fi ae-time${!shiftStart ? " ae-date-empty" : ""}`}
-                      type="time" value={shiftStart} onChange={e => setShiftStart(e.target.value)}
-                    />
-                    {!shiftStart && <span className="ae-shift-ph">Start Time</span>}
-                  </div>
-                  <span className="ae-shift-sep">—</span>
-                  <div className="ae-shift-slot">
-                    <input
-                      ref={shiftEndRef}
-                      className={`ae-fi ae-time${!shiftEnd ? " ae-date-empty" : ""}`}
-                      type="time" value={shiftEnd} onChange={e => setShiftEnd(e.target.value)}
-                    />
-                    {!shiftEnd && <span className="ae-shift-ph">End Time</span>}
-                  </div>
-                </div>
+                <div className="ae-shift-pill-sep" />
+                <input
+                  ref={shiftStartRef}
+                  className="ae-shift-pill-time"
+                  type="time" value={shiftStart}
+                  onChange={e => setShiftStart(e.target.value)}
+                />
+                <span className="ae-shift-pill-dash">—</span>
+                <input
+                  ref={shiftEndRef}
+                  className="ae-shift-pill-time"
+                  type="time" value={shiftEnd}
+                  onChange={e => setShiftEnd(e.target.value)}
+                />
               </div>
             </div>
 
