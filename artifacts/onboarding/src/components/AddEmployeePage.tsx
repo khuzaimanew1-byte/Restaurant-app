@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useLayoutEffect } from "react";
+import { useState, useRef, useCallback, useLayoutEffect, memo } from "react";
 
 // ── Palette for avatar fallback colours ───────────────────────────────────
 /* Avatar palette — hex SSOT lives in index.css :root as --av-p1…--av-p8 */
@@ -28,8 +28,10 @@ const CameraSmSVG = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="
 const CheckSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 const TrashSVG    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 const ChevSVG = ({ open }: { open: boolean }) => (
+  /* ae-chev-svg defines transition: transform .2s in CSS — only rotation is dynamic */
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-    style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}>
+    className="ae-chev-svg"
+    style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" } as React.CSSProperties}>
     <polyline points="6 9 12 15 18 9"/>
   </svg>
 );
@@ -37,7 +39,7 @@ const ChevSVG = ({ open }: { open: boolean }) => (
 const GENDERS = ["Male", "Female", "Other"];
 
 // ── BulletList sub-component ──────────────────────────────────────────────
-function BulletList({
+const BulletList = memo(function BulletList({
   label, items, input, onInputChange, onAdd, onDelete, placeholder,
 }: {
   label: string; items: string[]; input: string;
@@ -68,7 +70,7 @@ function BulletList({
       </div>
     </div>
   );
-}
+});
 
 // ── Main component ────────────────────────────────────────────────────────
 export function AddEmployeePage({
@@ -433,13 +435,13 @@ export function AddEmployeePage({
 
           {/* ── Pro sections ── */}
           <div className="ae-pro-grid">
-            <BulletList label="Assigned Tasks"     items={tasks} input={taskInp} onInputChange={setTaskInp} placeholder="Add a task…"       onAdd={() => addItem(taskInp, setTasks, setTaskInp)} onDelete={i => delItem(i, setTasks)} />
-            <BulletList label="Work Capabilities"  items={caps}  input={capInp}  onInputChange={setCapInp}  placeholder="Add a capability…"  onAdd={() => addItem(capInp,  setCaps,  setCapInp)}  onDelete={i => delItem(i, setCaps)}  />
+            <BulletList label="Assigned Tasks"     items={tasks} input={taskInp} onInputChange={setTaskInp} placeholder="Add a task…"       onAdd={() => addItem(taskInp, setTasks, setTaskInp)} onDelete={(i: number) => delItem(i, setTasks)} />
+            <BulletList label="Work Capabilities"  items={caps}  input={capInp}  onInputChange={setCapInp}  placeholder="Add a capability…"  onAdd={() => addItem(capInp,  setCaps,  setCapInp)}  onDelete={(i: number) => delItem(i, setCaps)}  />
           </div>
 
           {/* ── Bottom: Speciality + Buttons ── */}
           <div className="ae-bot-row">
-            <BulletList label="Speciality" items={specs} input={specInp} onInputChange={setSpecInp} placeholder="Add a speciality…" onAdd={() => addItem(specInp, setSpecs, setSpecInp)} onDelete={i => delItem(i, setSpecs)} />
+            <BulletList label="Speciality" items={specs} input={specInp} onInputChange={setSpecInp} placeholder="Add a speciality…" onAdd={() => addItem(specInp, setSpecs, setSpecInp)} onDelete={(i: number) => delItem(i, setSpecs)} />
             <div className="ae-bot-right">
               <button className="ae-btn-cancel" onClick={onClose} title="Discard">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

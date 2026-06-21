@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/constants/app_colors.dart';
+import '../../../../../core/constants/app_text_styles.dart';
 
 final _rules = <({String key, String label, bool Function(String) test})>[
   (key: 'len',     label: '8+ chars',     test: (p) => p.length >= 8),
@@ -42,8 +43,8 @@ class PasswordRulesWidget extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 r.label,
-                style: TextStyle(
-                  fontSize: 12,
+                style: AppTextStyles.label.copyWith(
+                  fontWeight: FontWeight.w400,
                   color: met ? AppColors.accent : AppColors.textTer,
                 ),
               ),

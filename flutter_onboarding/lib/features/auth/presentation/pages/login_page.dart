@@ -269,12 +269,12 @@ class _SignInScreenState extends State<_SignInScreen> {
                     children: const [
                       TextSpan(
                         text: 'Terms of Service',
-                        style: TextStyle(color: AppColors.accent),
+                        style: AppTextStyles.link,
                       ),
                       TextSpan(text: ' and '),
                       TextSpan(
                         text: 'Privacy Policy',
-                        style: TextStyle(color: AppColors.accent),
+                        style: AppTextStyles.link,
                       ),
                     ],
                   ),
@@ -482,7 +482,10 @@ class _OtpScreenState extends State<_OtpScreen> {
                 TextSpan(text: 'Resend in ', style: AppTextStyles.bodyXs),
                 TextSpan(
                   text: _countdownLabel,
-                  style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w600),
+                  style: AppTextStyles.bodyXs.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ))

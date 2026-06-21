@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
+import '../constants/app_text_styles.dart';
 
 enum AppButtonVariant { primary, secondary, ghost, destructive }
 
@@ -154,12 +155,7 @@ class _AppButtonState extends State<AppButton>
         ],
         Text(
           widget.label,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.3,
-            color: textColor,
-          ),
+          style: AppTextStyles.ctaButton.copyWith(color: textColor),
         ),
       ],
     );

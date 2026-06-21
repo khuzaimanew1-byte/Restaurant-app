@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../../core/constants/app_colors.dart';
+import '../../../../../core/constants/app_text_styles.dart';
 
 /// 6-digit OTP input row — mirrors React's OtpRow.
 class OtpInputRow extends StatefulWidget {
@@ -101,9 +102,7 @@ class _OtpInputRowState extends State<OtpInputRow> {
             FilteringTextInputFormatter.digitsOnly,
           ],
           onChanged: (v) => _onChanged(i, v),
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
+          style: AppTextStyles.otpDigit.copyWith(
             color: widget.hasError ? AppColors.err : AppColors.text,
           ),
           cursorColor: AppColors.accent,

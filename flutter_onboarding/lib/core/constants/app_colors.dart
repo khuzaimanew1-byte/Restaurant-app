@@ -32,6 +32,7 @@ class AppColors {
   static const text    = Color(0xEDF5E6C8); // --text    93%
   static const textSub = Color(0x80F5E6C8); // --text-sub 50%
   static const textTer = Color(0x47F5E6C8); // --text-ter 28%
+  static const textHint = Color(0x66F5E6C8); // --text at 40% (input hint)
 
   // ── Chip backgrounds (mirrors --chip-a/b/c) ─────────────────
   static const chipA = Color(0x2EC4820A); // --chip-a 18%
@@ -103,7 +104,7 @@ class AppColors {
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 12),
         hintStyle: const TextStyle(
-          color: Color(0x66F5E6C8),
+          color: AppColors.textHint,
           fontSize: 15,
           fontWeight: FontWeight.w400,
         ),

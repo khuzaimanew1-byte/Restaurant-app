@@ -61,15 +61,13 @@ class _BottomStrokeInputState extends State<BottomStrokeInput> {
             cursorColor: AppColors.accent,
             decoration: InputDecoration(
               labelText: widget.label,
-              labelStyle: TextStyle(
+              labelStyle: AppTextStyles.inputText.copyWith(
                 color: AppColors.text.withValues(alpha: 0.38),
-                fontSize: 15,
               ),
-              floatingLabelStyle: TextStyle(
+              floatingLabelStyle: AppTextStyles.error.copyWith(
                 color: hasErr
                     ? AppColors.inputStrokeErr
                     : AppColors.inputStrokeFocus,
-                fontSize: 11.5,
               ),
               enabledBorder: UnderlineInputBorder(
                 borderSide: BorderSide(

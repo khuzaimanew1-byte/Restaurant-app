@@ -150,4 +150,12 @@ class AppTextStyles {
     letterSpacing: -0.2,
     color: AppColors.textTer,
   );
+
+  // ── OTP ──────────────────────────────────────────────────────────────
+  /// OTP digit box text — 22px bold, default text colour.
+  static const otpDigit = TextStyle(
+    fontSize: 22,
+    fontWeight: FontWeight.w700,
+    color: AppColors.text,
+  );
 }
