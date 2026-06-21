@@ -31,11 +31,14 @@ function getValidToken(): string | null {
 function getInitialView(): View {
   const path = window.location.pathname;
   if (getValidToken()) {
-    window.history.replaceState({}, "", "/admin/dashboard");
+    // keep /admin/* paths as-is; admin-dashboard renders the overlay for add-employee
+    if (!path.startsWith("/admin/")) {
+      window.history.replaceState({}, "", "/admin/dashboard");
+    }
     return "admin-dashboard";
   }
   if (path === "/login") return "login";
-  if (path === "/admin/dashboard") {
+  if (path.startsWith("/admin/")) {
     window.history.replaceState({}, "", "/login");
     return "login";
   }

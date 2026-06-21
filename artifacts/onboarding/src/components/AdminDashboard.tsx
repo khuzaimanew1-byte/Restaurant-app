@@ -683,7 +683,9 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [officeTiming,   setOfficeTiming]   = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
   const [rawQuery,        setRawQuery]       = useState("");
   const [mobileSearchOpen, setMobileSearch] = useState(false);
-  const [showAddEmployee,  setShowAddEmployee] = useState(false);
+  const [showAddEmployee,  setShowAddEmployee] = useState(
+    () => window.location.pathname === "/admin/add-employee"
+  );
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
   const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
@@ -716,6 +718,25 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   const openSearch  = useCallback(() => { setMobileSearch(true); setTimeout(() => mobileSearchRef.current?.focus(), 300); }, []);
   const closeSearch = useCallback(() => { setMobileSearch(false); setRawQuery(""); }, []);
+
+  // ── URL-sync for Add Employee page ───────────────────────────────────────
+  const openAddEmployee = useCallback(() => {
+    window.history.pushState({}, "", "/admin/add-employee");
+    setShowAddEmployee(true);
+  }, []);
+
+  const closeAddEmployee = useCallback(() => {
+    window.history.pushState({}, "", "/admin/dashboard");
+    setShowAddEmployee(false);
+  }, []);
+
+  useEffect(() => {
+    function onPopState() {
+      setShowAddEmployee(window.location.pathname === "/admin/add-employee");
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const handleAddEmployee = useCallback((data: NewEmployeeData) => {
     setEmployees(prev => {
@@ -941,7 +962,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
 
         {/* FAB */}
-        <button className="adm-fab" aria-label="Add" onClick={() => setShowAddEmployee(true)}>
+        <button className="adm-fab" aria-label="Add" onClick={openAddEmployee}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
@@ -978,10 +999,10 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         <LogoutModal onConfirm={onLogout} onCancel={() => setLogoutModal(false)} />
       )}
 
-      {/* Add Employee page */}
+      {/* Add Employee page — /admin/add-employee */}
       {showAddEmployee && (
         <AddEmployeePage
-          onClose={() => setShowAddEmployee(false)}
+          onClose={closeAddEmployee}
           onSave={handleAddEmployee}
         />
       )}
