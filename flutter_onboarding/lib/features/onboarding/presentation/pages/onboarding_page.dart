@@ -7,6 +7,7 @@ import '../widgets/page_indicator.dart';
 import '../../data/onboarding_data.dart';
 import '../../data/onboarding_repository.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_text_styles.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -175,12 +176,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                           horizontal: 8, vertical: 8),
                       child: Text(
                         'Skip',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: -0.2,
-                          color: AppColors.textTer,
-                        ),
+                        style: AppTextStyles.skipLabel,
                       ),
                     ),
                   ),
@@ -212,24 +208,12 @@ class _OnboardingPageState extends State<OnboardingPage>
           children: [
             Text(
               onboardingPages[_currentIndex].headline,
-              style: const TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1.0,
-                height: 1.10,
-                color: AppColors.text,
-              ),
+              style: AppTextStyles.headline.copyWith(letterSpacing: -1.0, height: 1.10),
             ),
             const SizedBox(height: 12),
             Text(
               onboardingPages[_currentIndex].description,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                letterSpacing: -0.1,
-                height: 1.55,
-                color: AppColors.textSub,
-              ),
+              style: AppTextStyles.body,
             ),
             const SizedBox(height: 28),
             PageIndicator(
@@ -279,12 +263,7 @@ class _OnboardingPageState extends State<OnboardingPage>
             children: [
               Text(
                 isLast ? 'Get Started' : 'Continue',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                  color: AppColors.accentFg,
-                ),
+                style: AppTextStyles.ctaButton,
               ),
               if (!isLast) ...[
                 const SizedBox(width: 8),

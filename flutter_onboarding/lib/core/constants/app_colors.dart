@@ -26,6 +26,7 @@ class AppColors {
   static const accentBd   = Color(0x51C4820A); // --accent-bd  32%
   static const accentFg   = Color(0xFFFFF8F0); // --accent-fg
   static const accentGlow = Color(0x6BC4820A); // --accent-glow 42%
+  static const accentBg   = Color(0x1CC4820A); // --accent-bg    11% (radial background glow)
 
   // ── Text (mirrors --text, --text-sub, --text-ter) ───────────
   static const text    = Color(0xEDF5E6C8); // --text    93%

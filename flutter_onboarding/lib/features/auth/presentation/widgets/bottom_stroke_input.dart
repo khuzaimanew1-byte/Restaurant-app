@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/constants/app_colors.dart';
+import '../../../../../core/constants/app_text_styles.dart';
 
 /// Bottom-stroke floating-label input — mirrors React's TextInput / PasswordInput.
 ///
@@ -56,11 +57,7 @@ class _BottomStrokeInputState extends State<BottomStrokeInput> {
             onSubmitted: (_) => widget.onSubmitted?.call(),
             autocorrect: false,
             enableSuggestions: !widget.isPassword,
-            style: const TextStyle(
-              fontSize: 15,
-              color: AppColors.text,
-              fontWeight: FontWeight.w400,
-            ),
+            style: AppTextStyles.inputText,
             cursorColor: AppColors.accent,
             decoration: InputDecoration(
               labelText: widget.label,
@@ -117,7 +114,7 @@ class _BottomStrokeInputState extends State<BottomStrokeInput> {
             const SizedBox(height: 5),
             Text(
               widget.errorText!,
-              style: const TextStyle(fontSize: 11.5, color: AppColors.err),
+              style: AppTextStyles.error,
             ),
           ],
         ],

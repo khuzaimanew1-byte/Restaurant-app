@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_text_styles.dart';
 import '../../data/auth_storage.dart';
 
 /// Mirrors React's SuccessScreen — shown after successful admin verification.
@@ -29,7 +30,7 @@ class SuccessPage extends StatelessWidget {
                   gradient: RadialGradient(
                     center: Alignment(0, -1.0),
                     radius: 1.8,
-                    colors: [Color(0x1CC4820A), Colors.transparent],
+                    colors: [AppColors.accentBg, Colors.transparent],
                   ),
                 ),
               ),
@@ -64,12 +65,7 @@ class SuccessPage extends StatelessWidget {
                     const Text(
                       'Admin Successfully Verified',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.8,
-                        color: AppColors.text,
-                      ),
+                      style: AppTextStyles.headlineSm,
                     )
                     .animate()
                     .fadeIn(delay: 300.ms, duration: 500.ms)
@@ -83,8 +79,7 @@ class SuccessPage extends StatelessWidget {
                       onPressed: () => _logout(context),
                       child: Text(
                         'Log out',
-                        style: TextStyle(
-                          fontSize: 13,
+                        style: AppTextStyles.bodyXsTer.copyWith(
                           color: AppColors.textTer.withValues(alpha: 0.80),
                         ),
                       ),

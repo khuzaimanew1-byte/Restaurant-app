@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useLayoutEffect } from "react";
 
 // ── Palette for avatar fallback colours ───────────────────────────────────
+/* Avatar palette — hex SSOT lives in index.css :root as --av-p1…--av-p8 */
 const AVATAR_PALETTE = [
-  "#3B5BDB","#E64980","#7048E8","#2B8A3E",
-  "#C92A2A","#1098AD","#F08C00","#0B7285",
+  "var(--av-p1)","var(--av-p2)","var(--av-p3)","var(--av-p4)",
+  "var(--av-p5)","var(--av-p6)","var(--av-p7)","var(--av-p8)",
 ];
 
 export interface NewEmployeeData {
@@ -50,7 +51,7 @@ function BulletList({
       <div className="ae-pro-hdr">{label}</div>
       <div className="ae-bul-list">
         {items.map((t, i) => (
-          <div key={i} className="ae-bul-item">
+          <div key={t} className="ae-bul-item">
             <div className="ae-bul-dot" />
             <span className="ae-bul-txt">{t}</span>
             <span className="ae-bul-del" onMouseDown={e => { e.preventDefault(); onDelete(i); }}><TrashSVG /></span>
@@ -238,7 +239,7 @@ export function AddEmployeePage({
 
           {/* ── Salary pill ── */}
           <div className="ae-sal-sec">
-            <div className="ae-sal-pill" style={{ position: "relative" } as React.CSSProperties}>
+            <div className="ae-sal-pill">
               <span ref={salSizerRef} className="ae-sal-sizer" aria-hidden />
               <span className="ae-sal-cur">PKR</span>
               <div className="ae-sal-sep" />

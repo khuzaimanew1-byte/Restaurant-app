@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_text_styles.dart';
 import '../../data/auth_service.dart';
 import '../../data/auth_storage.dart';
+import '../providers/login_notifier.dart';
 import '../widgets/bottom_stroke_input.dart';
 import '../widgets/otp_input_row.dart';
 import '../widgets/password_rules_widget.dart';
-
-// ── Internal screen state ─────────────────────────────────────────────
-enum _Screen { signIn, otp, resetPassword }
 
 String _maskEmail(String email) {
   final parts = email.split('@');
@@ -20,40 +20,20 @@ String _maskEmail(String email) {
   return '${local.substring(0, local.length.clamp(0, 3))}***@${parts[1]}';
 }
 
-// ── LoginPage — mirrors React's LoginFlow ─────────────────────────────
-class LoginPage extends StatefulWidget {
+// ── LoginPage — screen routing via Riverpod StateNotifier ─────────────
+class LoginPage extends ConsumerWidget {
   const LoginPage({super.key});
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  _Screen _screen    = _Screen.signIn;
-  int     _screenKey = 0;
-
-  String _email      = '';
-  String _pendingPw  = '';
-  String _otpPurpose = 'login';
-
-  void _goTo(_Screen s) => setState(() { _screen = s; _screenKey++; });
-
-  Future<void> _handleLoggedIn(String token) async {
-    await AuthStorage.setToken(token);
-    if (mounted) context.go('/success');
-  }
-
-  void _handleOtpNeeded(String email, String pw) {
-    setState(() { _email = email; _pendingPw = pw; _otpPurpose = 'login'; });
-    _goTo(_Screen.otp);
-  }
-
-  void _handleForgot(String email) {
-    setState(() { _email = email; _otpPurpose = 'reset'; });
-    _goTo(_Screen.otp);
-  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state    = ref.watch(loginProvider);
+    final notifier = ref.read(loginProvider.notifier);
+
+    Future<void> handleLoggedIn(String token) async {
+      await AuthStorage.setToken(token);
+      if (context.mounted) context.go('/success');
+    }
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       resizeToAvoidBottomInset: true,
@@ -66,7 +46,7 @@ class _LoginPageState extends State<LoginPage> {
                 decoration: const BoxDecoration(
                   gradient: RadialGradient(
                     center: Alignment(0, -1.0), radius: 1.8,
-                    colors: [Color(0x1CC4820A), Colors.transparent],
+                    colors: [AppColors.accentBg, Colors.transparent],
                   ),
                 ),
               ),
@@ -82,28 +62,28 @@ class _LoginPageState extends State<LoginPage> {
                     child: child,
                   ),
                 ),
-                child: switch (_screen) {
-                  _Screen.signIn => _SignInScreen(
-                    key: ValueKey('signin-$_screenKey'),
-                    defaultEmail: _email,
-                    onOtpNeeded: _handleOtpNeeded,
-                    onLoggedIn: _handleLoggedIn,
-                    onForgot: _handleForgot,
+                child: switch (state.screen) {
+                  LoginScreen.signIn => _SignInScreen(
+                    key: ValueKey('signin-${state.screenKey}'),
+                    defaultEmail: state.email,
+                    onOtpNeeded: notifier.handleOtpNeeded,
+                    onLoggedIn: handleLoggedIn,
+                    onForgot: notifier.handleForgot,
                   ),
-                  _Screen.otp => _OtpScreen(
-                    key: ValueKey('otp-$_screenKey'),
-                    email: _email,
-                    purpose: _otpPurpose,
-                    pendingPw: _pendingPw,
-                    onChangeEmail: () => _goTo(_Screen.signIn),
-                    onLoggedIn: _handleLoggedIn,
-                    onResetReady: () => _goTo(_Screen.resetPassword),
+                  LoginScreen.otp => _OtpScreen(
+                    key: ValueKey('otp-${state.screenKey}'),
+                    email: state.email,
+                    purpose: state.otpPurpose,
+                    pendingPw: state.pendingPw,
+                    onChangeEmail: () => notifier.goTo(LoginScreen.signIn),
+                    onLoggedIn: handleLoggedIn,
+                    onResetReady: () => notifier.goTo(LoginScreen.resetPassword),
                   ),
-                  _Screen.resetPassword => _ResetPasswordScreen(
-                    key: ValueKey('reset-$_screenKey'),
-                    email: _email,
-                    onBack: () => _goTo(_Screen.signIn),
-                    onDone: () => _goTo(_Screen.signIn),
+                  LoginScreen.resetPassword => _ResetPasswordScreen(
+                    key: ValueKey('reset-${state.screenKey}'),
+                    email: state.email,
+                    onBack: () => notifier.goTo(LoginScreen.signIn),
+                    onDone: () => notifier.goTo(LoginScreen.signIn),
                   ),
                 },
               ),
@@ -181,8 +161,8 @@ class _SignInScreenState extends State<_SignInScreen> {
         await widget.onLoggedIn(token);
       }
     } catch (e) {
-      final msg        = e.toString().replaceFirst('Exception: ', '');
-      final lower      = msg.toLowerCase();
+      final msg   = e.toString().replaceFirst('Exception: ', '');
+      final lower = msg.toLowerCase();
       setState(() {
         if (lower.contains('not registered') || lower.contains('not found')) {
           _emailErr = 'Email not registered';
@@ -215,7 +195,7 @@ class _SignInScreenState extends State<_SignInScreen> {
       await AuthService.sendOtp(_emailCtrl.text.trim(), 'reset');
       widget.onForgot(_emailCtrl.text.trim());
     } catch (e) {
-      final msg        = e.toString().replaceFirst('Exception: ', '');
+      final msg = e.toString().replaceFirst('Exception: ', '');
       setState(() => _emailErr = msg);
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -232,18 +212,9 @@ class _SignInScreenState extends State<_SignInScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Welcome back',
-            style: TextStyle(
-              fontSize: 34, fontWeight: FontWeight.w800,
-              letterSpacing: -1.4, height: 1.06, color: AppColors.text,
-            ),
-          ),
+          const Text('Welcome back', style: AppTextStyles.headlineLogin),
           const SizedBox(height: 6),
-          Text(
-            'Sign in to your account',
-            style: TextStyle(fontSize: 14, color: AppColors.textTer, letterSpacing: -0.2),
-          ),
+          Text('Sign in to your account', style: AppTextStyles.subhead),
           const SizedBox(height: 36),
           BottomStrokeInput(
             label: 'Email address',
@@ -294,16 +265,16 @@ class _SignInScreenState extends State<_SignInScreen> {
                 child: Text.rich(
                   TextSpan(
                     text: 'I agree to the ',
-                    style: TextStyle(fontSize: 13, color: AppColors.textTer),
-                    children: [
+                    style: AppTextStyles.bodyXsTer,
+                    children: const [
                       TextSpan(
                         text: 'Terms of Service',
-                        style: const TextStyle(color: AppColors.accent),
+                        style: TextStyle(color: AppColors.accent),
                       ),
-                      const TextSpan(text: ' and '),
+                      TextSpan(text: ' and '),
                       TextSpan(
                         text: 'Privacy Policy',
-                        style: const TextStyle(color: AppColors.accent),
+                        style: TextStyle(color: AppColors.accent),
                       ),
                     ],
                   ),
@@ -313,7 +284,7 @@ class _SignInScreenState extends State<_SignInScreen> {
           ),
           if (_generalErr.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text(_generalErr, style: const TextStyle(fontSize: 11.5, color: AppColors.err)),
+            Text(_generalErr, style: AppTextStyles.error),
           ],
           const SizedBox(height: 24),
           _CtaButton(
@@ -326,13 +297,7 @@ class _SignInScreenState extends State<_SignInScreen> {
           Center(
             child: TextButton(
               onPressed: _loading ? null : _handleForgot,
-              child: Text(
-                'Forgot password?',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: AppColors.accent.withValues(alpha: 0.80),
-                ),
-              ),
+              child: Text('Forgot password?', style: AppTextStyles.forgotLink),
             ),
           ),
         ],
@@ -362,9 +327,9 @@ class _OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<_OtpScreen> {
-  List<String> _digits   = List.filled(6, '');
-  String       _otpErr   = '';
-  bool         _loading  = false;
+  List<String> _digits    = List.filled(6, '');
+  String       _otpErr    = '';
+  bool         _loading   = false;
   int          _countdown = 10 * 60;
   Timer?       _timer;
 
@@ -459,15 +424,12 @@ class _OtpScreenState extends State<_OtpScreen> {
           const SizedBox(height: 20),
           Text(
             _isLogin ? 'Check your inbox' : 'Password reset',
-            style: const TextStyle(
-              fontSize: 30, fontWeight: FontWeight.w800,
-              letterSpacing: -1.2, height: 1.06, color: AppColors.text,
-            ),
+            style: AppTextStyles.headline,
           ),
           const SizedBox(height: 6),
           Text(
             _isLogin ? 'We sent a 6-digit code to' : 'Enter the reset code sent to',
-            style: TextStyle(fontSize: 14, color: AppColors.textSub),
+            style: AppTextStyles.bodySmall,
           ),
           const SizedBox(height: 10),
           // Email chip
@@ -481,16 +443,16 @@ class _OtpScreenState extends State<_OtpScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(width: 6, height: 6,
-                  decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.accent)),
+                Container(
+                  width: 6, height: 6,
+                  decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.accent),
+                ),
                 const SizedBox(width: 8),
-                Text(_maskEmail(widget.email),
-                  style: const TextStyle(fontSize: 13, color: AppColors.text, fontWeight: FontWeight.w500)),
+                Text(_maskEmail(widget.email), style: AppTextStyles.chipText),
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: widget.onChangeEmail,
-                  child: const Text('Change',
-                    style: TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.w600)),
+                  child: const Text('Change', style: AppTextStyles.linkSm),
                 ),
               ],
             ),
@@ -504,37 +466,37 @@ class _OtpScreenState extends State<_OtpScreen> {
           ),
           if (_loading) ...[
             const SizedBox(height: 16),
-            const Center(child: SizedBox(width: 22, height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2.2, color: AppColors.accent))),
+            const Center(child: SizedBox(
+              width: 22, height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.2, color: AppColors.accent),
+            )),
           ],
           if (_otpErr.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text(_otpErr, style: const TextStyle(fontSize: 11.5, color: AppColors.err)),
+            Text(_otpErr, style: AppTextStyles.error),
           ],
           const SizedBox(height: 20),
           if (_countdown > 0)
             Text.rich(TextSpan(
-              text: 'Resend in ',
-              style: TextStyle(fontSize: 13, color: AppColors.textSub),
-              children: [TextSpan(
-                text: _countdownLabel,
-                style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w600),
-              )],
+              children: [
+                TextSpan(text: 'Resend in ', style: AppTextStyles.bodyXs),
+                TextSpan(
+                  text: _countdownLabel,
+                  style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.w600),
+                ),
+              ],
             ))
           else
             Row(children: [
-              Text("Didn't receive it? ",
-                style: TextStyle(fontSize: 13, color: AppColors.textSub)),
+              Text("Didn't receive it? ", style: AppTextStyles.bodyXs),
               GestureDetector(
                 onTap: _handleResend,
-                child: const Text('Resend code',
-                  style: TextStyle(fontSize: 13, color: AppColors.accent, fontWeight: FontWeight.w600)),
+                child: const Text('Resend code', style: AppTextStyles.link),
               ),
             ]),
           if (_isLogin && _countdown > 0) ...[
             const SizedBox(height: 6),
-            Text('Check spam/junk if not received.',
-              style: TextStyle(fontSize: 11.5, color: AppColors.textTer)),
+            Text('Check spam/junk if not received.', style: AppTextStyles.caption),
           ],
         ],
       ),
@@ -567,7 +529,8 @@ class _ResetPasswordScreenState extends State<_ResetPasswordScreen> {
   String _newErr = '', _confErr = '';
   bool _loading = false, _triedReset = false;
 
-  bool get _canSubmit => _newPwCtrl.text.isNotEmpty && _confirmCtrl.text.isNotEmpty && !_loading;
+  bool get _canSubmit =>
+      _newPwCtrl.text.isNotEmpty && _confirmCtrl.text.isNotEmpty && !_loading;
 
   @override
   void initState() {
@@ -635,14 +598,9 @@ class _ResetPasswordScreenState extends State<_ResetPasswordScreen> {
             child: const Icon(Icons.lock_outline_rounded, color: AppColors.accent, size: 26),
           ),
           const SizedBox(height: 20),
-          const Text('New password',
-            style: TextStyle(
-              fontSize: 30, fontWeight: FontWeight.w800,
-              letterSpacing: -1.2, height: 1.06, color: AppColors.text,
-            )),
+          const Text('New password', style: AppTextStyles.headline),
           const SizedBox(height: 6),
-          Text('Create a strong password for your account',
-            style: TextStyle(fontSize: 14, color: AppColors.textSub)),
+          Text('Create a strong password for your account', style: AppTextStyles.bodySmall),
           const SizedBox(height: 32),
           BottomStrokeInput(
             label: 'New password',
@@ -754,15 +712,7 @@ class _CtaButtonState extends State<_CtaButton>
                         color: AppColors.accentFg,
                       ),
                     )
-                  : Text(
-                      widget.label,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                        color: AppColors.accentFg,
-                      ),
-                    ),
+                  : Text(widget.label, style: AppTextStyles.ctaButton),
             ),
           ),
         ),
