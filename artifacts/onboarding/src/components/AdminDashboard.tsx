@@ -403,21 +403,29 @@ const EmployeeCard = memo(function EmployeeCard({
               {editError && <p className="adm-inline-error">{editError}</p>}
             </div>
           ) : isLeave ? (
-            /* Status label color comes from CSS class — no inline style */
+            /* Leave / unauthorized-leave: pill only, no time slots */
             <div className={`adm-status-label adm-status--${status}`}>
               {STATUS_LABEL[status]}
             </div>
           ) : (
-            <div className="adm-times">
-              <span className={`adm-time-in${arrStatus ? ` adm-time--${arrStatus}` : ""}`}>
-                {CHECKIN_SVG}
-                <span className={emp.checkIn ? "" : "adm-time-placeholder"}>{displayIn}</span>
-              </span>
-              <span className={`adm-time-out${depStatus ? ` adm-time--${depStatus}` : ""}`}>
-                {CHECKOUT_SVG}
-                <span className={emp.checkOut ? "" : "adm-time-placeholder"}>{displayOut}</span>
-              </span>
-            </div>
+            /* Present / late / half-day / early: pill + time slots */
+            <>
+              {status !== "normal" && (
+                <div className={`adm-status-label adm-status--${status}`}>
+                  {STATUS_LABEL[status]}
+                </div>
+              )}
+              <div className="adm-times">
+                <span className={`adm-time-in${arrStatus ? ` adm-time--${arrStatus}` : ""}`}>
+                  {CHECKIN_SVG}
+                  <span className={emp.checkIn ? "" : "adm-time-placeholder"}>{displayIn}</span>
+                </span>
+                <span className={`adm-time-out${depStatus ? ` adm-time--${depStatus}` : ""}`}>
+                  {CHECKOUT_SVG}
+                  <span className={emp.checkOut ? "" : "adm-time-placeholder"}>{displayOut}</span>
+                </span>
+              </div>
+            </>
           )}
         </div>
       </div>

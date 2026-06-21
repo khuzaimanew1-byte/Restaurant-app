@@ -628,20 +628,64 @@
 @media (min-width: 768px) { .adm-time-in, .adm-time-out { font-size: 11px; } }
 .adm-time-in svg, .adm-time-out svg { opacity: .7; }
 
-/* Status label (leave / unauthorized-leave / half-day) */
+/* Status pill — attendance badge shown on every employee card.
+   Dot injected via ::before; background/border/color set per variant.
+   Colors come from --clr-* SSOT in index.css :root — no hardcoded hex. */
 .adm-status-label {
-  font-size: 10px;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 6px;
+  border-radius: 20px;
+  font-size: 9px;
+  font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
   margin-top: 4px;
-  opacity: .9;
+  line-height: 1;
+  white-space: nowrap;
 }
-@media (min-width: 768px) { .adm-status-label { font-size: 11px; } }
-/* Status label color variants */
-.adm-status--leave               { color: var(--clr-leave); }
-.adm-status--unauthorized-leave  { color: var(--clr-unauth); }
-.adm-status--half-day            { color: var(--clr-half); }
+.adm-status-label::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+@media (min-width: 768px) { .adm-status-label { font-size: 10px; } }
+
+/* ── Status color variants ─────────────────────────────────────────────── */
+.adm-status--arrival {
+  color: var(--clr-present);
+  background: color-mix(in srgb, var(--clr-present) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--clr-present) 28%, transparent);
+}
+.adm-status--late-arrival {
+  color: var(--clr-late);
+  background: color-mix(in srgb, var(--clr-late) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--clr-late) 28%, transparent);
+}
+.adm-status--leave {
+  color: var(--clr-leave);
+  background: color-mix(in srgb, var(--clr-leave) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--clr-leave) 28%, transparent);
+}
+.adm-status--unauthorized-leave {
+  color: var(--clr-unauth);
+  background: color-mix(in srgb, var(--clr-unauth) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--clr-unauth) 28%, transparent);
+}
+.adm-status--half-day {
+  color: var(--clr-half);
+  background: color-mix(in srgb, var(--clr-half) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--clr-half) 28%, transparent);
+}
+.adm-status--early-departure {
+  color: var(--clr-early);
+  background: color-mix(in srgb, var(--clr-early) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--clr-early) 28%, transparent);
+}
 /* Time slot color overrides */
 .adm-time--late  { color: var(--clr-late); }
 .adm-time--early { color: var(--clr-early); }
