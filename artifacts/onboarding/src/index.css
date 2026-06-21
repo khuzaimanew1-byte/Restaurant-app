@@ -2107,11 +2107,35 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 }
 .ae-av-chg {
   position: absolute; inset: 0; border-radius: 50%; z-index: 3;
-  background: rgba(16,19,24,.78);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   color: var(--adm-text);
+  /* desktop: hidden until hover */
+  background: rgba(16,19,24,.78);
+  opacity: 0;
+  transition: opacity .22s ease;
 }
+.ae-av-ring:hover .ae-av-chg { opacity: 1; }
 .ae-av-chg span { font-size: 8px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(226,232,240,.78); }
+
+/* mobile: icon always visible, no dark overlay so image stays clear */
+@media (max-width: 600px) {
+  .ae-av-chg {
+    background: transparent;
+    opacity: 1;
+    align-items: flex-end;
+    justify-content: flex-end;
+    padding: 8px;
+  }
+  .ae-av-chg span { display: none; }
+  .ae-av-chg svg {
+    background: rgba(26,27,32,.72);
+    border-radius: 50%;
+    padding: 5px;
+    width: 28px; height: 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.45);
+    color: var(--adm-gold);
+  }
+}
 .ae-av-file { display: none; }
 
 /* ── Salary pill ── */
@@ -2151,8 +2175,7 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .ae-g2   { grid-template-columns: 1fr 1fr; }
 .ae-g1   { grid-template-columns: 1fr; }
 @media (max-width: 600px) {
-  .ae-g3 { grid-template-columns: 1fr; }
-  .ae-g2 { grid-template-columns: 1fr; }
+  .ae-g3 { grid-template-columns: 1fr 1fr; }
 }
 .ae-field { position: relative; padding-bottom: 2px; }
 .ae-field-rel { position: relative; }
