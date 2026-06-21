@@ -249,6 +249,22 @@ Any repeated visual pattern must have one SSOT. For topbars the SSOT is the CSS 
 - New icon button (back, close, toggle) → use `className="pg-icon-btn"`. Override only `border-radius` if a round shape is needed.
 - Adding a new repeated element → ask: is it always used with another class, or truly standalone? If standalone → create one shared class. If always paired → merge and use CSS vars for shared values.
 
+### 11. Shared Components — Mandatory Reuse
+
+Whenever a UI pattern already exists as a shared React component or CSS class, you **must** import and reuse it. Never recreate it inline.
+
+| Pattern | SSOT |
+|---------|------|
+| Primary CTA button | `<Button>` from `components/ui/Button.tsx` → `.cta-btn` |
+| Text / email / tel input with floating label | `<TextInput>` from `components/ui/Input.tsx` → `.inp-wrap/.inp/.inp-label/.inp-line` |
+| Password input with show/hide toggle | `<PasswordInput>` from `components/ui/Input.tsx` |
+| Removable chip / pill tag | `<Tag onRemove={...}>` from `components/ui/Tag.tsx` → `.ae-lang-tag` |
+| Attendance status badge | `<StatusTag status="...">` from `components/ui/Tag.tsx` → `.adm-status-label/.adm-status--*` |
+| 38×38 icon button | `.pg-icon-btn` CSS class |
+| Page topbar | `.<page>-topbar` CSS class using `--topbar-*` vars |
+
+**Rule:** Before writing any `<button>`, `<input>`, or label/badge JSX inline, check `components/ui/` first. If a shared component exists for it, use that — do **not** duplicate the HTML or CSS.
+
 ### 9. Code Hygiene
 
 - **`console.log` is forbidden** — remove before committing.

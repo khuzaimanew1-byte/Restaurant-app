@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback, useEffect, KeyboardEvent, ClipboardEvent } from "react";
+import { Button } from "./ui/Button";
+import { TextInput, PasswordInput } from "./ui/Input";
 
 // ── Types ──────────────────────────────────────────────────────────────
 type Screen     = "signin" | "otp";
@@ -48,27 +50,6 @@ async function apiPost<T>(path: string, body?: Record<string, unknown>): Promise
 }
 
 // ── Icons ──────────────────────────────────────────────────────────────
-function EyeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <line x1="1" y1="1" x2="23" y2="23"
-        stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function BackIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -143,61 +124,6 @@ function PasswordRules({ password }: { password: string }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-// ── TextInput ──────────────────────────────────────────────────────────
-function TextInput({ label, value, onChange, error, type = "text", autoComplete, onEnter, inputRef }: {
-  label: string; value: string; onChange: (v: string) => void;
-  error?: string; type?: string; autoComplete?: string;
-  onEnter?: () => void; inputRef?: React.RefObject<HTMLInputElement | null>;
-}) {
-  return (
-    <div className="inp-wrap">
-      <div className="inp-field">
-        <input ref={inputRef} type={type}
-          className={`inp${error ? " inp--error" : ""}`}
-          value={value} placeholder=" "
-          onChange={e => onChange(e.target.value)}
-          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") onEnter?.(); }}
-          autoComplete={autoComplete} />
-        <span className="inp-line" aria-hidden="true" />
-      </div>
-      <label className="inp-label">{label}</label>
-      {error && <div className="err-text">{error}</div>}
-    </div>
-  );
-}
-
-// ── PasswordInput ──────────────────────────────────────────────────────
-function PasswordInput({ label, value, onChange, error, autoComplete = "current-password", onEnter, inputRef }: {
-  label: string; value: string; onChange: (v: string) => void;
-  error?: string; autoComplete?: string; onEnter?: () => void;
-  inputRef?: React.RefObject<HTMLInputElement | null>;
-}) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="inp-wrap">
-      <div className="inp-field">
-        <input ref={inputRef} type={show ? "text" : "password"}
-          className={`inp inp--pw${error ? " inp--error" : ""}`}
-          value={value} placeholder=" "
-          onChange={e => onChange(e.target.value)}
-          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") onEnter?.(); }}
-          autoComplete={autoComplete}
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false} />
-        <span className="inp-line" aria-hidden="true" />
-        <button type="button" tabIndex={-1} className="inp-eye"
-          onClick={() => setShow(s => !s)}
-          aria-label={show ? "Hide password" : "Show password"}>
-          {show ? <EyeOffIcon /> : <EyeIcon />}
-        </button>
-      </div>
-      <label className="inp-label">{label}</label>
-      {error && <div className="err-text">{error}</div>}
     </div>
   );
 }
@@ -404,9 +330,9 @@ function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmai
       {generalErr && <div className="err-text general-err si-s5b">{generalErr}</div>}
 
       <div className="si-s6">
-        <button className="cta-btn" onClick={handleSubmit} disabled={!canSubmit}>
+        <Button onClick={handleSubmit} disabled={!canSubmit}>
           {loading ? <Spinner /> : "Sign In"}
-        </button>
+        </Button>
       </div>
 
       <button type="button" className="login__forgot si-s7"
@@ -600,9 +526,9 @@ export function ResetPasswordScreen({ resetToken, onBack, onDone, enterDir }: {
       </div>
 
       <div className="rp-s6">
-        <button className="cta-btn" onClick={handleReset} disabled={!canSubmit}>
+        <Button onClick={handleReset} disabled={!canSubmit}>
           {loading ? <Spinner /> : "Set Password"}
-        </button>
+        </Button>
       </div>
     </div>
   );
