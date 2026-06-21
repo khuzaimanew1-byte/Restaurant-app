@@ -1,0 +1,413 @@
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN FLOW — lazy-loaded with LoginFlow / ResetPasswordScreen
+   Imported in: LoginFlow.tsx
+═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN PAGE
+═══════════════════════════════════════════════════════════════ */
+.login {
+  width: 100vw; height: 100dvh;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: flex-start;
+  flex-direction: column;
+  font-family: 'Inter', -apple-system, 'Helvetica Neue', sans-serif;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.login__inner {
+  width: min(100%, 420px);
+  padding: clamp(52px,12dvh,96px) clamp(28px,8vw,48px) clamp(32px,8dvh,60px);
+  position: relative; z-index: 1;
+  flex: 1;
+  display: flex; flex-direction: column; justify-content: center;
+}
+
+/* ── Screen wrapper ── */
+.login__screen {
+  display: flex; flex-direction: column;
+  will-change: transform, opacity;
+}
+
+/* ── Typography ── */
+.login__head {
+  font-size: clamp(30px,8.5vw,40px); font-weight: 800;
+  color: var(--text); letter-spacing: -.045em; line-height: 1.06;
+  margin-bottom: clamp(4px,1vw,6px);
+}
+.login__sub-head {
+  font-size: clamp(13px,3.8vw,15px); color: var(--text-ter);
+  margin-bottom: clamp(28px,7vw,38px); letter-spacing: -.01em;
+}
+.login__sub {
+  font-size: clamp(13px,3.8vw,15px); color: var(--text-sub);
+  margin-bottom: clamp(6px,1.5vw,8px); letter-spacing: -.01em;
+}
+
+/* ── Back button ── */
+.login__back {
+  position: absolute;
+  top: clamp(-56px,-13vw,-44px); left: -6px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-sub);
+  padding: 8px 12px 8px 8px;
+  display: flex; align-items: center; gap: 7px;
+  font-size: clamp(13px,3.5vw,14px);
+  font-family: inherit; font-weight: 500; letter-spacing: -.01em;
+  border-radius: 10px;
+  transition: color 220ms ease, background 220ms ease;
+}
+.login__back:hover  { color: var(--text); background: rgba(255,255,255,.07); }
+.login__back:active { opacity: .5; }
+/* OTP/Reset back: animate in with the screen */
+.otp-back { animation: otp-back-in 0.68s cubic-bezier(.16,1,.3,1) 0ms both; }
+
+.login__forgot {
+  display: block; width: fit-content; margin: clamp(14px,4vw,20px) auto 0;
+  font-size: clamp(13px,3.5vw,14px);
+  color: var(--accent); opacity: .72;
+  background: none; border: none; cursor: pointer;
+  font-family: inherit; padding: 4px 0;
+  transition: opacity 220ms ease;
+}
+.login__forgot:hover  { opacity: 1; }
+.login__forgot:active { opacity: .4; }
+.login__forgot:disabled { pointer-events: none; opacity: .28; }
+
+/* ── Bottom-stroke inputs ── */
+.inp-wrap {
+  position: relative;
+  margin-bottom: clamp(20px,5.5vw,28px);
+}
+.inp-field {
+  position: relative;
+  padding-top: 20px;
+}
+
+/* Permanent dim track */
+.inp-field::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0;
+  width: 100%; height: 2px;
+  background: var(--inp-stroke);
+  border-radius: 2px;
+  pointer-events: none;
+  transition: background 220ms ease;
+}
+.inp-field:has(.inp--error)::after { background: var(--inp-stroke-err); }
+
+.inp {
+  width: 100%; background: none; border: none; outline: none;
+  padding: 6px 0;
+  font-size: clamp(15px,4.2vw,16px);
+  color: var(--text); font-family: inherit; font-weight: 400;
+  caret-color: var(--accent);
+}
+.inp--pw { padding-right: 36px; }
+
+/* Animated amber fill — left→right on focus, right→left on blur */
+.inp-line {
+  position: absolute; bottom: 0; left: 0;
+  width: 100%; height: 3px;
+  background: var(--inp-stroke-focus);
+  box-shadow: 0 0 12px rgba(196,130,10,.40);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 380ms cubic-bezier(0.22,1,0.36,1);
+  pointer-events: none; border-radius: 2px; z-index: 1;
+  will-change: transform;
+}
+.inp-wrap:focus-within .inp-line {
+  transform: scaleX(1); transform-origin: left center;
+  transition: transform 360ms cubic-bezier(0.22,1,0.36,1);
+}
+.inp-wrap:not(:focus-within) .inp-line {
+  transform: scaleX(0); transform-origin: right center;
+  transition: transform 220ms cubic-bezier(0.4,0,1,1);
+}
+.inp-field:has(.inp--error) .inp-line {
+  background: var(--inp-stroke-err);
+  transform: scaleX(1) !important;
+  transition: background 180ms ease !important;
+}
+
+/* Floating label */
+.inp-label {
+  position: absolute; left: 0; top: 28px;
+  font-size: clamp(15px,4.2vw,16px);
+  color: var(--inp-label);
+  pointer-events: none; transform-origin: left top;
+  transition: transform 280ms cubic-bezier(0.22,1,0.36,1), color 250ms ease;
+}
+.inp-wrap:focus-within .inp-label {
+  transform: translateY(-26px) scale(0.72);
+  color: var(--inp-label-focus);
+}
+.inp-field:has(.inp:not(:placeholder-shown)) ~ .inp-label {
+  transform: translateY(-26px) scale(0.72);
+  color: var(--inp-label-focus);
+}
+.inp-field:has(.inp--error) ~ .inp-label { color: var(--inp-label-err) !important; }
+
+/* Eye toggle */
+.inp-eye {
+  position: absolute; right: 0; bottom: 6px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-ter); padding: 4px;
+  display: flex; align-items: center;
+  transition: color .2s;
+}
+.inp-eye:active { color: var(--text-sub); }
+
+/* Error text */
+.err-text {
+  font-size: clamp(11px,3vw,12px); color: var(--err);
+  margin-top: 5px;
+  animation: err-in 250ms cubic-bezier(.16,1,.3,1) both;
+}
+.general-err { margin-top: 0; margin-bottom: clamp(16px,4vw,22px); }
+
+/* ── Password rules — CSS dot indicators ── */
+.pw-rules {
+  display: flex; flex-wrap: wrap; flex-direction: row;
+  gap: clamp(6px,2vw,8px) clamp(12px,3.5vw,18px);
+  margin: 6px 0 clamp(16px,4.5vw,22px);
+}
+.pw-rule {
+  display: flex; align-items: center; gap: 8px;
+  font-size: clamp(11.5px,3vw,13px);
+  color: var(--text-ter);
+  transition: color 300ms ease;
+  will-change: color;
+}
+.pw-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid currentColor;
+  transition:
+    background  300ms ease,
+    border-color 300ms ease,
+    transform   360ms cubic-bezier(.34,1.56,.64,1);
+  will-change: transform;
+}
+.pw-label { line-height: 1; }
+.pw-rule--met { color: var(--accent); }
+.pw-rule--met .pw-dot {
+  background: var(--accent); border-color: transparent;
+  transform: scale(1.22);
+}
+
+/* ── Terms row ── */
+.terms-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: clamp(6px,6vw,10px);
+}
+
+/* Custom animated checkbox */
+.cb-input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.cb-box {
+  width: 20px; height: 20px; flex-shrink: 0;
+  border: 1.5px solid var(--inp-stroke); border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; background: transparent; margin-top: 1px;
+  transition: background 220ms ease, border-color 220ms ease,
+    transform 260ms cubic-bezier(0.34,1.56,0.64,1);
+  will-change: transform;
+}
+.cb-input:checked + .cb-box {
+  background: var(--accent); border-color: var(--accent); transform: scale(1.08);
+}
+.cb-input:checked + .cb-box:active { transform: scale(0.94); }
+.cb-check { width: 12px; height: 10px; display: block; overflow: visible; }
+.cb-path {
+  stroke: #fff; stroke-dasharray: 15; stroke-dashoffset: 15;
+  transition: stroke-dashoffset 260ms cubic-bezier(0.16,1,0.3,1) 60ms;
+}
+.cb-input:checked + .cb-box .cb-path { stroke-dashoffset: 0; }
+.terms-text { font-size: clamp(12px,3.3vw,13px); color: var(--text-sub); line-height: 1.55; }
+.terms-link { color: var(--accent); cursor: pointer; }
+
+
+/* ── OTP icon badge ── */
+.otp-icon-wrap { margin-bottom: clamp(20px,5.5vw,28px); }
+.otp-icon {
+  width: 58px; height: 58px;
+  background: rgba(196,130,10,.12);
+  border: 1px solid rgba(196,130,10,.28);
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+  box-shadow: 0 0 32px rgba(196,130,10,.16);
+}
+
+/* ── OTP email chip ── */
+.otp-email-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 20px;
+  font-size: clamp(12px,3.4vw,13px); font-weight: 500;
+  color: var(--text-sub); letter-spacing: .01em;
+  margin-bottom: clamp(6px,1.5vw,8px);
+}
+.otp-email-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0;
+}
+.otp-change-email {
+  background: none; border: none; padding: 0;
+  color: var(--accent); font-size: clamp(11px,3vw,12px);
+  font-weight: 600; cursor: pointer; margin-left: 4px;
+  transition: opacity .15s;
+}
+.otp-change-email:hover { opacity: .75; }
+
+/* ── OTP digit boxes ── */
+.otp-row {
+  display: flex; gap: clamp(8px,2.5vw,12px);
+  justify-content: center;
+  margin: clamp(26px,7vw,36px) 0 clamp(10px,2.5vw,14px);
+}
+.otp-box {
+  width: clamp(44px,12.5vw,54px); height: clamp(52px,14vw,60px);
+  background: rgba(255,255,255,.04);
+  border: 1.5px solid rgba(255,255,255,.10); border-radius: 14px;
+  text-align: center;
+  font-size: clamp(22px,6.5vw,28px); font-weight: 700;
+  color: var(--text); font-family: inherit;
+  outline: none; caret-color: var(--accent);
+  transition: border-color 240ms ease, background 240ms ease,
+    box-shadow 240ms ease, transform 220ms cubic-bezier(0.22,1,0.36,1);
+  will-change: transform, box-shadow;
+}
+.otp-box:focus {
+  border-color: var(--accent);
+  background: rgba(196,130,10,.08);
+  box-shadow: 0 0 0 3.5px rgba(196,130,10,.18), 0 4px 16px rgba(0,0,0,.22);
+  transform: scale(1.07);
+}
+.otp-box--filled { border-color: rgba(196,130,10,.50); background: rgba(196,130,10,.06); }
+.otp-box--error {
+  border-color: var(--err) !important;
+  background: rgba(224,82,82,.07) !important;
+  box-shadow: 0 0 0 3px var(--err-glow) !important;
+  transform: scale(1) !important;
+}
+.otp-row--shake { animation: shake 480ms cubic-bezier(.36,.07,.19,.97); }
+.otp-spinner { text-align: center; margin: 10px 0; color: var(--accent); }
+
+/* ── Countdown ── */
+.countdown {
+  text-align: center; font-size: clamp(12px,3.3vw,14px);
+  color: var(--text-ter); margin-top: 6px;
+}
+.countdown__time { color: var(--text-sub); font-weight: 500; }
+.countdown__link {
+  background: none; border: none; color: var(--accent); cursor: pointer;
+  font-size: inherit; font-family: inherit; padding: 0; font-weight: 500;
+  transition: opacity .2s;
+}
+.countdown__link:active { opacity: .5; }
+
+.otp-spam-hint {
+  text-align: center; font-size: clamp(11px,3vw,12px);
+  color: var(--text-ter); margin-top: 10px;
+}
+.otp-spam-hint strong { color: var(--text-sub); font-weight: 600; }
+.otp-not-sent {
+  text-align: center; font-size: clamp(11px,3vw,12px);
+  color: var(--accent); opacity: .75; margin-top: 10px;
+}
+
+/* ── Spinner ── */
+
+/* ═══════════════════════════════════════════════════════════════
+   SIGNIN SCREEN — cascade from top
+   Elements drop sequentially from above (authoritative, settled)
+═══════════════════════════════════════════════════════════════ */
+@keyframes si-elem {
+  from { opacity: 0; transform: translateY(-22px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+/* Timing: each element staggers 60ms, settling into place */
+.si-s1 { animation: si-elem 0.72s cubic-bezier(.16,1,.3,1)  50ms both; }
+.si-s2 { animation: si-elem 0.72s cubic-bezier(.16,1,.3,1) 110ms both; }
+.si-s3 { animation: si-elem 0.70s cubic-bezier(.16,1,.3,1) 170ms both; }
+.si-s4 { animation: si-elem 0.70s cubic-bezier(.16,1,.3,1) 230ms both; }
+.si-s5  { animation: si-elem 0.68s cubic-bezier(.16,1,.3,1) 285ms both; }
+.si-s5b { animation: si-elem 0.68s cubic-bezier(.16,1,.3,1) 300ms both; }
+.si-s6  { animation: si-elem 0.68s cubic-bezier(.16,1,.3,1) 335ms both; }
+.si-s7 { animation: si-elem 0.66s cubic-bezier(.16,1,.3,1) 380ms both; }
+/* SignIn direction overrides (duration/delay inherited from rules above) */
+.screen-fwd  .si-s1,.screen-fwd  .si-s2,.screen-fwd  .si-s3,
+.screen-fwd  .si-s4,.screen-fwd  .si-s5,.screen-fwd  .si-s5b,
+.screen-fwd  .si-s6,.screen-fwd  .si-s7 { animation-name: settle-fwd;  }
+.screen-back .si-s1,.screen-back .si-s2,.screen-back .si-s3,
+.screen-back .si-s4,.screen-back .si-s5,.screen-back .si-s5b,
+.screen-back .si-s6,.screen-back .si-s7 { animation-name: settle-back; }
+
+/* ═══════════════════════════════════════════════════════════════
+   OTP SCREEN — spring bloom from below
+   Icon pops with rotation, elements spring upward (inviting action)
+═══════════════════════════════════════════════════════════════ */
+@keyframes otp-icon {
+  from { opacity: 0; transform: scale(0.55) rotate(-14deg); }
+  65%  {             transform: scale(1.13) rotate(5deg); }
+  to   { opacity: 1; transform: scale(1)    rotate(0deg); }
+}
+@keyframes otp-elem {
+  from { opacity: 0; transform: translateY(26px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+@keyframes otp-boxes {
+  from { opacity: 0; transform: scale(0.88) translateY(18px); }
+  65%  {             transform: scale(1.04) translateY(-3px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+.otp-s1 { animation: otp-icon  0.76s cubic-bezier(.34,1.56,.64,1)  40ms both; }
+.otp-s2 { animation: otp-elem  0.68s cubic-bezier(.16,1,.3,1)     110ms both; }
+.otp-s3 { animation: otp-elem  0.66s cubic-bezier(.16,1,.3,1)     160ms both; }
+.otp-s4 { animation: otp-elem  0.66s cubic-bezier(.16,1,.3,1)     210ms both; }
+.otp-s5 { animation: otp-boxes 0.76s cubic-bezier(.34,1.36,.64,1) 270ms both; }
+.otp-s6 { animation: otp-elem  0.66s cubic-bezier(.16,1,.3,1)     360ms both; }
+/* OTP direction overrides — s1 (icon-pop) and s5 (boxes-spring) keep unique animations */
+.screen-fwd  .otp-s2,.screen-fwd  .otp-s3,
+.screen-fwd  .otp-s4,.screen-fwd  .otp-s6 { animation-name: settle-fwd;  }
+.screen-back .otp-s2,.screen-back .otp-s3,
+.screen-back .otp-s4,.screen-back .otp-s6 { animation-name: settle-back; }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESET PASSWORD SCREEN — fields settle from navigation direction
+═══════════════════════════════════════════════════════════════ */
+@keyframes rp-elem {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.rp-s2 { animation: rp-elem 0.68s cubic-bezier(.16,1,.3,1)     120ms both; }
+.rp-s3 { animation: rp-elem 0.66s cubic-bezier(.16,1,.3,1)     175ms both; }
+.rp-s4 { animation: rp-elem 0.66s cubic-bezier(.16,1,.3,1)     235ms both; }
+.rp-s5 { animation: rp-elem 0.64s cubic-bezier(.16,1,.3,1)     295ms both; }
+.rp-s6 { animation: rp-elem 0.64s cubic-bezier(.16,1,.3,1)     350ms both; }
+/* Reset direction overrides */
+.screen-fwd  .rp-s2,.screen-fwd  .rp-s3,.screen-fwd  .rp-s4,
+.screen-fwd  .rp-s5,.screen-fwd  .rp-s6 { animation-name: settle-fwd;  }
+.screen-back .rp-s2,.screen-back .rp-s3,.screen-back .rp-s4,
+.screen-back .rp-s5,.screen-back .rp-s6 { animation-name: settle-back; }
+
+/* ── Shake (wrong OTP) ── */
+@keyframes shake {
+  0%,100% { transform: translateX(0);    }
+  12%     { transform: translateX(-11px); }
+  28%     { transform: translateX( 10px); }
+  44%     { transform: translateX( -8px); }
+  60%     { transform: translateX(  6px); }
+  76%     { transform: translateX( -3px); }
+}
+
+/* ── Error text entrance ── */
+@keyframes err-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+

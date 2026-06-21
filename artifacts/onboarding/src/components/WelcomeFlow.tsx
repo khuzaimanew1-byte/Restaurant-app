@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import "../styles/welcome-flow.css";
 
 /* ── Types ─────────────────────────────────────────────────── */
 type ChipVariant = "a" | "b" | "c";

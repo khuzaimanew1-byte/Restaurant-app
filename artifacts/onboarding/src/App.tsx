@@ -120,19 +120,14 @@ export default function App() {
     if (!resetToken) { goTo("login", "back"); return null; }
     return (
       <div className={viewClass}>
-        <div className="login">
-          <div className="ob__bg-glow" />
-          <div className="login__inner">
-            <Suspense fallback={<div className="adm-lazy-fallback" />}>
-              <ResetPasswordScreen
-                resetToken={resetToken}
-                enterDir="fwd"
-                onBack={leaveNewPassword}
-                onDone={leaveNewPassword}
-              />
-            </Suspense>
-          </div>
-        </div>
+        <Suspense fallback={<div className="adm-lazy-fallback" />}>
+          <ResetPasswordScreen
+            resetToken={resetToken}
+            enterDir="fwd"
+            onBack={leaveNewPassword}
+            onDone={leaveNewPassword}
+          />
+        </Suspense>
       </div>
     );
   }

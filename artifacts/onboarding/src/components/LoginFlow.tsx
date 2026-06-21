@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, KeyboardEvent, ClipboardEvent } from "react";
 import { Button } from "./ui/Button";
 import { TextInput, PasswordInput } from "./ui/Input";
+import "../styles/login-flow.css";
 
 // ── Types ──────────────────────────────────────────────────────────────
 type Screen     = "signin" | "otp";
@@ -497,38 +498,43 @@ export function ResetPasswordScreen({ resetToken, onBack, onDone, enterDir }: {
   const dir = enterDir === "fwd" ? "screen-fwd" : "screen-back";
 
   return (
-    <div className={`login__screen ${dir}`}>
-      <button className="login__back otp-back" onClick={onBack} aria-label="Back">
-        <BackIcon /><span>Back</span>
-      </button>
+    <div className="login">
+      <div className="ob__bg-glow" />
+      <div className="login__inner">
+        <div className={`login__screen ${dir}`}>
+          <button className="login__back otp-back" onClick={onBack} aria-label="Back">
+            <BackIcon /><span>Back</span>
+          </button>
 
-      <h1 className="login__head rp-s2">New password</h1>
-      <p className="login__sub rp-s3">Create a strong password for your account</p>
+          <h1 className="login__head rp-s2">New password</h1>
+          <p className="login__sub rp-s3">Create a strong password for your account</p>
 
-      <div className="rp-s4">
-        <PasswordInput
-          label="New password" value={newPw}
-          autoComplete="new-password"
-          onChange={v => { setNewPw(v); setNewErr(""); }}
-          error={newErr}
-          onEnter={() => confirmRef.current?.focus()}
-        />
-        {triedReset && !isPwValid(newPw) && <PasswordRules password={newPw} />}
-      </div>
+          <div className="rp-s4">
+            <PasswordInput
+              label="New password" value={newPw}
+              autoComplete="new-password"
+              onChange={v => { setNewPw(v); setNewErr(""); }}
+              error={newErr}
+              onEnter={() => confirmRef.current?.focus()}
+            />
+            {triedReset && !isPwValid(newPw) && <PasswordRules password={newPw} />}
+          </div>
 
-      <div className="rp-s5">
-        <PasswordInput
-          label="Confirm password" value={confirm} inputRef={confirmRef}
-          autoComplete="new-password"
-          onChange={v => { setConfirm(v); setConfErr(""); }}
-          error={confErr} onEnter={handleReset}
-        />
-      </div>
+          <div className="rp-s5">
+            <PasswordInput
+              label="Confirm password" value={confirm} inputRef={confirmRef}
+              autoComplete="new-password"
+              onChange={v => { setConfirm(v); setConfErr(""); }}
+              error={confErr} onEnter={handleReset}
+            />
+          </div>
 
-      <div className="rp-s6">
-        <Button onClick={handleReset} disabled={!canSubmit}>
-          {loading ? <Spinner /> : "Set Password"}
-        </Button>
+          <div className="rp-s6">
+            <Button onClick={handleReset} disabled={!canSubmit}>
+              {loading ? <Spinner /> : "Set Password"}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
