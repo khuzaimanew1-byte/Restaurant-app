@@ -2179,15 +2179,26 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   margin: 0 0 28px; position: relative; z-index: 1;
 }
 
-/* ── Form grid ── */
+/* ── Unified fields grid (one section, address spans full width) ── */
+.ae-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 36px clamp(24px,4vw,44px);
+  margin-bottom: 36px;
+  position: relative; z-index: 1;
+  align-items: start;
+}
+.ae-span-full { grid-column: 1 / -1; }
+@media (max-width: 600px) {
+  .ae-fields-grid { grid-template-columns: 1fr 1fr; gap: 32px 20px; }
+}
+
+/* legacy row helpers kept for potential future use */
 .ae-frow { display: grid; gap: 0 clamp(20px,4vw,40px); margin-bottom: 28px; position: relative; z-index: 1; }
 .ae-g3   { grid-template-columns: 1fr 1fr 1fr; }
 .ae-g2   { grid-template-columns: 1fr 1fr; }
 .ae-g1   { grid-template-columns: 1fr; }
-@media (max-width: 600px) {
-  .ae-g3 { grid-template-columns: 1fr 1fr; }
-}
-.ae-field { position: relative; padding-bottom: 2px; }
+.ae-field { position: relative; }
 .ae-field-rel { position: relative; }
 
 /* ── Underline field (matches login input style) ── */
@@ -2231,21 +2242,23 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 }
 
 /* Gender dropdown */
-.ae-csel { flex: 1; outline: none; cursor: pointer; }
+.ae-csel { flex: 1; outline: none; }
 .ae-csel-face {
   display: flex; align-items: center; justify-content: space-between;
   color: var(--adm-text); font-family: 'Inter', sans-serif; font-size: 14px;
-  user-select: none;
+  user-select: none; cursor: pointer;
 }
 .ae-csel-face svg { color: var(--adm-gold); opacity: .75; }
 .ae-csel-opts {
-  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-  background: #2a2d38; border: 1px solid rgba(212,175,55,.28);
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: rgba(30,33,42,.88);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(212,175,55,.28);
   border-radius: 8px; z-index: 200; overflow: hidden;
-  box-shadow: 0 12px 36px rgba(0,0,0,.65);
+  box-shadow: 0 16px 40px rgba(0,0,0,.7);
 }
 .ae-csel-opt {
-  padding: 10px 14px; font-family: 'Inter', sans-serif;
+  padding: 11px 14px; font-family: 'Inter', sans-serif;
   font-size: 13.5px; color: var(--adm-text); cursor: pointer;
   transition: background .15s;
 }

@@ -252,8 +252,10 @@ export function AddEmployeePage({
 
           <hr className="ae-divider" />
 
-          {/* ── Row 1: Name · Role · Gender ── */}
-          <div className="ae-frow ae-g3">
+          {/* ── Unified fields grid — all one section, address spans full width ── */}
+          <div className="ae-fields-grid">
+
+            {/* Full Name */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
                 <PersonSVG />
@@ -261,6 +263,8 @@ export function AddEmployeePage({
                   value={name} onChange={e => setName(e.target.value)} autoComplete="name" />
               </div>
             </div>
+
+            {/* Position / Role */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
                 <BriefSVG />
@@ -268,16 +272,18 @@ export function AddEmployeePage({
                   value={role} onChange={e => setRole(e.target.value)} />
               </div>
             </div>
+
+            {/* Gender */}
             <div className="ae-field ae-field-rel">
               <div className={`ae-fi-wrap${genderOpen ? " ae-focused" : ""}`}>
                 <UsersSVG />
                 <div
                   className={`ae-csel${genderOpen ? " ae-open" : ""}`}
                   tabIndex={0}
-                  onClick={e => { e.stopPropagation(); setGenderOpen(v => !v); }}
-                  onBlur={() => setTimeout(() => setGenderOpen(false), 150)}
+                  onBlur={() => setTimeout(() => setGenderOpen(false), 120)}
                 >
-                  <div className="ae-csel-face">
+                  <div className="ae-csel-face"
+                    onClick={e => { e.stopPropagation(); setGenderOpen(v => !v); }}>
                     <span>{gender}</span>
                     <ChevSVG open={genderOpen} />
                   </div>
@@ -294,10 +300,8 @@ export function AddEmployeePage({
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* ── Row 2: CNIC · Phone · Email ── */}
-          <div className="ae-frow ae-g3">
+            {/* CNIC */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
                 <CardSVG />
@@ -305,6 +309,8 @@ export function AddEmployeePage({
                   value={cnic} onChange={e => handleCnic(e.target.value)} />
               </div>
             </div>
+
+            {/* Phone */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
                 <PhoneSVG />
@@ -312,6 +318,8 @@ export function AddEmployeePage({
                   value={phone} onChange={e => setPhone(e.target.value)} />
               </div>
             </div>
+
+            {/* Email */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
                 <MailSVG />
@@ -319,10 +327,8 @@ export function AddEmployeePage({
                   value={email} onChange={e => setEmail(e.target.value)} />
               </div>
             </div>
-          </div>
 
-          {/* ── Row 3: Language · DOB · Joining Date ── */}
-          <div className="ae-frow ae-g3">
+            {/* Spoken Language */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
                 <GlobeSVG />
@@ -345,6 +351,8 @@ export function AddEmployeePage({
                 </div>
               )}
             </div>
+
+            {/* Date of Birth */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
                 <CalSVG />
@@ -353,6 +361,8 @@ export function AddEmployeePage({
                 {!dob && <span className="ae-date-ph">Date of Birth</span>}
               </div>
             </div>
+
+            {/* Joining Date */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
                 <CalSVG />
@@ -361,17 +371,16 @@ export function AddEmployeePage({
                 {!joiningDate && <span className="ae-date-ph">Joining Date</span>}
               </div>
             </div>
-          </div>
 
-          {/* ── Row 4: Address ── */}
-          <div className="ae-frow ae-g1" style={{ marginBottom: "28px" } as React.CSSProperties}>
-            <div className="ae-field">
+            {/* Street Address — full width, its own row */}
+            <div className="ae-field ae-span-full">
               <div className="ae-fi-wrap">
                 <PinSVG />
                 <input className="ae-fi" type="text" placeholder="Street Address"
                   value={address} onChange={e => setAddress(e.target.value)} />
               </div>
             </div>
+
           </div>
 
           <hr className="ae-divider" />
