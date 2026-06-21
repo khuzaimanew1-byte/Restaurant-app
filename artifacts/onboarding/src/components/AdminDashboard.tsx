@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
 import { useDebounce } from "../hooks/useDebounce";
+import { AddEmployeePage, type NewEmployeeData } from "./AddEmployeePage";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -680,8 +681,9 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [activeNav,      setActiveNav]      = useState<NavItem>("dashboard");
   const [employees,      setEmployees]      = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [officeTiming,   setOfficeTiming]   = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
-  const [rawQuery,       setRawQuery]       = useState("");
+  const [rawQuery,        setRawQuery]       = useState("");
   const [mobileSearchOpen, setMobileSearch] = useState(false);
+  const [showAddEmployee,  setShowAddEmployee] = useState(false);
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
   const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
@@ -714,6 +716,24 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   const openSearch  = useCallback(() => { setMobileSearch(true); setTimeout(() => mobileSearchRef.current?.focus(), 300); }, []);
   const closeSearch = useCallback(() => { setMobileSearch(false); setRawQuery(""); }, []);
+
+  const handleAddEmployee = useCallback((data: NewEmployeeData) => {
+    setEmployees(prev => {
+      const nextId = Math.max(0, ...prev.map(e => e.id)) + 1;
+      return [...prev, {
+        id: nextId,
+        name: data.name,
+        role: data.role || "Staff",
+        salary: data.salary,
+        checkIn: "", checkOut: "",
+        leaveStatus: null,
+        att: 0, perf: 0,
+        avatar: data.avatar,
+        initials: data.initials,
+        color: data.color,
+      }];
+    });
+  }, []);
   const requestLogout = useCallback(() => { setDropdownOpen(false); setLogoutModal(true); }, []);
 
   useEffect(() => {
@@ -920,8 +940,8 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           )}
         </div>
 
-        {/* FAB — mobile only */}
-        <button className="adm-fab" aria-label="Add">
+        {/* FAB */}
+        <button className="adm-fab" aria-label="Add" onClick={() => setShowAddEmployee(true)}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
@@ -956,6 +976,14 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       {/* Logout modal */}
       {logoutModalOpen && (
         <LogoutModal onConfirm={onLogout} onCancel={() => setLogoutModal(false)} />
+      )}
+
+      {/* Add Employee page */}
+      {showAddEmployee && (
+        <AddEmployeePage
+          onClose={() => setShowAddEmployee(false)}
+          onSave={handleAddEmployee}
+        />
       )}
     </div>
   );

@@ -1,0 +1,396 @@
+import { useState, useRef, useCallback } from "react";
+
+// ── Palette for avatar fallback colours ───────────────────────────────────
+const AVATAR_PALETTE = [
+  "#3B5BDB","#E64980","#7048E8","#2B8A3E",
+  "#C92A2A","#1098AD","#F08C00","#0B7285",
+];
+
+export interface NewEmployeeData {
+  name: string; role: string; salary: string;
+  avatar: string; initials: string; color: string;
+}
+
+// ── Inline SVG atoms ──────────────────────────────────────────────────────
+const PersonSVG   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>;
+const BriefSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>;
+const UsersSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>;
+const CardSVG     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>;
+const PhoneSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>;
+const MailSVG     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
+const GlobeSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+const CalSVG      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+const PinSVG      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+const CameraSVG   = () => <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
+const CameraSmSVG = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
+const CheckSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const TrashSVG    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
+const ChevSVG = ({ open }: { open: boolean }) => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+    style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform .2s" }}>
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+);
+
+const GENDERS = ["Male", "Female", "Other"];
+
+// ── BulletList sub-component ──────────────────────────────────────────────
+function BulletList({
+  label, items, input, onInputChange, onAdd, onDelete, placeholder,
+}: {
+  label: string; items: string[]; input: string;
+  onInputChange: (v: string) => void;
+  onAdd: () => void;
+  onDelete: (i: number) => void;
+  placeholder: string;
+}) {
+  return (
+    <div>
+      <div className="ae-pro-hdr">{label}</div>
+      <div className="ae-bul-list">
+        {items.map((t, i) => (
+          <div key={i} className="ae-bul-item">
+            <div className="ae-bul-dot" />
+            <span className="ae-bul-txt">{t}</span>
+            <span className="ae-bul-del" onMouseDown={e => { e.preventDefault(); onDelete(i); }}><TrashSVG /></span>
+          </div>
+        ))}
+      </div>
+      <div className="ae-bul-inp-row">
+        <input
+          className="ae-bul-inp" type="text" placeholder={placeholder}
+          value={input} onChange={e => onInputChange(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); onAdd(); } }}
+        />
+        <span className="ae-bul-add" onClick={onAdd}><CheckSVG /></span>
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────
+export function AddEmployeePage({
+  onClose,
+  onSave,
+}: {
+  onClose: () => void;
+  onSave: (data: NewEmployeeData) => void;
+}) {
+  // Avatar
+  const [avatarUrl,   setAvatarUrl]   = useState("");
+  const [dragOver,    setDragOver]    = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Core fields
+  const [name,        setName]        = useState("");
+  const [role,        setRole]        = useState("");
+  const [salary,      setSalary]      = useState("");
+  const [gender,      setGender]      = useState("Male");
+  const [genderOpen,  setGenderOpen]  = useState(false);
+  const [cnic,        setCnic]        = useState("");
+  const [phone,       setPhone]       = useState("");
+  const [email,       setEmail]       = useState("");
+  const [dob,         setDob]         = useState("");
+  const [joiningDate, setJoiningDate] = useState("");
+  const [address,     setAddress]     = useState("");
+
+  // Language tags
+  const [langInput,   setLangInput]   = useState("");
+  const [langs,       setLangs]       = useState<string[]>([]);
+
+  // Bullet lists
+  const [taskInp,  setTaskInp]  = useState(""); const [tasks, setTasks]   = useState<string[]>([]);
+  const [capInp,   setCapInp]   = useState(""); const [caps,  setCaps]    = useState<string[]>([]);
+  const [specInp,  setSpecInp]  = useState(""); const [specs, setSpecs]   = useState<string[]>([]);
+
+  // Toast
+  const [toast,    setToast]    = useState("");
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2800);
+  }, []);
+
+  // Avatar handlers
+  function applyImageFile(file: File) {
+    if (!file?.type.startsWith("image/")) return;
+    const r = new FileReader();
+    r.onload = e => setAvatarUrl(e.target!.result as string);
+    r.readAsDataURL(file);
+  }
+
+  // Salary — digits only, comma-formatted
+  function handleSalaryInput(raw: string) {
+    const digits = raw.replace(/\D/g, "");
+    setSalary(digits ? Number(digits).toLocaleString("en-US") : "");
+  }
+
+  // CNIC mask: 12345-1234567-1
+  function handleCnic(raw: string) {
+    const d = raw.replace(/\D/g, "").slice(0, 13);
+    let m = d;
+    if (d.length > 5)  m = d.slice(0, 5) + "-" + d.slice(5);
+    if (d.length > 12) m = m.slice(0, 13) + "-" + m.slice(13);
+    setCnic(m);
+  }
+
+  // Language tags
+  function addLang() {
+    const v = langInput.trim();
+    if (v && !langs.includes(v)) setLangs(p => [...p, v]);
+    setLangInput("");
+  }
+
+  // Bullet list helpers
+  function addItem(val: string, setter: React.Dispatch<React.SetStateAction<string[]>>, inputSetter: React.Dispatch<React.SetStateAction<string>>) {
+    const v = val.trim();
+    if (v) { setter(p => [...p, v]); inputSetter(""); }
+  }
+  function delItem(i: number, setter: React.Dispatch<React.SetStateAction<string[]>>) {
+    setter(p => p.filter((_, j) => j !== i));
+  }
+
+  // Submit
+  function handleCreate() {
+    if (!name.trim()) { showToast("Please enter the employee's full name."); return; }
+    const initials = name.trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    const color = AVATAR_PALETTE[Math.floor(Math.random() * AVATAR_PALETTE.length)];
+    const salaryStr = salary ? `$${salary}` : "";
+    onSave({ name: name.trim(), role: role.trim(), salary: salaryStr, avatar: avatarUrl, initials, color });
+    showToast(`Employee "${name.trim()}" created!`);
+    setTimeout(onClose, 900);
+  }
+
+  return (
+    <div className="ae-root">
+
+      {/* ── Top bar ── */}
+      <header className="ae-topbar">
+        <button className="ae-back-btn" onClick={onClose} aria-label="Back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+        </button>
+        <h2 className="ae-topbar-title">Add Employee</h2>
+        <div className="ae-topbar-spacer" />
+      </header>
+
+      {/* ── Scrollable body ── */}
+      <div className="ae-scroll">
+        <div className="ae-content">
+
+          {/* ── Ambient depth ── */}
+          <div className="ae-geo-bg" aria-hidden>
+            <div className="ae-gtr" />
+            <div className="ae-gbl" />
+          </div>
+
+          {/* ── Avatar ── */}
+          <div className="ae-av-sec">
+            <div className="ae-av-halo">
+              <div
+                className={`ae-av-ring${avatarUrl ? " ae-has-img" : ""}${dragOver ? " ae-drag-over" : ""}`}
+                onClick={() => fileRef.current?.click()}
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) applyImageFile(f); }}
+              >
+                {avatarUrl && <img className="ae-av-img" src={avatarUrl} alt="" />}
+                {!avatarUrl && (
+                  <div className="ae-av-inner">
+                    <CameraSVG />
+                    <span>Upload Photo</span>
+                  </div>
+                )}
+                {avatarUrl && (
+                  <div className="ae-av-chg">
+                    <CameraSmSVG />
+                    <span>Change</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" className="ae-av-file"
+              onChange={e => { if (e.target.files?.[0]) applyImageFile(e.target.files[0]); }} />
+          </div>
+
+          {/* ── Salary pill ── */}
+          <div className="ae-sal-sec">
+            <div className="ae-sal-pill">
+              <span className="ae-sal-cur">PKR</span>
+              <div className="ae-sal-sep" />
+              <input
+                className="ae-sal-inp"
+                type="text" inputMode="numeric" autoComplete="off"
+                placeholder="XX,XXX"
+                value={salary}
+                onKeyDown={e => {
+                  if (e.ctrlKey || e.metaKey || e.altKey) return;
+                  const allowed = /^\d$/.test(e.key) || ["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Home","End"].includes(e.key);
+                  if (!allowed) e.preventDefault();
+                }}
+                onChange={e => handleSalaryInput(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <hr className="ae-divider" />
+
+          {/* ── Row 1: Name · Role · Gender ── */}
+          <div className="ae-frow ae-g3">
+            <div className="ae-field">
+              <div className="ae-fi-wrap">
+                <PersonSVG />
+                <input className="ae-fi" type="text" placeholder="Full Name"
+                  value={name} onChange={e => setName(e.target.value)} autoComplete="name" />
+              </div>
+            </div>
+            <div className="ae-field">
+              <div className="ae-fi-wrap">
+                <BriefSVG />
+                <input className="ae-fi" type="text" placeholder="Position / Role"
+                  value={role} onChange={e => setRole(e.target.value)} />
+              </div>
+            </div>
+            <div className="ae-field ae-field-rel">
+              <div className={`ae-fi-wrap${genderOpen ? " ae-focused" : ""}`}>
+                <UsersSVG />
+                <div
+                  className={`ae-csel${genderOpen ? " ae-open" : ""}`}
+                  tabIndex={0}
+                  onClick={e => { e.stopPropagation(); setGenderOpen(v => !v); }}
+                  onBlur={() => setTimeout(() => setGenderOpen(false), 150)}
+                >
+                  <div className="ae-csel-face">
+                    <span>{gender}</span>
+                    <ChevSVG open={genderOpen} />
+                  </div>
+                  {genderOpen && (
+                    <div className="ae-csel-opts">
+                      {GENDERS.map(g => (
+                        <div key={g}
+                          className={`ae-csel-opt${gender === g ? " ae-selected" : ""}`}
+                          onMouseDown={e => { e.preventDefault(); setGender(g); setGenderOpen(false); }}
+                        >{g}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Row 2: CNIC · Phone · Email ── */}
+          <div className="ae-frow ae-g3">
+            <div className="ae-field">
+              <div className="ae-fi-wrap">
+                <CardSVG />
+                <input className="ae-fi" type="text" placeholder="12345-1234567-1" maxLength={15}
+                  value={cnic} onChange={e => handleCnic(e.target.value)} />
+              </div>
+            </div>
+            <div className="ae-field">
+              <div className="ae-fi-wrap">
+                <PhoneSVG />
+                <input className="ae-fi" type="tel" placeholder="03XX-XXXXXXX"
+                  value={phone} onChange={e => setPhone(e.target.value)} />
+              </div>
+            </div>
+            <div className="ae-field">
+              <div className="ae-fi-wrap">
+                <MailSVG />
+                <input className="ae-fi" type="email" placeholder="example@gmail.com"
+                  value={email} onChange={e => setEmail(e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Row 3: Language · DOB · Joining Date ── */}
+          <div className="ae-frow ae-g3">
+            <div className="ae-field">
+              <div className="ae-fi-wrap">
+                <GlobeSVG />
+                <input className="ae-fi" type="text" placeholder="Spoken Language"
+                  value={langInput} onChange={e => setLangInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addLang(); }
+                    else if (e.key === "Backspace" && !langInput && langs.length) setLangs(p => p.slice(0, -1));
+                  }}
+                />
+              </div>
+              {langs.length > 0 && (
+                <div className="ae-lang-tags">
+                  {langs.map(l => (
+                    <span key={l} className="ae-lang-tag">
+                      {l}
+                      <span className="ae-lang-del" onMouseDown={e => { e.preventDefault(); setLangs(p => p.filter(x => x !== l)); }}>✕</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="ae-field">
+              <div className="ae-fi-wrap">
+                <CalSVG />
+                <input className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
+                  type="date" value={dob} onChange={e => setDob(e.target.value)} />
+                {!dob && <span className="ae-date-ph">Date of Birth</span>}
+              </div>
+            </div>
+            <div className="ae-field">
+              <div className="ae-fi-wrap">
+                <CalSVG />
+                <input className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
+                  type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
+                {!joiningDate && <span className="ae-date-ph">Joining Date</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Row 4: Address ── */}
+          <div className="ae-frow ae-g1" style={{ marginBottom: "28px" } as React.CSSProperties}>
+            <div className="ae-field">
+              <div className="ae-fi-wrap">
+                <PinSVG />
+                <input className="ae-fi" type="text" placeholder="Street Address"
+                  value={address} onChange={e => setAddress(e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <hr className="ae-divider" />
+
+          {/* ── Pro sections ── */}
+          <div className="ae-pro-grid">
+            <BulletList label="Assigned Tasks"     items={tasks} input={taskInp} onInputChange={setTaskInp} placeholder="Add a task…"       onAdd={() => addItem(taskInp, setTasks, setTaskInp)} onDelete={i => delItem(i, setTasks)} />
+            <BulletList label="Work Capabilities"  items={caps}  input={capInp}  onInputChange={setCapInp}  placeholder="Add a capability…"  onAdd={() => addItem(capInp,  setCaps,  setCapInp)}  onDelete={i => delItem(i, setCaps)}  />
+          </div>
+
+          {/* ── Bottom: Speciality + Buttons ── */}
+          <div className="ae-bot-row">
+            <BulletList label="Speciality" items={specs} input={specInp} onInputChange={setSpecInp} placeholder="Add a speciality…" onAdd={() => addItem(specInp, setSpecs, setSpecInp)} onDelete={i => delItem(i, setSpecs)} />
+            <div className="ae-bot-right">
+              <button className="ae-btn-cancel" onClick={onClose} title="Discard">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+              <button className="ae-btn-create" onClick={handleCreate}>
+                Create Employee
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── Toast ── */}
+      <div className={`ae-toast${toast ? " ae-toast-show" : ""}`}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+        {toast}
+      </div>
+
+    </div>
+  );
+}
