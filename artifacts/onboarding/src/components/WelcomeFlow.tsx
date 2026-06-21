@@ -191,13 +191,13 @@ const PAGES = [
 ] as const;
 
 /* ── OnboardingFlow ─────────────────────────────────────────── */
-export interface OnboardingFlowProps {
+export interface WelcomeFlowProps {
   onGetStarted?: () => void;
   initialSlide?: number;
   onSlideChange?: (n: number) => void;
 }
 
-export function OnboardingFlow({ onGetStarted, initialSlide = 0, onSlideChange }: OnboardingFlowProps) {
+export function WelcomeFlow({ onGetStarted, initialSlide = 0, onSlideChange }: WelcomeFlowProps) {
   const [idx,   setIdx]   = useState(() => Math.max(0, Math.min(initialSlide, PAGES.length - 1)));
   const [dir,   setDir]   = useState<Dir>("fwd");
   const [phase, setPhase] = useState<Phase>("idle");

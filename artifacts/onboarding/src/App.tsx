@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from "react";
-import { OnboardingFlow }      from "./components/OnboardingFlow";
+import { WelcomeFlow }         from "./components/WelcomeFlow";
 import { LoginFlow }           from "./components/LoginFlow";
 import { ResetPasswordScreen } from "./components/LoginFlow";
 
@@ -136,7 +136,7 @@ export default function App() {
   );
 
   return (
-    <OnboardingFlow
+    <WelcomeFlow
       initialSlide={slide}
       onSlideChange={n => setSlide(n)}
       onGetStarted={() => goTo("login", "fwd")}

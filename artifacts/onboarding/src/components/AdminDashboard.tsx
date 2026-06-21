@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
-import { useDebounce } from "../hooks/useDebounce";
+import { useDebounce }       from "../hooks/useDebounce";
+import { useDelayedUnmount } from "../hooks/useDelayedUnmount";
 import { AddEmployeePage, type NewEmployeeData } from "./AddEmployeePage";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -21,13 +22,15 @@ interface CtxMenu     { empId: number; x: number; y: number; }
 
 // ── Status maps ────────────────────────────────────────────────────────────
 
-const STATUS_COLOR: Record<DisplayStatus, string | null> = {
-  "unauthorized-leave": "#FF5A5F",
-  "leave":              "#94A3B8",
-  "half-day":           "#14B8A6",
-  "early-departure":    "#A78BFA",
-  "late-arrival":       "#F59E0B",
-  "arrival":            "#22C55E",
+/** Maps display status → CSS class suffix for dot/label/time slots.
+ *  Colors live entirely in index.css via --clr-* vars. */
+const STATUS_CSS: Record<DisplayStatus, string | null> = {
+  "unauthorized-leave": "unauth",
+  "leave":              "leave",
+  "half-day":           "half",
+  "early-departure":    "early",
+  "late-arrival":       "late",
+  "arrival":            "present",
   "normal":             null,
 };
 
@@ -103,23 +106,22 @@ function to12h(t: string): string {
   return `${String(h).padStart(2, "0")}:${min} ${period}`;
 }
 
-// Returns the color the CHECK-IN time should receive (arrival-based, independent of departure)
-// Only late arrivals get amber; early/on-time arrivals use default text color
-function getArrivalColor(emp: Employee, timing: OfficeTiming): string | null {
+// Returns CSS key for check-in time color ("late" = amber / null = default)
+function getArrivalStatus(emp: Employee, timing: OfficeTiming): "late" | null {
   if (!emp.checkIn) return null;
   const inM    = parseTimeMins(emp.checkIn);
   const startM = parseTimeMins(timing.start);
   if (inM === -1) return null;
-  return inM > startM ? "#F59E0B" : null;
+  return inM > startM ? "late" : null;
 }
 
-// Returns the color the CHECK-OUT time should receive (departure-based)
-function getDepartureColor(emp: Employee, timing: OfficeTiming): string | null {
+// Returns CSS key for check-out time color ("early" = purple / "half" = teal / null = default)
+function getDepartureStatus(emp: Employee, timing: OfficeTiming): "early" | null {
   if (!emp.checkOut) return null;
   const outM = parseTimeMins(emp.checkOut);
   const endM = parseTimeMins(timing.end);
   if (outM === -1) return null;
-  return outM < endM ? "#A78BFA" : null; // null = normal departure, no special color
+  return outM < endM ? "early" : null;
 }
 
 function getDisplayStatus(emp: Employee, timing: OfficeTiming): DisplayStatus {
@@ -257,11 +259,12 @@ const AvatarImg = memo(function AvatarImg({ emp }: { emp: Employee }) {
   );
 });
 
-function ProgressBar({ value, color, glow }: { value: number; color: string; glow: string }) {
+/** variant="att" → --clr-att (warm white) | variant="perf" → --adm-gold (amber) */
+function ProgressBar({ value, variant }: { value: number; variant: "att" | "perf" }) {
   return (
     <div className="adm-progress-track">
-      <div className="adm-progress-fill"
-        style={{ width: `${value}%`, backgroundColor: color, boxShadow: `0 0 8px ${glow}` } as React.CSSProperties}
+      <div className={`adm-progress-fill adm-progress-fill--${variant}`}
+        style={{ width: `${value}%` } as React.CSSProperties}
       />
     </div>
   );
@@ -287,9 +290,10 @@ const EmployeeCard = memo(function EmployeeCard({
   onLongPress: (id: number, x: number, y: number) => void;
   onEditSave: (id: number, ci: string, co: string) => void;
 }) {
-  const status  = getDisplayStatus(emp, timing);
-  const isLeave = status === "leave" || status === "unauthorized-leave";
-  const isHalf  = status === "half-day";
+  const status    = getDisplayStatus(emp, timing);
+  const statusCss = STATUS_CSS[status];
+  const isLeave   = status === "leave" || status === "unauthorized-leave";
+  const isHalf    = status === "half-day";
 
   // Inline edit local state
   const [ci24,      setCi24]      = useState("");
@@ -310,19 +314,19 @@ const EmployeeCard = memo(function EmployeeCard({
     onEditSave(emp.id, to12h(ci24), to12h(co24));
   }
 
-  // Independent time colors — each slot gets its own status color
-  // arrColor: always show late-arrival amber regardless of half-day or any leave status
-  const arrColor = getArrivalColor(emp, timing);
-  const depColor = isHalf ? "#14B8A6" : (emp.leaveStatus ? null : getDepartureColor(emp, timing));
+  // Independent time slot CSS keys — no inline hex, colors live in CSS vars
+  // arrStatus: late arrival = "late", else null (default text color)
+  const arrStatus = getArrivalStatus(emp, timing);
+  const depStatus = isHalf ? "half" : (emp.leaveStatus ? null : getDepartureStatus(emp, timing));
 
-  // Dot color: checkout status takes priority when checkout exists; else arrival drives it
-  let dotColor: string | null;
+  // Dot CSS key: leave status > checkout departure > arrival
+  let dotCss: string | null;
   if (emp.leaveStatus) {
-    dotColor = STATUS_COLOR[status];
+    dotCss = statusCss;
   } else if (emp.checkOut) {
-    dotColor = depColor; // null = normal departure (no special color)
+    dotCss = depStatus; // null = normal departure
   } else {
-    dotColor = arrColor; // null = no checkin yet
+    dotCss = arrStatus; // null = no check-in yet
   }
 
   // Pulse only while actively checked in (no checkout, no leave)
@@ -365,13 +369,7 @@ const EmployeeCard = memo(function EmployeeCard({
       <div className="adm-card-left">
         <div className="adm-avatar-wrap">
           <AvatarImg emp={emp} />
-          <span
-            className={`adm-dot${shouldPulse ? " adm-dot-pulse" : ""}`}
-            style={dotColor
-              ? { background: dotColor, boxShadow: `0 0 6px ${dotColor}99` } as React.CSSProperties
-              : { background: "rgba(148,163,184,0.22)" }
-            }
-          />
+          <span className={`adm-dot${shouldPulse ? " adm-dot-pulse" : ""} adm-dot--${dotCss ?? "none"}`} />
         </div>
 
         <div className="adm-card-info">
@@ -404,22 +402,17 @@ const EmployeeCard = memo(function EmployeeCard({
               {editError && <p className="adm-inline-error">{editError}</p>}
             </div>
           ) : isLeave ? (
-            <div className="adm-status-label" style={{ color: STATUS_COLOR[status]! } as React.CSSProperties}>
+            /* Status label color comes from CSS class — no inline style */
+            <div className={`adm-status-label adm-status--${status}`}>
               {STATUS_LABEL[status]}
             </div>
           ) : (
             <div className="adm-times">
-              <span
-                className="adm-time-in"
-                style={arrColor ? { color: arrColor } as React.CSSProperties : undefined}
-              >
+              <span className={`adm-time-in${arrStatus ? ` adm-time--${arrStatus}` : ""}`}>
                 {CHECKIN_SVG}
                 <span className={emp.checkIn ? "" : "adm-time-placeholder"}>{displayIn}</span>
               </span>
-              <span
-                className="adm-time-out"
-                style={depColor ? { color: depColor } as React.CSSProperties : undefined}
-              >
+              <span className={`adm-time-out${depStatus ? ` adm-time--${depStatus}` : ""}`}>
                 {CHECKOUT_SVG}
                 <span className={emp.checkOut ? "" : "adm-time-placeholder"}>{displayOut}</span>
               </span>
@@ -447,11 +440,11 @@ const EmployeeCard = memo(function EmployeeCard({
         <div className="adm-bars">
           <div className="adm-bar-row">
             <div className="adm-bar-labels"><span>ATT</span><span>{emp.att}%</span></div>
-            <ProgressBar value={emp.att} color="#E5E2E1" glow="rgba(229,226,225,0.3)" />
+            <ProgressBar value={emp.att} variant="att" />
           </div>
           <div className="adm-bar-row">
             <div className="adm-bar-labels"><span>PERF</span><span>{emp.perf}%</span></div>
-            <ProgressBar value={emp.perf} color="#D4AF37" glow="rgba(212,175,55,0.4)" />
+            <ProgressBar value={emp.perf} variant="perf" />
           </div>
         </div>
       </div>
@@ -491,17 +484,22 @@ function ContextMenu({
     </svg>
   );
 
+  /** Renders a context menu button; statusKey applies a CSS color class from --clr-* vars. */
   const item = (
     label: string,
     icon: React.ReactNode,
     action: () => void,
-    color?: string,
+    statusKey?: string,
     disabled?: boolean,
     active?: boolean,
   ) => (
     <button
-      className={`adm-ctx-item${disabled ? " adm-ctx-item-disabled" : ""}${active ? " adm-ctx-item-active" : ""}`}
-      style={color && !disabled ? { color } as React.CSSProperties : undefined}
+      className={[
+        "adm-ctx-item",
+        disabled              ? "adm-ctx-item-disabled"          : "",
+        active                ? "adm-ctx-item-active"            : "",
+        statusKey && !disabled ? `adm-ctx-item--${statusKey}`    : "",
+      ].filter(Boolean).join(" ")}
       onClick={disabled ? undefined : action}
       disabled={disabled}
     >
@@ -526,19 +524,19 @@ function ContextMenu({
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
-      ), () => { onAction(ctx.empId, "leave"); }, "#94A3B8", false, emp.leaveStatus === "leave")}
+      ), () => { onAction(ctx.empId, "leave"); }, "leave", false, emp.leaveStatus === "leave")}
 
       {item("Unauthorized Leave", (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
         </svg>
-      ), () => { onAction(ctx.empId, "unauthorized-leave"); }, "#FF5A5F", false, emp.leaveStatus === "unauthorized-leave")}
+      ), () => { onAction(ctx.empId, "unauthorized-leave"); }, "unauth", false, emp.leaveStatus === "unauthorized-leave")}
 
       {item("Half Day", (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20V2z" fill="currentColor" stroke="none"/>
         </svg>
-      ), () => { onAction(ctx.empId, "half-day"); }, "#14B8A6", !halfOk, emp.leaveStatus === "half-day")}
+      ), () => { onAction(ctx.empId, "half-day"); }, "half", !halfOk, emp.leaveStatus === "half-day")}
 
     </div>
   );
@@ -622,8 +620,10 @@ function NavIcon({ id }: { id: NavItem }) {
 
 function RestaurantLogo({ size = 28 }: { size?: number }) {
   return (
+    /* Color comes from .adm-restaurant-logo CSS class → var(--adm-gold) */
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "#D4AF37" }}>
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+      className="adm-restaurant-logo">
       <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
       <path d="M7 2v20"/>
       <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
@@ -689,7 +689,17 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
   const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
+  const [ctxMenuData,    setCtxMenuData]    = useState<CtxMenu | null>(null); // last known position for unmount countdown
   const [editingId,      setEditingId]      = useState<number | null>(null);
+
+  // ── useDelayedUnmount — keeps overlays mounted for 60 s after close (Rule 3) ──
+  const shouldRenderLogout   = useDelayedUnmount(logoutModalOpen);
+  const shouldRenderAddEmp   = useDelayedUnmount(showAddEmployee);
+  const shouldRenderDropdown = useDelayedUnmount(dropdownOpen);
+  const shouldRenderCtx      = useDelayedUnmount(!!ctxMenu);
+
+  // Keep last ctxMenu data available during the unmount countdown
+  useEffect(() => { if (ctxMenu) setCtxMenuData(ctxMenu); }, [ctxMenu]);
 
   const debouncedQuery = useDebounce(rawQuery, 280);
 
@@ -865,7 +875,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               <div
                 className={`adm-profile-avatar${dropdownOpen ? " adm-profile-avatar-open" : ""}`}
                 onClick={() => setDropdownOpen(v => !v)} title="Account">A</div>
-              {dropdownOpen && (
+              {shouldRenderDropdown && (
                 <AvatarDropdown onLogoutRequest={requestLogout} onClose={() => setDropdownOpen(false)} />
               )}
             </div>
@@ -909,7 +919,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 onClick={() => setDropdownOpen(v => !v)} aria-label="Account">
                 <div className="adm-topbar-profile-avatar">A</div>
               </button>
-              {dropdownOpen && (
+              {shouldRenderDropdown && (
                 <AvatarDropdown onLogoutRequest={requestLogout} onClose={() => setDropdownOpen(false)} />
               )}
             </div>
@@ -985,22 +995,22 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
       </main>
 
-      {/* Context menu */}
-      {ctxMenu && (
+      {/* Context menu — kept mounted 60 s after close (Rule 3) */}
+      {shouldRenderCtx && ctxMenuData && (
         <ContextMenu
-          ctx={ctxMenu} employees={employees} timing={officeTiming}
-          isBeingEdited={editingId === ctxMenu.empId}
+          ctx={ctxMenuData} employees={employees} timing={officeTiming}
+          isBeingEdited={editingId === ctxMenuData.empId}
           onAction={handleCtxAction} onClose={() => setCtxMenu(null)}
         />
       )}
 
-      {/* Logout modal */}
-      {logoutModalOpen && (
+      {/* Logout modal — kept mounted 60 s after close (Rule 3) */}
+      {shouldRenderLogout && (
         <LogoutModal onConfirm={onLogout} onCancel={() => setLogoutModal(false)} />
       )}
 
-      {/* Add Employee page — /admin/add-employee */}
-      {showAddEmployee && (
+      {/* Add Employee page — /admin/add-employee — kept mounted 60 s after close (Rule 3) */}
+      {shouldRenderAddEmp && (
         <AddEmployeePage
           onClose={closeAddEmployee}
           onSave={handleAddEmployee}

@@ -107,6 +107,16 @@
   --adm-red:         #F87171;
   --adm-orange:      #FBBF24;
   --adm-grey:        #9CA3AF;
+
+  /* ── status / semantic colors (SSOT — never hardcode these inline) ── */
+  --clr-present:     #22C55E;
+  --clr-late:        #F59E0B;
+  --clr-leave:       #94A3B8;
+  --clr-unauth:      #FF5A5F;
+  --clr-half:        #14B8A6;
+  --clr-early:       #A78BFA;
+  --clr-att:         #E5E2E1;
+  --clr-att-glow:    rgba(229,226,225,0.30);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1494,6 +1504,14 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   0%,100% { filter: brightness(1); }
   50%     { filter: brightness(1.5) drop-shadow(0 0 5px currentColor); }
 }
+/* Dot status variants — use CSS vars, never hardcode hex inline */
+.adm-dot--present { background: var(--clr-present); box-shadow: 0 0 6px var(--clr-present); }
+.adm-dot--late    { background: var(--clr-late);    box-shadow: 0 0 6px var(--clr-late); }
+.adm-dot--leave   { background: var(--clr-leave);   box-shadow: 0 0 6px var(--clr-leave); }
+.adm-dot--unauth  { background: var(--clr-unauth);  box-shadow: 0 0 6px var(--clr-unauth); }
+.adm-dot--half    { background: var(--clr-half);    box-shadow: 0 0 6px var(--clr-half); }
+.adm-dot--early   { background: var(--clr-early);   box-shadow: 0 0 6px var(--clr-early); }
+.adm-dot--none    { background: rgba(148,163,184,0.22); }
 
 /* Card info */
 .adm-card-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
@@ -1529,6 +1547,14 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   opacity: .9;
 }
 @media (min-width: 768px) { .adm-status-label { font-size: 11px; } }
+/* Status label color variants */
+.adm-status--leave               { color: var(--clr-leave); }
+.adm-status--unauthorized-leave  { color: var(--clr-unauth); }
+.adm-status--half-day            { color: var(--clr-half); }
+/* Time slot color overrides */
+.adm-time--late  { color: var(--clr-late); }
+.adm-time--early { color: var(--clr-early); }
+.adm-time--half  { color: var(--clr-half); }
 .adm-status-chip {
   font-size: 10px;
   font-weight: 600;
@@ -1662,6 +1688,11 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   transform-origin: left;
   animation: adm-bar-grow 900ms cubic-bezier(.22,1,.36,1) both;
 }
+/* Progress bar color variants — colors from CSS vars, never inline */
+.adm-progress-fill--att  { background: var(--clr-att);  box-shadow: 0 0 8px var(--clr-att-glow); }
+.adm-progress-fill--perf { background: var(--adm-gold); box-shadow: 0 0 8px var(--adm-gold-glow); }
+/* Restaurant logo icon color */
+.adm-restaurant-logo { color: var(--adm-gold); }
 @keyframes adm-bar-grow {
   from { transform: scaleX(0); }
   to   { transform: scaleX(1); }
@@ -2465,6 +2496,10 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .adm-ctx-item-active {
   background: rgba(255,255,255,.05);
 }
+/* Context menu item color variants — maps to --clr-* vars */
+.adm-ctx-item--leave  { color: var(--clr-leave); }
+.adm-ctx-item--unauth { color: var(--clr-unauth); }
+.adm-ctx-item--half   { color: var(--clr-half); }
 .adm-ctx-tick {
   margin-left: auto;
   flex-shrink: 0;
