@@ -279,10 +279,11 @@ export function AddEmployeePage({
                 <span className="ae-date-ico" onClick={() => dobRef.current?.showPicker?.()}>
                   <CalSVG />
                 </span>
-                <input ref={dobRef}
-                  className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
-                  type="date" value={dob} onChange={e => setDob(e.target.value)} />
-                {!dob && <span className="ae-date-ph">Date of Birth</span>}
+                <div className={`ae-date-wrap${!dob ? " empty" : ""}`} data-ph="Date of Birth">
+                  <input ref={dobRef}
+                    className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
+                    type="date" value={dob} onChange={e => setDob(e.target.value)} />
+                </div>
               </div>
             </div>
 
@@ -380,10 +381,11 @@ export function AddEmployeePage({
                 <span className="ae-date-ico" onClick={() => joiningRef.current?.showPicker?.()}>
                   <CalSVG />
                 </span>
-                <input ref={joiningRef}
-                  className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
-                  type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
-                {!joiningDate && <span className="ae-date-ph">Joining Date</span>}
+                <div className={`ae-date-wrap${!joiningDate ? " empty" : ""}`} data-ph="Joining Date">
+                  <input ref={joiningRef}
+                    className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
+                    type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
+                </div>
               </div>
             </div>
 
