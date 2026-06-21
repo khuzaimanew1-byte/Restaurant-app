@@ -85,6 +85,10 @@ export function AddEmployeePage({
   const salInpRef   = useRef<HTMLInputElement>(null);
   const salSizerRef = useRef<HTMLSpanElement>(null);
 
+  // Date input refs — for programmatic showPicker() via icon click
+  const dobRef      = useRef<HTMLInputElement>(null);
+  const joiningRef  = useRef<HTMLInputElement>(null);
+
   // Core fields
   const [name,        setName]        = useState("");
   const [role,        setRole]        = useState("");
@@ -267,8 +271,11 @@ export function AddEmployeePage({
             {/* Date of Birth */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
-                <CalSVG />
-                <input className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
+                <span className="ae-date-ico" onClick={() => dobRef.current?.showPicker?.()}>
+                  <CalSVG />
+                </span>
+                <input ref={dobRef}
+                  className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
                   type="date" value={dob} onChange={e => setDob(e.target.value)} />
                 {!dob && <span className="ae-date-ph">Date of Birth</span>}
               </div>
@@ -365,8 +372,11 @@ export function AddEmployeePage({
             {/* Joining Date */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
-                <CalSVG />
-                <input className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
+                <span className="ae-date-ico" onClick={() => joiningRef.current?.showPicker?.()}>
+                  <CalSVG />
+                </span>
+                <input ref={joiningRef}
+                  className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
                   type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
                 {!joiningDate && <span className="ae-date-ph">Joining Date</span>}
               </div>
