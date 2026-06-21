@@ -1,4 +1,4 @@
-import { useState, RefObject, InputHTMLAttributes } from "react";
+import { useState, ReactNode, RefObject, InputHTMLAttributes } from "react";
 
 function EyeIcon() {
   return (
@@ -21,9 +21,15 @@ function EyeOffIcon() {
 }
 
 // ── TextInput ─────────────────────────────────────────────────────────────
-/** Shared text input with floating label + amber underline animation.
- *  SSOT: wraps .inp-wrap / .inp-field / .inp / .inp-label / .inp-line (index.css).
- *  Import and reuse for every plain text/email/tel field across the app.
+/** Shared text input — two visual variants:
+ *
+ *  default  (no variant prop): floating label + amber underline — used on Login page.
+ *           SSOT: .inp-wrap / .inp-field / .inp / .inp-label / .inp-line (index.css)
+ *
+ *  compact  (variant="compact"): icon left + placeholder label + gold underline —
+ *           used on AddEmployee grid. Reuses .ae-fi-wrap / .ae-fi CSS (index.css).
+ *           Pass an SVG via the `icon` prop to show the leading icon.
+ *
  *  Accepts all native <input> attributes via spread (maxLength, inputMode, etc.). */
 type TextInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> & {
   label: string;
@@ -32,12 +38,42 @@ type TextInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "onChange"> & 
   error?: string;
   onEnter?: () => void;
   inputRef?: RefObject<HTMLInputElement | null>;
+  /** Leading icon — only shown in variant="compact" */
+  icon?: ReactNode;
+  variant?: "default" | "compact";
 };
 
 export function TextInput({
   label, value, onChange, error,
-  type = "text", onEnter, onKeyDown, inputRef, ...rest
+  type = "text", onEnter, onKeyDown, inputRef,
+  icon, variant = "default",
+  ...rest
 }: TextInputProps) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") onEnter?.();
+    onKeyDown?.(e);
+  };
+
+  /* ── compact: ae-fi-wrap style (icon + placeholder, gold underline) ── */
+  if (variant === "compact") {
+    return (
+      <div className="ae-fi-wrap">
+        {icon}
+        <input
+          ref={inputRef}
+          type={type}
+          className="ae-fi"
+          value={value}
+          placeholder={label}
+          onChange={e => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          {...rest}
+        />
+      </div>
+    );
+  }
+
+  /* ── default: floating label + amber animated underline ── */
   return (
     <div className="inp-wrap">
       <div className="inp-field">
@@ -48,10 +84,7 @@ export function TextInput({
           value={value}
           placeholder=" "
           onChange={e => onChange(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === "Enter") onEnter?.();
-            onKeyDown?.(e);
-          }}
+          onKeyDown={handleKeyDown}
           {...rest}
         />
         <span className="inp-line" aria-hidden="true" />

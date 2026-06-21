@@ -16,6 +16,13 @@ export interface NewEmployeeData {
 }
 
 // ── Inline SVG atoms ──────────────────────────────────────────────────────
+const PersonSVG   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>;
+const CardSVG     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>;
+const PhoneSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>;
+const MailSVG     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>;
+const GlobeSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+const BriefSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>;
+const PinSVG      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
 const UsersSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>;
 const CalSVG      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 const CameraSVG   = () => <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
@@ -266,7 +273,7 @@ export function AddEmployeePage({
 
             {/* Full Name */}
             <div className="ae-field">
-              <TextInput label="Full Name" value={name} onChange={v => setName(v)} autoComplete="name" />
+              <TextInput label="Full Name" value={name} onChange={v => setName(v)} autoComplete="name" variant="compact" icon={<PersonSVG />} />
             </div>
 
             {/* Date of Birth */}
@@ -313,23 +320,24 @@ export function AddEmployeePage({
 
             {/* CNIC */}
             <div className="ae-field">
-              <TextInput label="CNIC" value={cnic} onChange={v => handleCnic(v)} maxLength={15} />
+              <TextInput label="CNIC" value={cnic} onChange={v => handleCnic(v)} maxLength={15} variant="compact" icon={<CardSVG />} />
             </div>
 
             {/* Phone */}
             <div className="ae-field">
-              <TextInput label="Phone" value={phone} onChange={v => setPhone(v)} type="tel" />
+              <TextInput label="Phone" value={phone} onChange={v => setPhone(v)} type="tel" variant="compact" icon={<PhoneSVG />} />
             </div>
 
             {/* Email */}
             <div className="ae-field">
-              <TextInput label="Email" value={email} onChange={v => setEmail(v)} type="email" autoComplete="email" />
+              <TextInput label="Email" value={email} onChange={v => setEmail(v)} type="email" autoComplete="email" variant="compact" icon={<MailSVG />} />
             </div>
 
             {/* Spoken Language */}
             <div className="ae-field">
               <TextInput
                 label="Spoken Language" value={langInput} onChange={v => setLangInput(v)}
+                variant="compact" icon={<GlobeSVG />}
                 onKeyDown={e => {
                   if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addLang(); }
                   else if (e.key === "Backspace" && !langInput && langs.length) setLangs(p => p.slice(0, -1));
@@ -346,7 +354,7 @@ export function AddEmployeePage({
 
             {/* Position / Role */}
             <div className="ae-field">
-              <TextInput label="Position / Role" value={role} onChange={v => setRole(v)} />
+              <TextInput label="Position / Role" value={role} onChange={v => setRole(v)} variant="compact" icon={<BriefSVG />} />
             </div>
 
             {/* Joining Date */}
@@ -393,7 +401,7 @@ export function AddEmployeePage({
 
             {/* Street Address — full width, its own row */}
             <div className="ae-field ae-span-full">
-              <TextInput label="Street Address" value={address} onChange={v => setAddress(v)} />
+              <TextInput label="Street Address" value={address} onChange={v => setAddress(v)} variant="compact" icon={<PinSVG />} />
             </div>
 
           </div>
