@@ -69,12 +69,35 @@ These rules apply to **all code in this project** automatically, without needing
 | Accent Dark        | `#9B5B26` Deep Copper     | `--accent-end` / `AppColors.accentEnd` |
 | Accent Highlight   | `#E8A86A` Light Gold      | `--illus-badge` / `AppColors.illustBadge` |
 
+**Status / semantic colors (also SSOT — define once, never inline):**
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--clr-present` | `#22C55E` | Arrival / present |
+| `--clr-late`    | `#F59E0B` | Late arrival |
+| `--clr-leave`   | `#94A3B8` | Approved leave |
+| `--clr-unauth`  | `#FF5A5F` | Unauthorized leave |
+| `--clr-half`    | `#14B8A6` | Half-day |
+| `--clr-early`   | `#A78BFA` | Early departure |
+
 **Rules:**
-- All colors live in CSS custom properties (React) or `AppColors` constants (Flutter). Never hardcode hex values outside these two SSOTs.
+- All colors — brand AND status — live in CSS custom properties (React) or `AppColors` constants (Flutter). **Never hardcode hex values anywhere else.**
 - React SSOT: `artifacts/onboarding/src/index.css` `:root` block.
 - Flutter SSOT: `flutter_onboarding/lib/core/constants/app_colors.dart`.
 - Light mode for React: `[data-dark="false"]` override uses warm parchment bg (`#F2EBE0`) and same Copper Bronze accent.
 - Light mode for Flutter: `AppColors.lightBg` = `#F2EBE0`, same accent.
+
+### 0a. Flutter SSOT Rules
+
+These apply automatically to all Dart/Flutter code:
+
+- **Colors:** Always `AppColors.*` — never hardcode hex in widgets or theme files.
+- **Text styles:** Always `AppTextStyles.*` from `flutter_onboarding/lib/core/constants/app_text_styles.dart` — never inline `TextStyle(...)` with raw values.
+- **Navigation:** Always `go_router` (`context.go()`, `context.push()`, `context.pop()`). Never use `Navigator.push` directly.
+- **State:** Always Riverpod 2 (`ref.watch`, `ref.read`, `StateNotifierProvider`, `AsyncNotifierProvider`). Never use `setState` in non-trivial widgets; never use `Provider` package.
+- **Theme:** `ThemeData` pair in `AppTheme` — light and dark both defined; switched via Riverpod state. No `Theme.of(context).copyWith(...)` scattered in widgets.
+- **Assets:** Only reference via `AppAssets.*` constants — never raw string paths.
+- **No `print()`:** Use `debugPrint()` only during development; remove before any release build. Never use `print()` in production paths.
 
 ### 1. Styling
 
@@ -124,9 +147,9 @@ Implement via a `useDelayedUnmount(isOpen: boolean, delayMs = 60_000)` hook that
 
 All durations and easings live in CSS — never hardcoded in JS `setTimeout` logic (except the transition timeout that matches the CSS duration).
 
-#### Page Navigation Tree & Animation Direction (SSOT — strictly enforced)
+#### 4a. Page Navigation Animations (SSOT — auto-applied to every new page/panel)
 
-Spatial model — left = shallow, right = deep:
+**Spatial model — left = shallow, right = deep:**
 
 ```
 [Onboarding /] ──fwd──▶ [Login /login] ──fwd──▶ [OTP (inline)] ──fwd──▶ [New Password /new-password]
@@ -145,13 +168,20 @@ Back is the exact reverse of each forward arrow.
 | New Password → Login (back/done) | back | `.view-back` |
 | Login → Success (logged in) | fwd | `.view-fwd` |
 | Success → Login (logout) | back | `.view-back` |
+| Admin Dashboard → any sub-panel | fwd | `.view-fwd` (slide from right) |
+| Sub-panel → Admin Dashboard (back) | back | `.view-back` (slide to right) |
+
+**Element settle animations (auto on every new screen):**
+- Every new screen's staggered elements get settle direction from parent: `.screen-fwd .{prefix}-s*` → `settle-fwd`; `.screen-back .{prefix}-s*` → `settle-back`.
+- Settle keyframes: `settle-fwd` = `translateX(28px→0)`, `settle-back` = `translateX(-28px→0)`.
+- View keyframes: `view-fwd` = `translateX(32px) + scale`, `view-back` = `translateX(-32px) + scale`.
+- Duration/delay/easing inherited from base table — **never re-specify** in direction overrides.
+- Icon pops and unique semantic animations are direction-independent (keep their own keyframes).
 
 **Implementation contracts:**
 - App-level view switches → `App.tsx` `goTo(view, dir)` sets `viewDir` state → wrapper gets `className="view-fwd"` or `"view-back"`.
-- Within-LoginFlow screen switches → `enterDir` prop → `LoginFlow` renders `.screen-fwd` or `.screen-back` on the screen root.
-- **Element settling follows parent direction automatically:** `.screen-fwd .si-s*` / `.screen-back .si-s*` override `animation-name` with `settle-fwd` / `settle-back`. Same for `.otp-s*` and `.rp-s*`. Duration/delay/easing inherited from base rules — never re-specify them in direction overrides.
-- `otp-s1` (icon pop) and `otp-s5` (OTP boxes spring) keep their unique semantic animations regardless of direction.
-- CSS keyframes: `settle-fwd` (translateX 28px→0), `settle-back` (translateX -28px→0), `view-fwd` (32px+scale), `view-back` (-32px+scale).
+- Within-screen switches → `enterDir` prop → renders `.screen-fwd` or `.screen-back` on screen root.
+- Flutter: `go_router` transitions use `CustomTransitionPage` with `SlideTransition` — forward = right-to-left, back = left-to-right.
 
 ### 5. Design Principles (Apple-level)
 
@@ -162,11 +192,41 @@ Back is the exact reverse of each forward arrow.
 - **Glassmorphism:** `backdrop-filter: blur(20–28px)` + `var(--glass)` bg + `var(--glass-bd)` border. Defined once in `.glass-card`, extended where needed.
 - **Psychological flow:** One clear benefit per screen → progress dots (Zeigarnik effect) → premium CTA (Von Restorff). Never add friction before the user commits.
 
-### 6. Code Hygiene
+### 6. Routing — One Page, One URL
 
-- Remove all `console.log`, `console.error`, commented-out blocks, and unused imports before committing.
-- No dead variables or unreachable branches.
+- Every distinct page or major view **must have its own URL route** so it can be deep-linked, bookmarked, and navigated via browser back/forward.
+- React: use `react-router-dom` (or Vite file-based routing) — never simulate pages with `useState` view toggles unless it is a true inline sub-screen (e.g. OTP within Login flow).
+- Flutter: all top-level pages registered in `app_router.dart` with a named path (e.g. `/login`, `/otp`, `/success`, `/admin`, `/admin/add-employee`).
+- Sub-panels that slide in over a page (sheets, drawers) are **not** separate routes — they are overlays. Only full-screen replacements get a route.
+
+### 7. Performance — Always On
+
+Apply these automatically on every new component or page — no need to mention per task:
+
+**React:**
+- Expensive derived data → `useMemo([deps])`
+- Stable callbacks passed as props → `useCallback([deps])`
+- Pure presentational components → `React.memo()`
+- Heavy/rare components (dashboards, modals) → `React.lazy()` + `<Suspense>`
+- Images → `loading="lazy"` + explicit `width`/`height` to prevent CLS
+- Lists → stable `key` prop (never index for dynamic lists)
+- Event handlers → debounce search inputs (`300 ms`), throttle scroll/resize
+
+**Flutter:**
+- Use `const` constructors everywhere possible
+- Avoid rebuilding subtrees: extract widgets, use `select()` on Riverpod providers
+- Images → `CachedNetworkImage` with placeholder
+- Long lists → `ListView.builder` / `SliverList` — never `Column` with mapped children for >10 items
+- Heavy computation → `compute()` (isolate) for anything that could block the UI thread
+
+### 8. Code Hygiene
+
+- **`console.log` is forbidden** — remove before committing. Use nothing for debug traces.
+- **`console.error` is allowed** for genuine runtime errors that need visibility (API failures, unexpected states). Keep messages concise and actionable.
+- **Important comments are required** for: non-obvious logic, SSOT pointers, intentional workarounds, and `/* mobile-only */` / `/* desktop-only */` markers. Remove only comments that describe what the code obviously does.
+- No dead variables, unused imports, or unreachable branches.
 - TypeScript: no `any` unless unavoidable (e.g. CSS custom property casting `as React.CSSProperties`).
+- Flutter: no `dynamic` unless unavoidable; always type Riverpod providers explicitly.
 
 ---
 
