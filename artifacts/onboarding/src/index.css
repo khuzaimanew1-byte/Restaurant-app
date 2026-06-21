@@ -2190,7 +2190,7 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 }
 .ae-span-full { grid-column: 1 / -1; }
 @media (max-width: 600px) {
-  .ae-fields-grid { grid-template-columns: 1fr 1fr; gap: 20px 16px; }
+  .ae-fields-grid { grid-template-columns: 1fr 1fr; gap: 30px 16px; }
 }
 
 /* legacy row helpers kept for potential future use */
