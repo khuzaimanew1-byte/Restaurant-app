@@ -387,8 +387,8 @@ export function AddEmployeePage({
               </div>
             </div>
 
-            {/* Shift Timing — full width, start → end */}
-            <div className="ae-field ae-span-full">
+            {/* Shift Timing — 1 column */}
+            <div className="ae-field">
               <div className="ae-fi-wrap ae-shift-wrap">
                 <span className="ae-date-ico" onClick={() => shiftStartRef.current?.showPicker?.()}>
                   <ClockSVG />
