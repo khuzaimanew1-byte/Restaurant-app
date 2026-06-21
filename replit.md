@@ -47,6 +47,20 @@ flutter run \
 
 > **Note:** `artifacts/onboarding/` and `flutter_onboarding/` are workspace-bound legacy folder names. All internal code uses restaurant-appropriate naming — never use "onboarding" as a concept name in new code. The welcome/splash screens are `WelcomeFlow`, not "OnboardingFlow".
 
+## Development Model — Per-Screen "Freeze Then Port"
+
+**Rule (always enforced — no exceptions):**
+
+1. **Web first, end-to-end.** Pehle ek screen/feature React web pe mukammal banao — UI, API aur DB sab real ho. Koi mock data ya placeholder na ho.
+2. **Stabilise before porting.** Jab us screen ka design aur API contract 2–3 din stable rahe (koi major change na aaye), tab usi screen ko Flutter mein port karo.
+3. **Parallel pipeline.** Agla feature React pe shuru karo jab tak pichla Flutter mein settle ho raha hai — dono tracks ek saath chaltay hain, lekin sequence maintain hoti hai.
+
+**Why:** Web pe iterate karna tez aur sasta hai. Flutter port ek stable contract pe hona chahiye — warna dono sides simultaneously change hotay hain aur sync toot jaati hai.
+
+**Applies to:** har naya screen, feature, aur API endpoint. Koi bhi Flutter code tab tak nahi likhna jab tak uska React counterpart production-ready aur design-frozen na ho.
+
+---
+
 ## Architecture decisions
 
 - **bcryptjs password hashing**: passwords hashed server-side with bcrypt (cost 12); OTPs hashed with cost 10
