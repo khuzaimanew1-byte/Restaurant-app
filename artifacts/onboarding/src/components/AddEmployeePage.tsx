@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useLayoutEffect } from "react";
 
 // ── Palette for avatar fallback colours ───────────────────────────────────
 const AVATAR_PALETTE = [
@@ -79,7 +79,11 @@ export function AddEmployeePage({
   // Avatar
   const [avatarUrl,   setAvatarUrl]   = useState("");
   const [dragOver,    setDragOver]    = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRef     = useRef<HTMLInputElement>(null);
+
+  // Salary auto-resize refs (effect runs after salary state below)
+  const salInpRef   = useRef<HTMLInputElement>(null);
+  const salSizerRef = useRef<HTMLSpanElement>(null);
 
   // Core fields
   const [name,        setName]        = useState("");
@@ -93,6 +97,14 @@ export function AddEmployeePage({
   const [dob,         setDob]         = useState("");
   const [joiningDate, setJoiningDate] = useState("");
   const [address,     setAddress]     = useState("");
+
+  // Salary pill auto-resize — runs after salary state is declared
+  useLayoutEffect(() => {
+    if (!salSizerRef.current || !salInpRef.current) return;
+    salSizerRef.current.textContent = salary || "XX,XXX";
+    const w = Math.max(52, salSizerRef.current.offsetWidth + 4);
+    salInpRef.current.style.width = `${w}px`;
+  }, [salary]);
 
   // Language tags
   const [langInput,   setLangInput]   = useState("");
@@ -217,10 +229,12 @@ export function AddEmployeePage({
 
           {/* ── Salary pill ── */}
           <div className="ae-sal-sec">
-            <div className="ae-sal-pill">
+            <div className="ae-sal-pill" style={{ position: "relative" } as React.CSSProperties}>
+              <span ref={salSizerRef} className="ae-sal-sizer" aria-hidden />
               <span className="ae-sal-cur">PKR</span>
               <div className="ae-sal-sep" />
               <input
+                ref={salInpRef}
                 className="ae-sal-inp"
                 type="text" inputMode="numeric" autoComplete="off"
                 placeholder="XX,XXX"
@@ -232,6 +246,7 @@ export function AddEmployeePage({
                 }}
                 onChange={e => handleSalaryInput(e.target.value)}
               />
+              <span className="ae-sal-mo">/ mo</span>
             </div>
           </div>
 
