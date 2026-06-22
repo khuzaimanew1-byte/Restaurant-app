@@ -921,7 +921,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
         <div className="adm-sidebar-nav">
           {NAV_ITEMS.map(item => (
             <button key={item.id}
-              className={`adm-nav-item${activeNav === item.id ? " adm-nav-active" : ""}`}
+              className={`nav-item adm-nav-item${activeNav === item.id ? " adm-nav-active" : ""}`}
               onClick={() => setActiveNav(item.id)}>
               <NavIcon id={item.id} />
               <span>{item.label}</span>
@@ -1080,7 +1080,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
         <nav className="adm-bottom-nav">
           {BOTTOM_NAV_ITEMS.map(item => (
             <button key={item.id}
-              className={`adm-bnav-item${activeNav === item.id ? " adm-bnav-active" : ""}`}
+              className={`nav-item adm-bnav-item${activeNav === item.id ? " adm-bnav-active" : ""}`}
               onClick={() => setActiveNav(item.id)}>
               <div className="adm-bnav-icon-wrap">
                 <NavIcon id={item.id} />

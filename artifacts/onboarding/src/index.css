@@ -302,6 +302,22 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   SHARED NAV ITEM BASE — SSOT for all nav buttons (sidebar, bottom bar)
+   Shared by: .adm-nav-item, .adm-bnav-item, .adm-sidebar-logout
+   Page-specific classes keep only their unique overrides.
+   Every future nav bar must extend .nav-item — never redefine
+   display, align-items, border, background, cursor, or font-family.
+═══════════════════════════════════════════════════════════════ */
+.nav-item {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    SHARED STATUS PILL — SSOT base for all stat/count chips
    Used by: .adm-desktop-chip, .adm-mobile-chip, .adm-half-badge
    Only color stays page-specific — everything else is here.

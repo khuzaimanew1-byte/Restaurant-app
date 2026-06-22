@@ -30,6 +30,7 @@ const CameraSVG   = () => <svg width="34" height="34" viewBox="0 0 24 24" fill="
 const CameraSmSVG = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
 const CheckSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 const TrashSVG    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
+const ExpSVG = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>;
 const ChevSVG = ({ open }: { open: boolean }) => (
   /* ae-chev-svg defines transition: transform .2s in CSS — only rotation is dynamic */
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -114,6 +115,7 @@ export function AddEmployeePage({
   const [address,     setAddress]     = useState("");
   const [shiftStart,  setShiftStart]  = useState("");
   const [shiftEnd,    setShiftEnd]    = useState("");
+  const [experience,  setExperience]  = useState("");
 
   // Salary pill auto-resize — runs after salary state is declared
   useLayoutEffect(() => {
@@ -319,7 +321,12 @@ export function AddEmployeePage({
               </div>
             </div>
 
-            {/* Row 3: Shift Timing — spans both field columns on desktop */}
+            {/* Row 3: Experience */}
+            <div className="ae-field">
+              <TextInput label="Experience" value={experience} onChange={v => setExperience(v)} variant="compact" icon={<ExpSVG />} />
+            </div>
+
+            {/* Row 4: Shift Timing — spans both field columns on desktop */}
             <div className="ae-field ae-s1-sft">
               <div className="ae-shift-row">
                 <span className="ae-shift-ico">
@@ -411,9 +418,9 @@ export function AddEmployeePage({
               </div>
             </div>
 
-            {/* CNIC */}
-            <div className="ae-field ae-s3-cni">
-              <TextInput label="CNIC" value={cnic} onChange={v => handleCnic(v)} maxLength={15} variant="compact" icon={<CardSVG />} />
+            {/* Email */}
+            <div className="ae-field ae-s3-eml">
+              <TextInput label="Email" value={email} onChange={v => setEmail(v)} type="email" autoComplete="email" variant="compact" icon={<MailSVG />} />
             </div>
 
             {/* Spoken Language */}
@@ -446,9 +453,9 @@ export function AddEmployeePage({
               <TextInput label="Phone" value={phone} onChange={v => setPhone(v)} type="tel" variant="compact" icon={<PhoneSVG />} />
             </div>
 
-            {/* Email */}
-            <div className="ae-field ae-s3-eml">
-              <TextInput label="Email" value={email} onChange={v => setEmail(v)} type="email" autoComplete="email" variant="compact" icon={<MailSVG />} />
+            {/* CNIC */}
+            <div className="ae-field ae-s3-cni">
+              <TextInput label="CNIC" value={cnic} onChange={v => handleCnic(v)} maxLength={15} variant="compact" icon={<CardSVG />} />
             </div>
 
             {/* Street Address — always full width */}

@@ -47,24 +47,24 @@
   gap: 28px clamp(24px, 4vw, 44px);
   margin-bottom: 20px;
   position: relative; z-index: 1;
-  align-items: start;
+  align-items: center;
 }
 
-/* Left sticky column: Photo (rows 1-2) + Salary (rows 3) */
+/* Left sticky column: Photo + Salary — spans all field rows, centered vertically */
 .ae-s1-lft {
   grid-column: 1;
-  grid-row: 1 / 4;
+  grid-row: 1 / 5;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 16px;
 }
 /* Reset individual margins — gap handles spacing inside ae-s1-lft */
 .ae-s1-lft .ae-av-sec { padding-top: 0; margin-bottom: 0; }
 .ae-s1-lft .ae-sal-sec { margin-bottom: 0; }
 
-/* Shift Timing — spans both right field columns on desktop (row 3) */
+/* Shift Timing — spans both right field columns on desktop (row 4) */
 .ae-s1-sft { grid-column: 2 / 4; }
 
 @media (max-width: 640px) {
@@ -107,12 +107,12 @@
 /* ════════════════════════════════════════════════════════════
    SECTION 3 — Bottom: personal info fields
    Desktop (3-col):
-     Row 1: Gender | CNIC    | Languages
-     Row 2: Phone  | Email
+     Row 1: Gender | Email   | Languages
+     Row 2: Phone  | CNIC
      Row 3: Street Address (full width)
    Mobile (2-col, CSS order resequences fields):
      Row 1: Gender   | Languages
-     Row 2: CNIC     | Phone
+     Row 2: Phone    | CNIC
      Row 3: Email    (full width)
      Row 4: Street   (full width)
 ════════════════════════════════════════════════════════════ */
@@ -131,11 +131,11 @@
     grid-template-columns: 1fr 1fr;
     gap: 28px 16px;
   }
-  /* Mobile reorder: Gender | Languages / CNIC | Phone / Email / Street */
+  /* Mobile reorder: Gender | Languages / Phone | CNIC / Email / Street */
   .ae-s3-gdr { order: 1; }
   .ae-s3-lng { order: 2; }
-  .ae-s3-cni { order: 3; }
-  .ae-s3-phn { order: 4; }
+  .ae-s3-phn { order: 3; }
+  .ae-s3-cni { order: 4; }
   .ae-s3-eml { order: 5; grid-column: 1 / -1; }
   .ae-s3-adr { order: 6; }
 }
