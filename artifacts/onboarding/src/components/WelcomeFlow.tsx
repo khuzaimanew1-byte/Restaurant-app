@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import "../styles/welcome-flow.css";
+import { WelcomeBg } from "./backgrounds/WelcomeBg";
 
 /* ── Types ─────────────────────────────────────────────────── */
 type ChipVariant = "a" | "b" | "c";
@@ -239,7 +240,7 @@ export function WelcomeFlow({ onGetStarted, initialSlide = 0, onSlideChange }: W
 
   return (
     <div className="ob">
-      <div className="ob__bg-glow" />
+      <WelcomeBg />
 
       {!isLast && (
         <button className="skip-btn top-enter" onClick={() => goTo(PAGES.length - 1)}>

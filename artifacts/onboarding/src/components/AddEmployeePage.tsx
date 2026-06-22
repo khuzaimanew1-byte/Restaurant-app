@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useLayoutEffect, memo } from "react";
 import { Button } from "./ui/Button";
 import { TextInput } from "./ui/Input";
+import "../styles/add-bg.css";
 import "../styles/add-employee.css";
 
 // ── Palette for avatar fallback colours ───────────────────────────────────

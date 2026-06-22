@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, KeyboardEvent, ClipboardEvent
 import { Button } from "./ui/Button";
 import { TextInput, PasswordInput } from "./ui/Input";
 import "../styles/login-flow.css";
+import { AuthBg } from "./backgrounds/AuthBg";
 
 // ── Types ──────────────────────────────────────────────────────────────
 type Screen     = "signin" | "otp";
@@ -499,7 +500,7 @@ export function ResetPasswordScreen({ resetToken, onBack, onDone, enterDir }: {
 
   return (
     <div className="login">
-      <div className="ob__bg-glow" />
+      <AuthBg />
       <div className="login__inner">
         <div className={`login__screen ${dir}`}>
           <button className="login__back otp-back" onClick={onBack} aria-label="Back">
@@ -592,7 +593,7 @@ export function LoginFlow({ onLoggedIn, onResetVerified }: LoginFlowProps) {
 
   return (
     <div className="login">
-      <div className="ob__bg-glow" />
+      <AuthBg />
       <div className="login__inner">
         {screen === "signin" && (
           <SignInScreen

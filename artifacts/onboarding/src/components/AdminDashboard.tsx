@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
 import { useDebounce }       from "../hooks/useDebounce";
 import { useDelayedUnmount } from "../hooks/useDelayedUnmount";
 import { AddEmployeePage, type NewEmployeeData } from "./AddEmployeePage";
+import "../styles/main-bg.css";
 import "../styles/admin-dashboard.css";
 
 // ── Types ──────────────────────────────────────────────────────────────────
