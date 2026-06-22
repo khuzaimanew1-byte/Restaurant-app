@@ -1,0 +1,17 @@
+/* ── Add Employee background — CSS injected via style tag ── */
+const css = `
+.ae-root {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 70% 55% at 0% 0%, rgba(110,68,12,.28) 0%, transparent 68%),
+    radial-gradient(ellipse 45% 35% at 100% 0%, rgba(90,55,8,.12) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M14,0 L28,14 L14,28 L0,14 Z' fill='none' stroke='rgba(255,255,255,0.052)' stroke-width='0.7'/%3E%3C/svg%3E");
+  background-size: 100% 100%, 100% 100%, 28px 28px;
+  background-repeat: no-repeat, no-repeat, repeat;
+}
+`;
+
+/* AddBg — injects add-employee page background styles */
+export function AddBg() {
+  return <style>{css}</style>;
+}

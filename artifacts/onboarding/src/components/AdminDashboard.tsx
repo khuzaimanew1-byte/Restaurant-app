@@ -3,7 +3,7 @@ import { useDebounce }       from "../hooks/useDebounce";
 import { useDelayedUnmount } from "../hooks/useDelayedUnmount";
 import { AddEmployeePage, type NewEmployeeData } from "./AddEmployeePage";
 import "../styles/admin-dashboard.css";
-import "../styles/main-bg.css";
+import { MainBg } from "./main-bg";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -926,6 +926,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="adm-root">
+      <MainBg />
 
       {/* ── Desktop Sidebar ── */}
       <nav className="adm-sidebar">
