@@ -126,6 +126,8 @@
   --topbar-bd:     rgba(255,255,255,.10);
   --topbar-shadow: 0 4px 20px rgba(0,0,0,.20);
   --topbar-h:      60px;
+  /* top padding for the first content section below a topbar — set once, reused per-page */
+  --content-pad-t: 16px;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -297,4 +299,21 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 .t-sp {
   width: 38px;
   flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SHARED STATUS PILL — SSOT base for all stat/count chips
+   Used by: .adm-desktop-chip, .adm-mobile-chip, .adm-half-badge
+   Colors and padding remain page-specific; only structure here.
+   Future pills must use .stat-pill as base — never redefine
+   display, border, background, backdrop-filter, or border-radius.
+═══════════════════════════════════════════════════════════════ */
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.20);
+  background: rgba(255,255,255,.10);
+  backdrop-filter: blur(8px);
+  font-size: 13px;
 }

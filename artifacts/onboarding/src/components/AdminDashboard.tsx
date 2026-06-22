@@ -934,7 +934,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
       <main className="adm-main">
 
         {/* Desktop top header */}
-        <header className="adm-header">
+        <header className="topbar adm-header">
           <div className="adm-header-left">
             <div className="adm-header-date-row">
               <h2 className="adm-header-date">{today}</h2>
@@ -1026,9 +1026,9 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
 
         {/* Desktop stats bar — below header: pills left, Total right */}
         <div className="adm-desktop-stats">
-          <span className="adm-desktop-chip adm-desktop-chip-present">Present: {presentCount}</span>
+          <span className="stat-pill adm-desktop-chip adm-desktop-chip-present">Present: {presentCount}</span>
           {halfDayCount > 0 && (
-            <span className="adm-desktop-chip adm-desktop-chip-half">Half Day: {halfDayCount}</span>
+            <span className="stat-pill adm-desktop-chip adm-desktop-chip-half">Half Day: {halfDayCount}</span>
           )}
           <span className="adm-desktop-stats-total">Total: {totalCount}</span>
         </div>
@@ -1040,9 +1040,9 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
             <span className="adm-mobile-total">Total: {totalCount}</span>
           </div>
           <div className="adm-mobile-chips-row">
-            <span className="adm-mobile-chip">Present: {presentCount}</span>
+            <span className="stat-pill adm-mobile-chip">Present: {presentCount}</span>
             {halfDayCount > 0 && (
-              <span className="adm-mobile-chip adm-mobile-chip-half">Half Day: {halfDayCount}</span>
+              <span className="stat-pill adm-mobile-chip adm-mobile-chip-half">Half Day: {halfDayCount}</span>
             )}
           </div>
         </div>

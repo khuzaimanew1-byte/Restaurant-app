@@ -148,13 +148,9 @@
 @media (min-width: 768px) { .adm-main { margin-left: 256px; } }
 
 /* ── Desktop header ──────────────────────────────────── */
+/* Chrome (bg, blur, border, shadow) comes from .topbar (index.css SSOT) */
 .adm-header {
-  /* shared topbar chrome — matches all page topbars via --topbar-* vars (SSOT) */
-  background: var(--topbar-bg);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--topbar-bd);
-  box-shadow: var(--topbar-shadow);
-  /* page-specific layout */
+  height: auto; min-height: var(--topbar-h); /* override topbar fixed height */
   display: none;
   justify-content: space-between;
   align-items: center;
@@ -188,14 +184,8 @@
 }
 @media (min-width: 768px) { .adm-desktop-stats { display: flex; } }
 .adm-desktop-chip {
-  display: inline-flex;
-  align-items: center;
+  /* structure from .stat-pill (index.css SSOT) — only page-specifics here */
   padding: 4px 14px;
-  border-radius: 9999px;
-  border: 1px solid rgba(255,255,255,.20);
-  background: rgba(255,255,255,.10);
-  backdrop-filter: blur(8px);
-  font-size: 13px;
   font-family: 'Geist', 'Inter', sans-serif;
   color: var(--adm-gold-text);
 }
@@ -446,14 +436,8 @@
   color: white; margin: 0;
 }
 .adm-mobile-chip {
-  display: inline-flex;
-  align-items: center;
+  /* structure from .stat-pill (index.css SSOT) — only page-specifics here */
   padding: 4px 12px;
-  border-radius: 9999px;
-  border: 1px solid rgba(255,255,255,.20);
-  background: rgba(255,255,255,.10);
-  backdrop-filter: blur(8px);
-  font-size: 13px;
   color: var(--adm-gold-text);
 }
 .adm-mobile-chip-half {
@@ -469,7 +453,7 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 .adm-content {
-  padding: 16px 16px 120px;
+  padding: var(--content-pad-t) 16px 120px; /* top from SSOT token */
   flex: 1;
 }
 .adm-content-enter {
@@ -647,20 +631,21 @@
   color: rgba(255,255,255,.25);
 }
 
-/* Half-day inline badge (next to salary) */
+/* Half-day inline badge (next to salary)
+   Add .stat-pill in JSX when used — border-radius matches .stat-pill (10px) */
 .adm-half-badge {
   display: inline-flex;
   align-items: center;
   gap: 2px;
   margin-left: 7px;
   padding: 2px 7px 2px 5px;
-  border-radius: 20px;
+  border-radius: 10px; /* reduced 50% from 20px; matches .stat-pill */
+  border: 1px solid rgba(20,184,166,.22);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: .04em;
   color: rgba(255,255,255,.40);
   background: rgba(20,184,166,.08);
-  border: 1px solid rgba(20,184,166,.22);
   vertical-align: middle;
   line-height: 1.5;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
