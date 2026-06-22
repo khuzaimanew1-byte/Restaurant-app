@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import "../styles/welcome-flow.css";
+import { WelcomeBg, IllusGlow } from "./welcome-bg";
 
 /* ── Types ─────────────────────────────────────────────────── */
 type ChipVariant = "a" | "b" | "c";
@@ -28,7 +29,7 @@ function Chip({ val, sub, variant, delay, pos }: {
 function AttendanceIllus() {
   return (
     <div className="illus">
-      <div className="illus__glow" />
+      <IllusGlow />
 
       <div className="rings">
         {([38, 55, 72] as const).map((pct, i) => (
@@ -76,7 +77,7 @@ const MONTH_DAYS = Array.from({ length: 30 }, (_, i) => i + 1);
 function LeaveIllus() {
   return (
     <div className="illus">
-      <div className="illus__glow" />
+      <IllusGlow />
 
       <div className="cal-card glass-card">
         <div className="cal-header">
@@ -125,7 +126,7 @@ const BARS = [0.65, 0.82, 0.58, 0.91, 0.74, 0.88, 0.96];
 function AnalyticsIllus() {
   return (
     <div className="illus">
-      <div className="illus__glow" />
+      <IllusGlow />
 
       <div className="chart-card glass-card">
         <div className="chart-header">
@@ -239,7 +240,7 @@ export function WelcomeFlow({ onGetStarted, initialSlide = 0, onSlideChange }: W
 
   return (
     <div className="ob">
-      <div className="ob__bg-glow" />
+      <WelcomeBg />
 
       {!isLast && (
         <button className="skip-btn top-enter" onClick={() => goTo(PAGES.length - 1)}>

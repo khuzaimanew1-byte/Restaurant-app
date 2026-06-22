@@ -1,0 +1,9 @@
+/* ═══════════════════════════════════════════════════════════════
+   MAIN BG — background design for AdminDashboard
+   Imported in: AdminDashboard.tsx
+═══════════════════════════════════════════════════════════════ */
+
+.adm-root {
+  background-color: var(--adm-bg);
+  background-image: radial-gradient(circle at 50% 0%, #2A2D3A 0%, #1E2028 100%);
+}

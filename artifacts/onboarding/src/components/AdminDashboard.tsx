@@ -3,6 +3,7 @@ import { useDebounce }       from "../hooks/useDebounce";
 import { useDelayedUnmount } from "../hooks/useDelayedUnmount";
 import { AddEmployeePage, type NewEmployeeData } from "./AddEmployeePage";
 import "../styles/admin-dashboard.css";
+import "../styles/main-bg.css";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
