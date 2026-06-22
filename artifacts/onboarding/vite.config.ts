@@ -26,29 +26,12 @@ if (!basePath) {
   );
 }
 
-/* Replit's nginx proxy drops idle WebSocket connections after ~36 s which
-   causes Vite to assume the dev-server restarted and trigger a full page
-   reload. This plugin sends a WebSocket ping frame every 25 s so the
-   connection stays alive and HMR works without page refreshes. */
-const replitWsPing = {
-  name: "replit-ws-ping",
-  configureServer(server: import("vite").ViteDevServer) {
-    server.ws.on("connection", (socket) => {
-      const id = setInterval(() => {
-        if ((socket as WebSocket).readyState === 1) (socket as WebSocket).ping?.();
-      }, 25_000);
-      socket.on("close", () => clearInterval(id));
-    });
-  },
-};
-
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
-    replitWsPing,
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
