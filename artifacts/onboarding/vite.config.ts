@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
@@ -26,12 +26,44 @@ if (!basePath) {
   );
 }
 
+/* Replit's WebSocket proxy has a ~35-second idle timeout. When the HMR
+   WebSocket goes idle, the proxy closes it; Vite enters "polling for
+   restart" mode and calls location.reload() on reconnect — causing the
+   visible page refresh. Fix: send a WebSocket ping every 15 seconds so
+   the connection is never idle long enough for the proxy to drop it. */
+function viteHmrKeepAlive(): Plugin {
+  return {
+    name: "vite-hmr-keep-alive",
+    apply: "serve",
+    configureServer(server) {
+      server.httpServer?.once("listening", () => {
+        /* Access the underlying ws.Server (not in Vite's public API but
+           stable across Vite 4/5/6/7 — keep as any to avoid type drift). */
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const wss = (server.ws as any).wss as
+          | { clients: Set<{ readyState: number; ping(): void }> }
+          | undefined;
+        if (!wss) return;
+
+        const timer = setInterval(() => {
+          wss.clients.forEach((client) => {
+            if (client.readyState === 1 /* OPEN */) client.ping();
+          });
+        }, 15_000);
+
+        server.httpServer?.on("close", () => clearInterval(timer));
+      });
+    },
+  };
+}
+
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
+    viteHmrKeepAlive(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
