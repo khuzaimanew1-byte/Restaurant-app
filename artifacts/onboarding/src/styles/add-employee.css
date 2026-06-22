@@ -2,9 +2,6 @@
    ADD EMPLOYEE — lazy-loaded with AddEmployeePage component
    Imported in: AddEmployeePage.tsx
 ═══════════════════════════════════════════════════════════════ */
-/* ══════════════════════════════════════════════════════════════
-   ADD EMPLOYEE PAGE  (.ae-*)
-══════════════════════════════════════════════════════════════ */
 
 .ae-root {
   position: fixed; inset: 0; z-index: 60;
@@ -27,7 +24,6 @@
   from { transform: translateX(100%); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
 }
-/* Exit — plays when isOpen becomes false; useDelayedUnmount handles actual unmount */
 .ae-root.ae-root--closing {
   animation: ae-slide-out 260ms cubic-bezier(0.4,0,1,1) both;
   pointer-events: none;
@@ -51,10 +47,131 @@
 .ae-scroll::-webkit-scrollbar-thumb { background: rgba(212,175,55,.25); border-radius: 3px; }
 .ae-content {
   position: relative; z-index: 1;
-  max-width: 820px; margin: 0 auto;
+  max-width: 860px; margin: 0 auto;
   padding: clamp(8px,1.5vw,14px) clamp(20px,5vw,44px) 32px;
 }
 
+/* ════════════════════════════════════════════════════════════
+   SECTION 1 — Top: Photo+Salary left col, 2 field cols right
+   Desktop: [Photo+Salary] | [Full Name   ] | [DOB         ]
+                             [Role        ] | [Joining Date ]
+                             [Shift Timing ←→ spans 2 cols  ]
+   Mobile:  Photo → Salary centred, then 2-col fields below
+════════════════════════════════════════════════════════════ */
+.ae-sec1 {
+  display: grid;
+  grid-template-columns: 182px 1fr 1fr;
+  gap: 28px clamp(24px, 4vw, 44px);
+  margin-bottom: 20px;
+  position: relative; z-index: 1;
+  align-items: start;
+}
+
+/* Left sticky column: Photo (rows 1-2) + Salary (rows 3) */
+.ae-s1-lft {
+  grid-column: 1;
+  grid-row: 1 / 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+}
+/* Reset individual margins — gap handles spacing inside ae-s1-lft */
+.ae-s1-lft .ae-av-sec { padding-top: 0; margin-bottom: 0; }
+.ae-s1-lft .ae-sal-sec { margin-bottom: 0; }
+
+/* Shift Timing — spans both right field columns on desktop (row 3) */
+.ae-s1-sft { grid-column: 2 / 4; }
+
+@media (max-width: 640px) {
+  .ae-sec1 {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 16px;
+  }
+  .ae-s1-lft {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+  /* Shift Timing: full width on mobile */
+  .ae-s1-sft { grid-column: 1 / -1; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SECTION 2 — Middle: Tasks+Speciality left · Capabilities right
+   Desktop: [Assigned Tasks   ] | [Work Capabilities]
+            [Speciality       ] |
+   Mobile:  Assigned Tasks → Work Capabilities → Speciality (stacked)
+════════════════════════════════════════════════════════════ */
+.ae-sec2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(16px, 3vw, 32px);
+  margin-bottom: 20px;
+  position: relative; z-index: 1;
+  align-items: start;
+}
+.ae-s2-lft {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+@media (max-width: 640px) {
+  .ae-sec2 { grid-template-columns: 1fr; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   SECTION 3 — Bottom: personal info fields
+   Desktop (3-col):
+     Row 1: Gender | CNIC    | Languages
+     Row 2: Phone  | Email
+     Row 3: Street Address (full width)
+   Mobile (2-col, CSS order resequences fields):
+     Row 1: Gender   | Languages
+     Row 2: CNIC     | Phone
+     Row 3: Email    (full width)
+     Row 4: Street   (full width)
+════════════════════════════════════════════════════════════ */
+.ae-sec3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 28px clamp(24px, 4vw, 44px);
+  margin-bottom: 20px;
+  position: relative; z-index: 1;
+  align-items: start;
+}
+.ae-span-full { grid-column: 1 / -1; }
+
+@media (max-width: 640px) {
+  .ae-sec3 {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 16px;
+  }
+  /* Mobile reorder: Gender | Languages / CNIC | Phone / Email / Street */
+  .ae-s3-gdr { order: 1; }
+  .ae-s3-lng { order: 2; }
+  .ae-s3-cni { order: 3; }
+  .ae-s3-phn { order: 4; }
+  .ae-s3-eml { order: 5; grid-column: 1 / -1; }
+  .ae-s3-adr { order: 6; }
+}
+
+/* ── Actions — right-aligned ── */
+.ae-act {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+  padding-bottom: 4px;
+  position: relative; z-index: 1;
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   SHARED FIELD ATOMS
+════════════════════════════════════════════════════════════ */
 
 /* ── Avatar ── */
 .ae-av-sec {
@@ -85,6 +202,7 @@
   display: flex; align-items: center; justify-content: center;
   animation: ae-ring-breath 3.6s ease-in-out infinite;
   transition: background .28s;
+  will-change: transform, opacity;
 }
 @keyframes ae-ring-breath {
   0%,100% { box-shadow: 0 0 0 2.5px var(--adm-gold), 0 0 0 7px rgba(212,175,55,.12), 0 12px 36px rgba(0,0,0,.55); }
@@ -107,7 +225,6 @@
   position: absolute; inset: 0; border-radius: 50%; z-index: 3;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   color: var(--adm-text);
-  /* desktop: hidden until hover */
   background: rgba(16,19,24,.78);
   opacity: 0;
   transition: opacity .22s ease;
@@ -139,7 +256,7 @@
 /* ── Salary pill ── */
 .ae-sal-sec { display: flex; align-items: center; justify-content: center; margin-bottom: 16px; position: relative; z-index: 1; }
 .ae-sal-pill {
-  position: relative; /* R8: position via CSS class, not inline style */
+  position: relative;
   display: inline-flex; align-items: center; gap: 0;
   border: 1.5px solid rgba(212,175,55,.45);
   border-radius: 100px; padding: 0 16px; height: 32px;
@@ -175,28 +292,10 @@
 /* ── Divider ── */
 .ae-divider {
   border: none; border-top: 1px solid rgba(212,175,55,.14);
-  margin: 0 0 18px; position: relative; z-index: 1;
+  margin: 0 0 22px; position: relative; z-index: 1;
 }
 
-/* ── Unified fields grid (one section, address spans full width) ── */
-.ae-fields-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 22px clamp(24px,4vw,44px);
-  margin-bottom: 20px;
-  position: relative; z-index: 1;
-  align-items: start;
-}
-.ae-span-full { grid-column: 1 / -1; }
-@media (max-width: 600px) {
-  .ae-fields-grid { grid-template-columns: 1fr 1fr; gap: 30px 16px; }
-}
-
-/* legacy row helpers kept for potential future use */
-.ae-frow { display: grid; gap: 0 clamp(20px,4vw,40px); margin-bottom: 28px; position: relative; z-index: 1; }
-.ae-g3   { grid-template-columns: 1fr 1fr 1fr; }
-.ae-g2   { grid-template-columns: 1fr 1fr; }
-.ae-g1   { grid-template-columns: 1fr; }
+/* ── Field containers ── */
 .ae-field { position: relative; }
 .ae-field-rel { position: relative; }
 
@@ -318,16 +417,11 @@
 .ae-lang-del { font-size: 9px; color: rgba(212,175,55,.55); cursor: pointer; }
 .ae-lang-del:hover { color: var(--adm-gold); }
 
-/* ── Pro section headers ── */
+/* ── Pro section header ── */
 .ae-pro-hdr {
   font-size: 9.5px; font-weight: 800; letter-spacing: 2.5px;
   color: var(--adm-gold); text-transform: uppercase; margin-bottom: 13px;
 }
-.ae-pro-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px,3vw,32px);
-  margin-bottom: 16px; position: relative; z-index: 1;
-}
-@media (max-width: 600px) { .ae-pro-grid { grid-template-columns: 1fr; } }
 
 /* Bullet list */
 .ae-bul-list { margin-bottom: 4px; }
@@ -363,17 +457,6 @@
 .ae-chev-svg { transition: transform .2s; }
 .ae-bul-add:hover { color: var(--adm-gold); }
 
-/* ── Bottom row ── */
-.ae-bot-row {
-  display: grid; grid-template-columns: 1fr auto;
-  gap: clamp(20px,4vw,40px); align-items: flex-end;
-  margin-top: 6px; position: relative; z-index: 1;
-}
-@media (max-width: 600px) {
-  .ae-bot-row { grid-template-columns: 1fr; }
-}
-.ae-bot-right { display: flex; align-items: flex-end; justify-content: flex-end; gap: 10px; padding-bottom: 4px; }
-
 /* ── Cancel button ── */
 .ae-btn-cancel {
   display: flex; align-items: center; justify-content: center;
@@ -387,8 +470,8 @@
 .ae-btn-cancel:hover { border-color: rgba(226,232,240,.5); color: var(--adm-text); background: rgba(226,232,240,.07); }
 .ae-btn-cancel:active { transform: rotate(90deg) scale(.92); }
 
-/* AddEmployee create button — compact size (overrides full-height .cta-btn for this context) */
-.ae-bot-right .cta-btn {
+/* Create Employee button — compact size override for this context */
+.ae-act .cta-btn {
   height: 38px; width: auto; padding: 0 24px;
   font-size: 11px; font-weight: 800; letter-spacing: 1.2px;
   border-radius: 12px;
@@ -408,4 +491,3 @@
 }
 .ae-toast svg { color: var(--adm-gold); flex-shrink: 0; }
 .ae-toast.ae-toast-show { transform: translateX(-50%) translateY(0); opacity: 1; }
-

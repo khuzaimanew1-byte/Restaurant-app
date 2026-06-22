@@ -126,77 +126,75 @@ export function AddEmployeePage({
   const [langInput,   setLangInput]   = useState("");
   const [langs,       setLangs]       = useState<string[]>([]);
 
-  // Bullet lists
-  const [taskInp,  setTaskInp]  = useState(""); const [tasks, setTasks]   = useState<string[]>([]);
-  const [capInp,   setCapInp]   = useState(""); const [caps,  setCaps]    = useState<string[]>([]);
-  const [specInp,  setSpecInp]  = useState(""); const [specs, setSpecs]   = useState<string[]>([]);
+  // Pro lists
+  const [taskInp,  setTaskInp]  = useState("");
+  const [tasks,    setTasks]    = useState<string[]>([]);
+  const [capInp,   setCapInp]   = useState("");
+  const [caps,     setCaps]     = useState<string[]>([]);
+  const [specInp,  setSpecInp]  = useState("");
+  const [specs,    setSpecs]    = useState<string[]>([]);
 
   // Toast
-  const [toast,    setToast]    = useState("");
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [toast, setToast] = useState("");
   const showToast = useCallback((msg: string) => {
     setToast(msg);
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(""), 2800);
+    setTimeout(() => setToast(""), 3200);
   }, []);
 
-  // Avatar handlers — resize to max 160px height before storing (SSOT image rule)
-  function applyImageFile(file: File) {
-    if (!file?.type.startsWith("image/")) return;
+  // Image processing — resize to ≤160px height, WebP 82%
+  const applyImageFile = useCallback((file: File) => {
+    const url = URL.createObjectURL(file);
     const img = new Image();
-    const blobUrl = URL.createObjectURL(file);
     img.onload = () => {
-      URL.revokeObjectURL(blobUrl);
-      const MAX_H = 160;
-      const scale = img.naturalHeight > MAX_H ? MAX_H / img.naturalHeight : 1;
-      const w = Math.round(img.naturalWidth  * scale);
-      const h = Math.round(img.naturalHeight * scale);
+      const scale = Math.min(1, 160 / img.height);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
       const canvas = document.createElement("canvas");
-      canvas.width  = w;
-      canvas.height = h;
+      canvas.width = w; canvas.height = h;
       canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
       setAvatarUrl(canvas.toDataURL("image/webp", 0.82));
+      URL.revokeObjectURL(url);
     };
-    img.src = blobUrl;
-  }
+    img.src = url;
+  }, []);
 
-  // Salary — digits only, comma-formatted
-  function handleSalaryInput(raw: string) {
-    const digits = raw.replace(/\D/g, "");
-    setSalary(digits ? Number(digits).toLocaleString("en-US") : "");
-  }
-
-  // CNIC mask: 12345-1234567-1
-  function handleCnic(raw: string) {
-    const d = raw.replace(/\D/g, "").slice(0, 13);
-    let m = d;
-    if (d.length > 5)  m = d.slice(0, 5) + "-" + d.slice(5);
-    if (d.length > 12) m = m.slice(0, 13) + "-" + m.slice(13);
-    setCnic(m);
-  }
-
-  // Language tags
-  function addLang() {
-    const v = langInput.trim();
-    if (v && !langs.includes(v)) setLangs(p => [...p, v]);
+  const addLang = useCallback(() => {
+    const t = langInput.trim();
+    if (t && !langs.includes(t)) setLangs(p => [...p, t]);
     setLangInput("");
-  }
+  }, [langInput, langs]);
 
-  // Bullet list helpers
-  function addItem(val: string, setter: React.Dispatch<React.SetStateAction<string[]>>, inputSetter: React.Dispatch<React.SetStateAction<string>>) {
-    const v = val.trim();
-    if (v) { setter(p => [...p, v]); inputSetter(""); }
-  }
-  function delItem(i: number, setter: React.Dispatch<React.SetStateAction<string[]>>) {
-    setter(p => p.filter((_, j) => j !== i));
-  }
+  const addItem = useCallback((val: string, setter: React.Dispatch<React.SetStateAction<string[]>>, inputSetter: React.Dispatch<React.SetStateAction<string>>) => {
+    const t = val.trim();
+    if (t) setter(p => [...p, t]);
+    inputSetter("");
+  }, []);
 
-  // Submit
+  const delItem = useCallback((i: number, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+    setter(p => p.filter((_, idx) => idx !== i));
+  }, []);
+
+  // CNIC formatter — inserts dashes at positions 5 and 13
+  const handleCnic = useCallback((raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 13);
+    let out = digits;
+    if (digits.length > 5)  out = digits.slice(0, 5)  + "-" + digits.slice(5);
+    if (digits.length > 12) out = out.slice(0, 14) + "-" + out.slice(14);
+    setCnic(out);
+  }, []);
+
+  // Salary input — digits only, comma-separated thousands
+  const handleSalaryInput = useCallback((raw: string) => {
+    const digits = raw.replace(/\D/g, "");
+    setSalary(digits ? Number(digits).toLocaleString("en-PK") : "");
+  }, []);
+
   function handleCreate() {
-    if (!name.trim()) { showToast("Please enter the employee's full name."); return; }
+    if (!name.trim()) { showToast("Full Name is required"); return; }
+    if (!role.trim()) { showToast("Position / Role is required"); return; }
     const initials = name.trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-    const color = AVATAR_PALETTE[Math.floor(Math.random() * AVATAR_PALETTE.length)];
-    const salaryStr = salary ? `$${salary}` : "";
+    const color    = AVATAR_PALETTE[name.charCodeAt(0) % AVATAR_PALETTE.length];
+    const salaryStr = salary ? `PKR ${salary}` : "";
     onSave({ name: name.trim(), role: role.trim(), salary: salaryStr, avatar: avatarUrl, initials, color });
     showToast(`Employee "${name.trim()}" created!`);
     setTimeout(onClose, 900);
@@ -220,69 +218,74 @@ export function AddEmployeePage({
       <div className="ae-scroll">
         <div className="ae-content">
 
-          {/* ── Avatar ── */}
-          <div className="ae-av-sec">
-            <div className="ae-av-halo">
-              <div
-                className={`ae-av-ring${avatarUrl ? " ae-has-img" : ""}${dragOver ? " ae-drag-over" : ""}`}
-                onClick={() => fileRef.current?.click()}
-                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) applyImageFile(f); }}
-              >
-                {avatarUrl && <img className="ae-av-img" src={avatarUrl} alt="" />}
-                {!avatarUrl && (
-                  <div className="ae-av-inner">
-                    <CameraSVG />
-                    <span>Upload Photo</span>
+          {/* ════════════════════════════════════════════════════
+              SECTION 1 — Top
+              Desktop: [Photo+Salary col] | [Name] | [DOB]
+                                           [Role]  | [Joining]
+                                           [Shift Timing ←→]
+              Mobile: Photo → Salary → 2-col fields below
+          ════════════════════════════════════════════════════ */}
+          <div className="ae-sec1">
+
+            {/* Left sticky column: Photo (top) + Salary (bottom) */}
+            <div className="ae-s1-lft">
+              <div className="ae-av-sec">
+                <div className="ae-av-halo">
+                  <div
+                    className={`ae-av-ring${avatarUrl ? " ae-has-img" : ""}${dragOver ? " ae-drag-over" : ""}`}
+                    onClick={() => fileRef.current?.click()}
+                    onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) applyImageFile(f); }}
+                  >
+                    {avatarUrl && <img className="ae-av-img" src={avatarUrl} alt="" />}
+                    {!avatarUrl && (
+                      <div className="ae-av-inner">
+                        <CameraSVG />
+                        <span>Upload Photo</span>
+                      </div>
+                    )}
+                    {avatarUrl && (
+                      <div className="ae-av-chg">
+                        <CameraSmSVG />
+                        <span>Change</span>
+                      </div>
+                    )}
                   </div>
-                )}
-                {avatarUrl && (
-                  <div className="ae-av-chg">
-                    <CameraSmSVG />
-                    <span>Change</span>
-                  </div>
-                )}
+                </div>
+                <input ref={fileRef} type="file" accept="image/*" className="ae-av-file"
+                  onChange={e => { if (e.target.files?.[0]) applyImageFile(e.target.files[0]); }} />
+              </div>
+
+              <div className="ae-sal-sec">
+                <div className="ae-sal-pill">
+                  <span ref={salSizerRef} className="ae-sal-sizer" aria-hidden />
+                  <span className="ae-sal-cur">PKR</span>
+                  <div className="ae-sal-sep" />
+                  <input
+                    ref={salInpRef}
+                    className="ae-sal-inp"
+                    type="text" inputMode="numeric" autoComplete="off"
+                    placeholder="XX,XXX"
+                    value={salary}
+                    onKeyDown={e => {
+                      if (e.ctrlKey || e.metaKey || e.altKey) return;
+                      const allowed = /^\d$/.test(e.key) || ["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Home","End"].includes(e.key);
+                      if (!allowed) e.preventDefault();
+                    }}
+                    onChange={e => handleSalaryInput(e.target.value)}
+                  />
+                  <span className="ae-sal-mo">/ mo</span>
+                </div>
               </div>
             </div>
-            <input ref={fileRef} type="file" accept="image/*" className="ae-av-file"
-              onChange={e => { if (e.target.files?.[0]) applyImageFile(e.target.files[0]); }} />
-          </div>
 
-          {/* ── Salary pill ── */}
-          <div className="ae-sal-sec">
-            <div className="ae-sal-pill">
-              <span ref={salSizerRef} className="ae-sal-sizer" aria-hidden />
-              <span className="ae-sal-cur">PKR</span>
-              <div className="ae-sal-sep" />
-              <input
-                ref={salInpRef}
-                className="ae-sal-inp"
-                type="text" inputMode="numeric" autoComplete="off"
-                placeholder="XX,XXX"
-                value={salary}
-                onKeyDown={e => {
-                  if (e.ctrlKey || e.metaKey || e.altKey) return;
-                  const allowed = /^\d$/.test(e.key) || ["Backspace","Delete","ArrowLeft","ArrowRight","Tab","Home","End"].includes(e.key);
-                  if (!allowed) e.preventDefault();
-                }}
-                onChange={e => handleSalaryInput(e.target.value)}
-              />
-              <span className="ae-sal-mo">/ mo</span>
-            </div>
-          </div>
-
-          <hr className="ae-divider" />
-
-          {/* ── Unified fields grid — all one section, address spans full width ── */}
-          <div className="ae-fields-grid">
-
-            {/* Full Name */}
+            {/* Row 1: Full Name */}
             <div className="ae-field">
               <TextInput label="Full Name" value={name} onChange={v => setName(v)} autoComplete="name" variant="compact" icon={<PersonSVG />} />
             </div>
 
-            {/* Date of Birth */}
+            {/* Row 1: Date of Birth */}
             <div className="ae-field">
               <div className="ae-fi-wrap">
                 <span className="ae-date-ico" onClick={() => dobRef.current?.showPicker?.()}>
@@ -296,8 +299,91 @@ export function AddEmployeePage({
               </div>
             </div>
 
+            {/* Row 2: Position / Role */}
+            <div className="ae-field">
+              <TextInput label="Position / Role" value={role} onChange={v => setRole(v)} variant="compact" icon={<BriefSVG />} />
+            </div>
+
+            {/* Row 2: Joining Date */}
+            <div className="ae-field">
+              <div className="ae-fi-wrap">
+                <span className="ae-date-ico" onClick={() => joiningRef.current?.showPicker?.()}>
+                  <CalSVG />
+                </span>
+                <div className={`ae-date-wrap${!joiningDate ? " empty" : ""}`} data-ph="Joining Date">
+                  <input ref={joiningRef}
+                    className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
+                    type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            {/* Row 3: Shift Timing — spans both field columns on desktop */}
+            <div className="ae-field ae-s1-sft">
+              <div className="ae-shift-row">
+                <span className="ae-shift-ico">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                  </svg>
+                </span>
+                <input
+                  ref={shiftStartRef}
+                  className="ae-shift-time-inp"
+                  type="time" value={shiftStart}
+                  onChange={e => setShiftStart(e.target.value)}
+                />
+                <span className="ae-shift-ico">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
+                  </svg>
+                </span>
+                <input
+                  ref={shiftEndRef}
+                  className="ae-shift-time-inp"
+                  type="time" value={shiftEnd}
+                  onChange={e => setShiftEnd(e.target.value)}
+                />
+              </div>
+            </div>
+
+          </div>
+
+          <hr className="ae-divider" />
+
+          {/* ════════════════════════════════════════════════════
+              SECTION 2 — Middle
+              Desktop: [Assigned Tasks   ] | [Work Capabilities]
+                       [Speciality       ] |
+              Mobile:  Assigned Tasks → Work Capabilities → Speciality
+          ════════════════════════════════════════════════════ */}
+          <div className="ae-sec2">
+            <div className="ae-s2-lft">
+              <BulletList label="Assigned Tasks"  items={tasks} input={taskInp} onInputChange={setTaskInp} placeholder="Add a task…"       onAdd={() => addItem(taskInp, setTasks, setTaskInp)} onDelete={(i: number) => delItem(i, setTasks)} />
+              <BulletList label="Speciality"      items={specs} input={specInp} onInputChange={setSpecInp} placeholder="Add a speciality…"  onAdd={() => addItem(specInp, setSpecs, setSpecInp)} onDelete={(i: number) => delItem(i, setSpecs)} />
+            </div>
+            <div className="ae-s2-rgt">
+              <BulletList label="Work Capabilities" items={caps} input={capInp} onInputChange={setCapInp} placeholder="Add a capability…" onAdd={() => addItem(capInp, setCaps, setCapInp)} onDelete={(i: number) => delItem(i, setCaps)} />
+            </div>
+          </div>
+
+          <hr className="ae-divider" />
+
+          {/* ════════════════════════════════════════════════════
+              SECTION 3 — Bottom personal fields
+              Desktop (3-col):
+                Row 1: Gender | CNIC | Languages
+                Row 2: Phone  | Email
+                Row 3: Street Address (full width)
+              Mobile (2-col, reordered via CSS order):
+                Row 1: Gender   | Languages
+                Row 2: CNIC     | Phone
+                Row 3: Email    (full width)
+                Row 4: Street   (full width)
+          ════════════════════════════════════════════════════ */}
+          <div className="ae-sec3">
+
             {/* Gender */}
-            <div className="ae-field ae-field-rel">
+            <div className="ae-field ae-field-rel ae-s3-gdr">
               <div className={`ae-fi-wrap${genderOpen ? " ae-focused" : ""}`}>
                 <UsersSVG />
                 <div
@@ -325,22 +411,12 @@ export function AddEmployeePage({
             </div>
 
             {/* CNIC */}
-            <div className="ae-field">
+            <div className="ae-field ae-s3-cni">
               <TextInput label="CNIC" value={cnic} onChange={v => handleCnic(v)} maxLength={15} variant="compact" icon={<CardSVG />} />
             </div>
 
-            {/* Phone */}
-            <div className="ae-field">
-              <TextInput label="Phone" value={phone} onChange={v => setPhone(v)} type="tel" variant="compact" icon={<PhoneSVG />} />
-            </div>
-
-            {/* Email */}
-            <div className="ae-field">
-              <TextInput label="Email" value={email} onChange={v => setEmail(v)} type="email" autoComplete="email" variant="compact" icon={<MailSVG />} />
-            </div>
-
             {/* Spoken Language */}
-            <div className="ae-field">
+            <div className="ae-field ae-s3-lng">
               <TextInput
                 label="Spoken Language" value={langInput} onChange={v => setLangInput(v)}
                 variant="compact" icon={<GlobeSVG />}
@@ -364,79 +440,31 @@ export function AddEmployeePage({
               )}
             </div>
 
-            {/* Position / Role */}
-            <div className="ae-field">
-              <TextInput label="Position / Role" value={role} onChange={v => setRole(v)} variant="compact" icon={<BriefSVG />} />
+            {/* Phone */}
+            <div className="ae-field ae-s3-phn">
+              <TextInput label="Phone" value={phone} onChange={v => setPhone(v)} type="tel" variant="compact" icon={<PhoneSVG />} />
             </div>
 
-            {/* Joining Date */}
-            <div className="ae-field">
-              <div className="ae-fi-wrap">
-                <span className="ae-date-ico" onClick={() => joiningRef.current?.showPicker?.()}>
-                  <CalSVG />
-                </span>
-                <div className={`ae-date-wrap${!joiningDate ? " empty" : ""}`} data-ph="Joining Date">
-                  <input ref={joiningRef}
-                    className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
-                    type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
-                </div>
-              </div>
+            {/* Email */}
+            <div className="ae-field ae-s3-eml">
+              <TextInput label="Email" value={email} onChange={v => setEmail(v)} type="email" autoComplete="email" variant="compact" icon={<MailSVG />} />
             </div>
 
-            {/* Shift Timing — single underline field */}
-            <div className="ae-field">
-              <div className="ae-shift-row">
-                <span className="ae-shift-ico">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-                  </svg>
-                </span>
-                <input
-                  ref={shiftStartRef}
-                  className="ae-shift-time-inp"
-                  type="time" value={shiftStart}
-                  onChange={e => setShiftStart(e.target.value)}
-                />
-                <span className="ae-shift-ico">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
-                  </svg>
-                </span>
-                <input
-                  ref={shiftEndRef}
-                  className="ae-shift-time-inp"
-                  type="time" value={shiftEnd}
-                  onChange={e => setShiftEnd(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Street Address — full width, its own row */}
-            <div className="ae-field ae-span-full">
+            {/* Street Address — always full width */}
+            <div className="ae-field ae-s3-adr ae-span-full">
               <TextInput label="Street Address" value={address} onChange={v => setAddress(v)} variant="compact" icon={<PinSVG />} />
             </div>
 
           </div>
 
-          <hr className="ae-divider" />
-
-          {/* ── Pro sections ── */}
-          <div className="ae-pro-grid">
-            <BulletList label="Assigned Tasks"     items={tasks} input={taskInp} onInputChange={setTaskInp} placeholder="Add a task…"       onAdd={() => addItem(taskInp, setTasks, setTaskInp)} onDelete={(i: number) => delItem(i, setTasks)} />
-            <BulletList label="Work Capabilities"  items={caps}  input={capInp}  onInputChange={setCapInp}  placeholder="Add a capability…"  onAdd={() => addItem(capInp,  setCaps,  setCapInp)}  onDelete={(i: number) => delItem(i, setCaps)}  />
-          </div>
-
-          {/* ── Bottom: Speciality + Buttons ── */}
-          <div className="ae-bot-row">
-            <BulletList label="Speciality" items={specs} input={specInp} onInputChange={setSpecInp} placeholder="Add a speciality…" onAdd={() => addItem(specInp, setSpecs, setSpecInp)} onDelete={(i: number) => delItem(i, setSpecs)} />
-            <div className="ae-bot-right">
-              <button className="ae-btn-cancel" onClick={onClose} title="Discard">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-              <Button onClick={handleCreate}>Create Employee</Button>
-            </div>
+          {/* ── Actions — right-aligned ── */}
+          <div className="ae-act">
+            <button className="ae-btn-cancel" onClick={onClose} title="Discard">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+            <Button onClick={handleCreate}>Create Employee</Button>
           </div>
 
         </div>
