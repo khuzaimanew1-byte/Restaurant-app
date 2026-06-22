@@ -17,10 +17,121 @@
   position: relative;
 }
 
-/* ── Sidebar + bottom nav → moved to navbar.css (imported by Navbar.tsx) ── */
+/* ── Desktop Sidebar ─────────────────────────────────── */
+.adm-sidebar {
+  display: none;
+  width: 256px;
+  min-height: 100vh;
+  flex-direction: column;
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 20;
+  background: var(--adm-surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(242,201,76,.10);
+}
+@media (min-width: 768px) { .adm-sidebar { display: flex; } }
 
-/* ── Mobile topbar: hidden on desktop (sidebar takes over) ── */
-@media (min-width: 768px) { .adm-main .topbar { display: none; } }
+.adm-sidebar-logo {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.adm-sidebar-brand {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--adm-text);
+  margin: 0;
+}
+.adm-sidebar-nav {
+  flex: 1;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.adm-nav-item {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--adm-text-dim);
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  transition: color 220ms ease, transform 150ms cubic-bezier(.22,1,.36,1);
+  will-change: color;
+}
+/* Expanding highlight — sweeps left→right on activation */
+.adm-nav-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: rgba(242,201,76,.10);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 320ms cubic-bezier(.16,1,.3,1);
+  pointer-events: none;
+}
+/* Left accent bar — scales in from center */
+.adm-nav-item::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 18%; bottom: 18%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--adm-gold-bright);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 260ms cubic-bezier(.16,1,.3,1) 60ms;
+  pointer-events: none;
+}
+.adm-nav-item:hover:not(.adm-nav-active) {
+  color: var(--adm-gold-bright);
+  background: rgba(255,255,255,.04);
+}
+.adm-nav-item:active { transform: scale(.97); }
+.adm-nav-active {
+  color: var(--adm-gold-bright);
+}
+.adm-nav-active::before { transform: scaleX(1); }
+.adm-nav-active::after  { transform: scaleY(1); }
+.adm-sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+.adm-sidebar-logout {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--adm-text-dim);
+  border: none;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  transition: background 180ms ease, color 180ms ease;
+}
+.adm-sidebar-logout:hover { background: rgba(248,113,113,.10); color: var(--adm-red); }
+.adm-sidebar-logout:active { transform: scale(.97); }
 
 /* ── Main area ───────────────────────────────────────── */
 .adm-main {
@@ -76,16 +187,22 @@
   padding: 8px 28px 4px;
 }
 @media (min-width: 768px) { .adm-desktop-stats { display: flex; } }
-/* ── Chip color modifiers — base structure from .chip in index.css ── */
-.adm-chip-p {
+.adm-desktop-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255,255,255,.20);
+  background: rgba(255,255,255,.10);
+  backdrop-filter: blur(8px);
+  font-size: 13px;
+  font-family: 'Geist', 'Inter', sans-serif;
   color: var(--adm-gold-text);
-  padding: 4px 14px; /* desktop stats pills get slightly more padding */
 }
-.adm-chip-h {
+.adm-desktop-chip-half {
   color: var(--clr-half);
   border-color: rgba(20,184,166,.30);
   background: rgba(20,184,166,.08);
-  padding: 4px 14px;
 }
 .adm-desktop-stats-total {
   margin-left: auto;
@@ -190,7 +307,23 @@
   box-shadow: 0 0 24px rgba(212,175,55,.40);
 }
 
-/* ── Mobile topbar sub-elements (chrome → global .topbar in index.css) ── */
+/* ── Mobile top bar ── */
+.adm-topbar {
+  /* shared topbar chrome — matches all page topbars via --topbar-* vars (SSOT) */
+  display: flex; align-items: center;
+  height: var(--topbar-h); flex-shrink: 0;
+  background: var(--topbar-bg);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--topbar-bd);
+  box-shadow: var(--topbar-shadow);
+  /* page-specific layout */
+  justify-content: space-between;
+  padding: 0 16px;
+  position: sticky; top: 0; z-index: 50;
+  gap: 8px;
+}
+@media (min-width: 768px) { .adm-topbar { display: none; } }
+
 .adm-topbar-logo {
   display: flex;
   align-items: center;
@@ -324,7 +457,22 @@
   font-size: clamp(15px, 4.2vw, 17px); font-weight: 500;
   color: var(--adm-text); margin: 0;
 }
-/* Mobile chip color — structure from .chip base, color from .adm-chip-p / .adm-chip-h */
+.adm-mobile-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255,255,255,.20);
+  background: rgba(255,255,255,.10);
+  backdrop-filter: blur(8px);
+  font-size: 13px;
+  color: var(--adm-gold-text);
+}
+.adm-mobile-chip-half {
+  color: var(--clr-half);
+  border-color: rgba(20,184,166,.30);
+  background: rgba(20,184,166,.08);
+}
 .adm-mobile-total { font-size: 13px; color: var(--adm-text-dim); }
 
 /* ── Content & grid ──────────────────────────────────── */
@@ -587,6 +735,8 @@
 /* Progress bar color variants — colors from CSS vars, never inline */
 .adm-progress-fill--att  { background: var(--clr-att);  box-shadow: 0 0 8px var(--clr-att-glow); }
 .adm-progress-fill--perf { background: var(--adm-gold); box-shadow: 0 0 8px var(--adm-gold-glow); }
+/* Restaurant logo icon color */
+.adm-restaurant-logo { color: var(--adm-gold); }
 @keyframes adm-bar-grow {
   from { transform: scaleX(0); }
   to   { transform: scaleX(1); }
@@ -615,7 +765,90 @@
   .adm-fab { bottom: 32px; right: 32px; }
 }
 
-/* ── Bottom nav → moved to navbar.css (.bnav / .bn-i / .bn-a / .bn-ico / .bn-dot) ── */
+/* ── Bottom nav ──────────────────────────────────────── */
+.adm-bottom-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  position: fixed;
+  bottom: 16px; left: 16px; right: 16px;
+  z-index: 40;
+  background: rgba(35,38,48,.60);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 -5px 20px rgba(0,0,0,.30);
+  border-radius: 24px;
+  padding: 10px 8px;
+}
+@media (min-width: 768px) { .adm-bottom-nav { display: none; } }
+
+.adm-bnav-item {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 10px;
+  min-height: 44px; /* R25: SSOT touch target ≥ 44px */
+  border-radius: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--adm-text-dim);
+  font-size: clamp(8px, 2.1vw, 10px);
+  font-family: 'Inter', sans-serif;
+  transition: color 240ms cubic-bezier(.22,1,.36,1),
+              transform 180ms cubic-bezier(.22,1,.36,1);
+  min-width: 44px;
+  will-change: transform;
+}
+/* Expanding pill background */
+.adm-bnav-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: rgba(212,175,55,.12);
+  transform: scale(0);
+  transform-origin: center;
+  transition: transform 320ms cubic-bezier(.16,1,.3,1);
+  pointer-events: none;
+}
+.adm-bnav-item:active { transform: scale(.88); }
+.adm-bnav-item:hover:not(.adm-bnav-active) {
+  color: var(--adm-gold-bright);
+  background: rgba(255,255,255,.05);
+}
+.adm-bnav-active {
+  color: var(--adm-gold-text);
+  filter: drop-shadow(0 0 6px rgba(242,201,76,.40));
+}
+.adm-bnav-active::before { transform: scale(1); }
+
+.adm-bnav-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adm-bnav-notif-dot {
+  position: absolute;
+  top: -3px; right: -4px;
+  width: 7px; height: 7px;
+  background: var(--adm-gold);
+  border-radius: 50%;
+  border: 1.5px solid rgba(35,38,48,.90);
+  animation: adm-notif-pulse 2.5s ease-in-out infinite;
+}
+@keyframes adm-notif-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(212,175,55,.6); }
+  50%     { box-shadow: 0 0 0 4px rgba(212,175,55,0); }
+}
+
+/* nav animation handled by ::before / ::after pseudo-elements above */
 
 /* ── Avatar dropdown ──────────────────────────────────── */
 .adm-avatar-dropdown {

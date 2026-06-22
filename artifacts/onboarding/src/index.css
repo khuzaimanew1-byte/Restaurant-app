@@ -158,46 +158,6 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
        a duplicate class that adds the same dimensions/states).
 ═══════════════════════════════════════════════════════════════ */
 
-/* ── Global topbar chrome — every page's primary bar (.topbar) ─────────────
-   Topbar sub-element CSS stays in the page's own CSS file (admin-specific).
-   To hide the mobile topbar on desktop in a layout with a sidebar, add:
-     @media (min-width: 768px) { .adm-main .topbar { display: none; } }
-   in the page's own CSS file. */
-.topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  height: var(--topbar-h); flex-shrink: 0;
-  background: var(--topbar-bg);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--topbar-bd);
-  box-shadow: var(--topbar-shadow);
-  padding: 0 16px;
-  position: sticky; top: 0; z-index: 50;
-  gap: 8px;
-}
-/* Topbar title — used on pages with a back button on the left */
-.t-ttl {
-  flex: 1;
-  font-size: 17px; font-weight: 700;
-  color: var(--adm-text); letter-spacing: -.02em;
-}
-/* Topbar spacer — mirrors pg-icon-btn width for symmetry when one side is empty */
-.t-sp { width: 38px; flex-shrink: 0; }
-
-/* ── Chip / pill — base structure only, no color ──────────────────────────
-   Add a color modifier class or contextual rule for text/border/background color.
-   Used on: admin dashboard present/half-day pills, and any future status chips. */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 9999px;
-  border: 1px solid rgba(255,255,255,.20);
-  background: rgba(255,255,255,.10);
-  backdrop-filter: blur(8px);
-  font-size: 13px;
-  font-family: 'Geist', 'Inter', sans-serif;
-}
-
 /* 38×38 icon button — back arrows, close (×), toggle buttons on any page.
    Override only border-radius when a round shape is needed (e.g. border-radius:50%). */
 .pg-icon-btn {

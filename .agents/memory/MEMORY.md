@@ -3,4 +3,3 @@
 - [Onboarding design system](onboarding-design-system.md) — Slate+Amber palette SSOT, Apple-level rules (spacing, animation, psychology, glass), dark-only; no light mode ever.
 - [Flutter SSOT compliance](flutter-ssot-compliance.md) — AppTextStyles tokens, AppColors additions, Riverpod LoginNotifier, setState exceptions.
 - [Per-page CSS splitting](per-page-css-split.md) — CSS split from one 2690-line file into per-component files; global index.css is 266 lines; each page CSS imported in its lazy component.
-- [Navbar refactor + SSOT rules](navbar-ssot-refactor.md) — Navbar.tsx extracted; .topbar/.t-ttl/.t-sp/.chip global; short class names; semantic HTML; Tag.tsx deleted.
