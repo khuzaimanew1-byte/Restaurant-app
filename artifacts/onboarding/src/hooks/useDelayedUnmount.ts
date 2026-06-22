@@ -13,18 +13,23 @@ import { useState, useEffect, useRef } from "react";
  *   const shouldRender = useDelayedUnmount(isOpen);
  *   return shouldRender ? <Modal /> : null;
  */
-export function useDelayedUnmount(isOpen: boolean, delayMs = 60_000): boolean {
+export function useDelayedUnmount(isOpen: boolean, delayMs = 30000): boolean {
   const [shouldRender, setShouldRender] = useState(isOpen);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
       setShouldRender(true);
     } else if (shouldRender) {
       timerRef.current = setTimeout(() => setShouldRender(false), delayMs);
     }
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [isOpen, delayMs, shouldRender]);
 
   return shouldRender;
