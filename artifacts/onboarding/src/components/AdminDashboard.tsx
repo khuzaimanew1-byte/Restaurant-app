@@ -361,7 +361,7 @@ const EmployeeCard = memo(function EmployeeCard({
   return (
     <div
       className={`adm-card${isLeave ? " adm-card-absent" : ""}${isEditing ? " adm-card-editing" : ""}`}
-      style={{ animationDelay: `${idx * 40}ms` } as React.CSSProperties}
+      style={{ animationDelay: `${idx * 70}ms` } as React.CSSProperties}
       onContextMenu={handleContextMenu}
       onTouchStart={isEditing ? undefined : handleTouchStart}
       onTouchEnd={isEditing ? undefined : clearTimer}
