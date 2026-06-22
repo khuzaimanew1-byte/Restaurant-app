@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useLayoutEffect, memo } from "react";
 import { Button } from "./ui/Button";
 import { TextInput } from "./ui/Input";
 import "../styles/add-employee.css";
-import { AddBg } from "./add-bg";
 
 // ── Palette for avatar fallback colours ───────────────────────────────────
 /* Avatar palette — hex SSOT lives in index.css :root as --av-p1…--av-p8 */
@@ -203,7 +202,6 @@ export function AddEmployeePage({
 
   return (
     <div className={`ae-root${!isOpen ? " ae-root--closing" : ""}`}>
-      <AddBg />
 
       {/* ── Top bar — global .topbar chrome from index.css ── */}
       <header className="topbar">

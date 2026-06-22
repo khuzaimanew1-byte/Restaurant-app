@@ -11,6 +11,10 @@
 .adm-root {
   display: flex;
   height: 100dvh;
+  background-color: var(--adm-bg);
+  background-image:
+    url('https://www.transparenttextures.com/patterns/dark-wood.png'),
+    radial-gradient(circle at 50% 0%, #2A2D3A 0%, #1E2028 100%);
   font-family: 'Inter', sans-serif;
   color: var(--adm-text);
   position: relative;
