@@ -184,10 +184,7 @@
 }
 @media (min-width: 768px) { .adm-desktop-stats { display: flex; } }
 .adm-desktop-chip {
-  /* structure from .stat-pill (index.css SSOT) — only page-specifics here */
-  padding: 4px 14px;
-  font-family: 'Geist', 'Inter', sans-serif;
-  color: var(--adm-gold-text);
+  color: var(--adm-gold-text); /* structure from .stat-pill (index.css SSOT) */
 }
 .adm-desktop-chip-half {
   color: var(--clr-half);
@@ -436,9 +433,7 @@
   color: white; margin: 0;
 }
 .adm-mobile-chip {
-  /* structure from .stat-pill (index.css SSOT) — only page-specifics here */
-  padding: 4px 12px;
-  color: var(--adm-gold-text);
+  color: var(--adm-gold-text); /* structure from .stat-pill (index.css SSOT) */
 }
 .adm-mobile-chip-half {
   color: var(--clr-half);

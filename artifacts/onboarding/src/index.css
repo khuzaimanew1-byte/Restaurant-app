@@ -304,16 +304,18 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
 /* ═══════════════════════════════════════════════════════════════
    SHARED STATUS PILL — SSOT base for all stat/count chips
    Used by: .adm-desktop-chip, .adm-mobile-chip, .adm-half-badge
-   Colors and padding remain page-specific; only structure here.
+   Only color stays page-specific — everything else is here.
    Future pills must use .stat-pill as base — never redefine
-   display, border, background, backdrop-filter, or border-radius.
+   any of these properties in page CSS.
 ═══════════════════════════════════════════════════════════════ */
 .stat-pill {
   display: inline-flex;
   align-items: center;
+  padding: 4px 14px;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,.20);
   background: rgba(255,255,255,.10);
   backdrop-filter: blur(8px);
   font-size: 13px;
+  font-family: 'Geist', 'Inter', sans-serif;
 }
