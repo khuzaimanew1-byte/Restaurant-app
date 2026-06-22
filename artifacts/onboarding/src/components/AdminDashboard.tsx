@@ -481,16 +481,23 @@ function ContextMenu({
     setKbdIdx(next);
   }
 
-  /* ── All close triggers — active only while mounted (isOpen or exit anim) */
+  /* ── All close triggers ────────────────────────────────────────────────────
+     mousedown (bubble) matches the original proven pattern — fires after target
+     handlers, avoids race with contextmenu event that capture-phase pointerdown
+     introduced (pointerdown captures BEFORE contextmenu, causing spurious close
+     when right-clicking a card while menu is already open).
+     Escape is checked BEFORE the isOpen guard so it always works.            */
   useEffect(() => {
-    const onPointerDown = (e: PointerEvent) => {
+    function onMouseDown(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (!isOpen) return; // ignore during exit animation
-      if (e.key === "Escape")     { e.preventDefault(); onClose(); return; }
-      if (e.key === "ArrowDown")  { e.preventDefault(); moveFocus(1);  return; }
-      if (e.key === "ArrowUp")    { e.preventDefault(); moveFocus(-1); return; }
+    }
+    function onKey(e: KeyboardEvent) {
+      /* Escape works even during exit animation (220ms window) */
+      if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
+      /* Arrow nav + Enter only while fully open */
+      if (!isOpen) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); moveFocus(1);  return; }
+      if (e.key === "ArrowUp")   { e.preventDefault(); moveFocus(-1); return; }
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         const idx = kbdIdxRef.current;
@@ -499,24 +506,23 @@ function ContextMenu({
         onAction(ctx.empId, actions[idx]);
         onClose();
       }
-    };
-    const onWindowBlur  = () => onClose();
-    const onResize      = () => onClose();
-    const onPopState    = () => onClose();
+    }
+    const onBlur     = () => onClose();
+    const onResize   = () => onClose();
+    const onPopState = () => onClose();
 
-    /* capture phase so we beat any stopPropagation in child elements */
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("keydown", onKey);
-    window.addEventListener("blur", onWindowBlur);
-    window.addEventListener("resize", onResize);
-    window.addEventListener("popstate", onPopState);
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown",   onKey);
+    window.addEventListener("blur",        onBlur);
+    window.addEventListener("resize",      onResize);
+    window.addEventListener("popstate",    onPopState);
 
     return () => {
-      document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("keydown", onKey);
-      window.removeEventListener("blur", onWindowBlur);
-      window.removeEventListener("resize", onResize);
-      window.removeEventListener("popstate", onPopState);
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown",   onKey);
+      window.removeEventListener("blur",        onBlur);
+      window.removeEventListener("resize",      onResize);
+      window.removeEventListener("popstate",    onPopState);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, onClose, ctx.empId]);
@@ -722,32 +728,16 @@ function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel:
 }
 
 function AvatarDropdown({
-  isOpen, triggerRefs, onLogoutRequest, onClose,
+  isOpen, onLogoutRequest, onClose,
 }: {
   isOpen: boolean;
-  triggerRefs: React.RefObject<HTMLElement | null>[];
   onLogoutRequest: () => void;
   onClose: () => void;
 }) {
-  const dropRef = useRef<HTMLDivElement>(null);
-
-  /* Outside-click listener — always active while mounted (not gated on isOpen).
-     This is the fix: during exit animation isOpen=false but we still need to
-     respond if the user clicks again so we don't block interaction. */
-  useEffect(() => {
-    const onPointerDown = (e: PointerEvent) => {
-      const t = e.target as Node;
-      const insideTrigger = triggerRefs.some(r => r.current?.contains(t));
-      const insideDrop    = dropRef.current?.contains(t);
-      if (!insideTrigger && !insideDrop) onClose();
-    };
-    document.addEventListener("pointerdown", onPointerDown, true);
-    return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [onClose, triggerRefs]);
-
+  /* No internal outside-click listener — the parent (AdminDashboard) owns it
+     via container div refs, matching the original proven mousedown pattern. */
   return (
     <div
-      ref={dropRef}
       className="adm-avatar-dropdown"
       data-closing={!isOpen ? "" : undefined}
     >
@@ -805,10 +795,12 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   const searchRef          = useRef<HTMLInputElement>(null);
   const mobileSearchRef    = useRef<HTMLInputElement>(null);
-  /* Refs to the avatar trigger buttons — passed to AvatarDropdown for outside-click */
-  const desktopAvatarRef   = useRef<HTMLDivElement>(null);
-  const mobileAvatarRef    = useRef<HTMLButtonElement>(null);
-  const dropdownTriggerRefs = [desktopAvatarRef, mobileAvatarRef] as React.RefObject<HTMLElement | null>[];
+  /* Container div refs — wrap avatar button + dropdown panel together.
+     mousedown containment check on the CONTAINER means clicking anywhere
+     inside (avatar button OR dropdown panel) never triggers outside-close.
+     This mirrors the original proven pattern. */
+  const desktopDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef  = useRef<HTMLDivElement>(null);
 
   const today        = getTodayStr();
   const presentCount  = useMemo(() => employees.filter(e => !e.leaveStatus && e.checkIn).length, [employees]);
@@ -869,6 +861,21 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   }, []);
   const requestLogout = useCallback(() => { setDropdownOpen(false); setLogoutModal(true); }, []);
   const closeDropdown = useCallback(() => setDropdownOpen(false), []);
+
+  /* ── Avatar dropdown outside-click ─────────────────────────────────────────
+     Active whenever the dropdown is mounted (open OR 220ms exit animation).
+     Container refs include BOTH the avatar button and the dropdown panel, so
+     clicking either never triggers close — same as the original mousedown pattern.  */
+  useEffect(() => {
+    if (!shouldRenderDropdown) return;
+    function handleMouseDown(e: MouseEvent) {
+      const t = e.target as Node;
+      if (!desktopDropdownRef.current?.contains(t) && !mobileDropdownRef.current?.contains(t))
+        setDropdownOpen(false);
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [shouldRenderDropdown]);
 
   const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus) => {
     if (action === "edit") {
@@ -963,15 +970,13 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               </svg>
               <span className="adm-notif-dot" />
             </button>
-            <div className="adm-profile-wrap">
+            <div className="adm-profile-wrap" ref={desktopDropdownRef}>
               <div
-                ref={desktopAvatarRef}
                 className={`adm-profile-avatar${dropdownOpen ? " adm-profile-avatar-open" : ""}`}
                 onClick={() => setDropdownOpen(v => !v)} title="Account">A</div>
               {shouldRenderDropdown && (
                 <AvatarDropdown
                   isOpen={dropdownOpen}
-                  triggerRefs={dropdownTriggerRefs}
                   onLogoutRequest={requestLogout}
                   onClose={closeDropdown}
                 />
@@ -1011,9 +1016,8 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 </svg>
               )}
             </button>
-            <div className="adm-topbar-avatar-wrap">
+            <div className="adm-topbar-avatar-wrap" ref={mobileDropdownRef}>
               <button
-                ref={mobileAvatarRef}
                 className={`adm-topbar-profile${dropdownOpen ? " adm-topbar-profile-open" : ""}`}
                 onClick={() => setDropdownOpen(v => !v)} aria-label="Account">
                 <div className="adm-topbar-profile-avatar">A</div>
@@ -1021,7 +1025,6 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               {shouldRenderDropdown && (
                 <AvatarDropdown
                   isOpen={dropdownOpen}
-                  triggerRefs={dropdownTriggerRefs}
                   onLogoutRequest={requestLogout}
                   onClose={closeDropdown}
                 />
