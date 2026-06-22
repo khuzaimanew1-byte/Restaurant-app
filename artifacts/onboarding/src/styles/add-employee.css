@@ -44,16 +44,17 @@
 .ae-sec1 {
   display: grid;
   grid-template-columns: 182px 1fr 1fr;
-  gap: 28px clamp(24px, 4vw, 44px);
+  gap: 20px clamp(24px, 4vw, 44px);
   margin-bottom: 20px;
   position: relative; z-index: 1;
-  align-items: center;
+  align-items: start;
 }
 
 /* Left sticky column: Photo + Salary — spans all 3 field rows, centered vertically */
 .ae-s1-lft {
   grid-column: 1;
   grid-row: 1 / 4;
+  align-self: center;
   display: flex;
   flex-direction: column;
   align-items: center;
