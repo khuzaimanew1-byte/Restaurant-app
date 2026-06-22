@@ -50,10 +50,10 @@
   align-items: center;
 }
 
-/* Left sticky column: Photo + Salary — spans all field rows, centered vertically */
+/* Left sticky column: Photo + Salary — spans all 3 field rows, centered vertically */
 .ae-s1-lft {
   grid-column: 1;
-  grid-row: 1 / 5;
+  grid-row: 1 / 4;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -64,9 +64,9 @@
 .ae-s1-lft .ae-av-sec { padding-top: 0; margin-bottom: 0; }
 .ae-s1-lft .ae-sal-sec { margin-bottom: 0; }
 
-/* Experience + Shift Timing — both span right two cols for consistent rhythm */
-.ae-s1-exp { grid-column: 2 / 4; }
-.ae-s1-sft { grid-column: 2 / 4; }
+/* Experience (col 2) + Shift Timing (col 3) auto-flow to their columns on desktop */
+/* ae-s1-exp has no explicit desktop column — grid auto-places it in col 2, row 3 */
+/* ae-s1-sft has no explicit desktop column — grid auto-places it in col 3, row 3 */
 
 @media (max-width: 640px) {
   .ae-sec1 {
@@ -331,6 +331,23 @@
 .ae-date.ae-date-empty                        { color: transparent; }
 .ae-date.ae-date-empty::-webkit-datetime-edit { opacity: 0; }
 .ae-date.ae-date-empty::-webkit-datetime-edit-fields-wrapper { opacity: 0; }
+
+/* Duration inputs (yr / mo) — numbers only, same visual as shift time inputs */
+.ae-dur-inp {
+  background: transparent; border: none; outline: none;
+  color: var(--adm-text); font-family: 'Inter', sans-serif;
+  font-size: 13px; font-weight: 500;
+  width: 26px; text-align: center;
+  color-scheme: dark;
+  -moz-appearance: textfield;
+}
+.ae-dur-inp::-webkit-outer-spin-button,
+.ae-dur-inp::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ae-dur-inp::placeholder { color: rgba(226,232,240,.35); }
+.ae-dur-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  color: rgba(212,175,55,.55); user-select: none; flex-shrink: 0;
+}
 
 /* Shift timing — single underline field */
 .ae-shift-row {

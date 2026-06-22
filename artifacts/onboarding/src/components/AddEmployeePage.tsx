@@ -115,7 +115,8 @@ export function AddEmployeePage({
   const [address,     setAddress]     = useState("");
   const [shiftStart,  setShiftStart]  = useState("");
   const [shiftEnd,    setShiftEnd]    = useState("");
-  const [experience,  setExperience]  = useState("");
+  const [expYr,       setExpYr]       = useState("");
+  const [expMo,       setExpMo]       = useState("");
 
   // Salary pill auto-resize — runs after salary state is declared
   useLayoutEffect(() => {
@@ -321,12 +322,30 @@ export function AddEmployeePage({
               </div>
             </div>
 
-            {/* Row 3: Experience — spans both right cols for consistent visual rhythm */}
+            {/* Row 3 col 2: Experience — compact yr / mo numeric inline */}
             <div className="ae-field ae-s1-exp">
-              <TextInput label="Experience" value={experience} onChange={v => setExperience(v)} variant="compact" icon={<ExpSVG />} />
+              <div className="ae-shift-row">
+                <span className="ae-shift-ico"><ExpSVG /></span>
+                <input
+                  className="ae-dur-inp" type="number" inputMode="numeric"
+                  min="0" max="50" placeholder="0"
+                  value={expYr}
+                  onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
+                  onChange={e => setExpYr(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                />
+                <span className="ae-dur-lbl">yr</span>
+                <input
+                  className="ae-dur-inp" type="number" inputMode="numeric"
+                  min="0" max="11" placeholder="0"
+                  value={expMo}
+                  onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
+                  onChange={e => setExpMo(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                />
+                <span className="ae-dur-lbl">mo</span>
+              </div>
             </div>
 
-            {/* Row 4: Shift Timing — spans both field columns on desktop */}
+            {/* Row 3 col 3: Shift Timing — pairs with Experience on same row */}
             <div className="ae-field ae-s1-sft">
               <div className="ae-shift-row">
                 <span className="ae-shift-ico">
