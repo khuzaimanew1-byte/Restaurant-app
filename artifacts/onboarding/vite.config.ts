@@ -26,33 +26,39 @@ if (!basePath) {
   );
 }
 
-/* Replit's WebSocket proxy has a ~35-second idle timeout. When the HMR
-   WebSocket goes idle, the proxy closes it; Vite enters "polling for
-   restart" mode and calls location.reload() on reconnect — causing the
-   visible page refresh. Fix: send a WebSocket ping every 15 seconds so
-   the connection is never idle long enough for the proxy to drop it. */
-function viteHmrKeepAlive(): Plugin {
+/* Replit's WebSocket proxy hard-drops connections every ~35 seconds regardless
+   of ping/pong activity. Vite's default response is to poll the server and
+   then call location.reload() — causing the visible "auto refresh".
+
+   Fix: patch Vite's own client.mjs (via transform hook) to call
+   transport.connect() instead of location.reload(). Both symbols are in the
+   same closure, so we can reference them directly.  The patched path:
+     ✕ await waitForSuccessfulPing(url.href); location.reload();
+     ✓ await waitForSuccessfulPing(url.href); transport.connect(createHMRHandler(handleMessage)); */
+function viteHmrReconnect(): Plugin {
   return {
-    name: "vite-hmr-keep-alive",
+    name: "vite-hmr-reconnect",
     apply: "serve",
-    configureServer(server) {
-      server.httpServer?.once("listening", () => {
-        /* Access the underlying ws.Server (not in Vite's public API but
-           stable across Vite 4/5/6/7 — keep as any to avoid type drift). */
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const wss = (server.ws as any).wss as
-          | { clients: Set<{ readyState: number; ping(): void }> }
-          | undefined;
-        if (!wss) return;
+    transform(code, id) {
+      if (!id.includes("vite/dist/client/client.mjs")) return null;
 
-        const timer = setInterval(() => {
-          wss.clients.forEach((client) => {
-            if (client.readyState === 1 /* OPEN */) client.ping();
-          });
-        }, 15_000);
+      const patched = code.replace(
+        /await waitForSuccessfulPing\(url\.href\);\s*location\.reload\(\);/,
+        `console.debug("[vite] connecting...");
+transport.connect(createHMRHandler(handleMessage)).catch(() => location.reload());`,
+      );
 
-        server.httpServer?.on("close", () => clearInterval(timer));
-      });
+      if (patched === code) {
+        /* Pattern not found — likely a Vite version change. Fall back to
+           default behaviour (page reload) rather than crashing. */
+        console.warn(
+          "[vite-hmr-reconnect] Could not patch client.mjs — pattern not found. " +
+            "HMR will fall back to page reloads on WebSocket drops.",
+        );
+        return null;
+      }
+
+      return { code: patched, map: null };
     },
   };
 }
@@ -63,7 +69,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
-    viteHmrKeepAlive(),
+    viteHmrReconnect(),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
