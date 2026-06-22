@@ -12,9 +12,6 @@
   display: flex;
   height: 100dvh;
   background-color: var(--adm-bg);
-  background-image:
-    url('https://www.transparenttextures.com/patterns/dark-wood.png'),
-    radial-gradient(circle at 50% 0%, #2A2D3A 0%, #1E2028 100%);
   font-family: 'Inter', sans-serif;
   color: var(--adm-text);
   position: relative;
@@ -48,7 +45,7 @@
   font-size: 20px;
   font-weight: 700;
   letter-spacing: .02em;
-  color: white;
+  color: var(--adm-text);
   margin: 0;
 }
 .adm-sidebar-nav {
@@ -176,10 +173,10 @@
 }
 .adm-header-date {
   font-family: 'Geist', 'Inter', sans-serif;
-  font-size: 22px;
+  font-size: clamp(18px, 2.2vw, 22px);
   font-weight: 500;
   letter-spacing: -.02em;
-  color: white;
+  color: var(--adm-text);
   margin: 0;
 }
 /* ── Desktop stats bar (below header) ── */
@@ -265,9 +262,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 200ms ease;
+  transition: color 200ms ease, transform 150ms cubic-bezier(.22,1,.36,1);
 }
-.adm-notif-btn:hover { color: var(--adm-gold); }
+.adm-notif-btn:hover  { color: var(--adm-gold); }
+.adm-notif-btn:active { transform: scale(.88); }
 .adm-notif-dot {
   position: absolute;
   top: 2px; right: 2px;
@@ -343,8 +341,8 @@
 }
 .adm-topbar-brand {
   font-family: 'DM Serif Display', 'Playfair Display', serif;
-  font-size: 20px;
-  color: white;
+  font-size: clamp(17px, 4.8vw, 20px);
+  color: var(--adm-text);
   letter-spacing: .02em;
   white-space: nowrap;
   font-weight: 400;
@@ -386,7 +384,7 @@
 
 .adm-topbar-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .adm-topbar-toggle {
-  color: #d1d5db;
+  color: var(--adm-text);
   background: none;
   border: none;
   cursor: pointer;
@@ -456,8 +454,8 @@
   justify-content: space-between;
 }
 .adm-mobile-date {
-  font-size: 17px; font-weight: 500;
-  color: white; margin: 0;
+  font-size: clamp(15px, 4.2vw, 17px); font-weight: 500;
+  color: var(--adm-text); margin: 0;
 }
 .adm-mobile-chip {
   display: inline-flex;
@@ -520,14 +518,11 @@
   border-radius: 12px;
   width: 100%;
   background: var(--adm-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--adm-gold-glow);
-  box-shadow:
-    0 0 15px rgba(212,175,55,.15),
-    inset 0 0 10px rgba(255,255,255,.05),
-    0 4px 20px rgba(0,0,0,.40);
+  box-shadow: 0 4px 20px rgba(0,0,0,.40);
   transition: transform 220ms cubic-bezier(.22,1,.36,1), box-shadow 220ms ease;
+  will-change: transform, opacity;
+  contain: layout style paint;
   animation: adm-card-in 500ms cubic-bezier(.16,1,.3,1) both;
 }
 @media (min-width: 768px) {
@@ -540,10 +535,7 @@
 }
 .adm-card:hover {
   transform: translateY(-2px);
-  box-shadow:
-    0 0 25px rgba(212,175,55,.25),
-    inset 0 0 10px rgba(255,255,255,.05),
-    0 8px 32px rgba(0,0,0,.50);
+  box-shadow: 0 0 20px rgba(212,175,55,.20), 0 8px 32px rgba(0,0,0,.50);
 }
 .adm-card:active { transform: scale(.985); }
 .adm-card-absent { opacity: .65; }
@@ -608,14 +600,13 @@
 .adm-card-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .adm-card-name {
   font-weight: 500;
-  font-size: 14px;
-  color: white;
+  font-size: clamp(13px, 3.8vw, 15px);
+  color: var(--adm-text);
   margin: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-@media (min-width: 768px) { .adm-card-name { font-size: 16px; } }
-.adm-card-role  { font-size: 12px; color: var(--adm-text-muted); margin: 0; }
-.adm-card-salary { font-size: 12px; color: #d1d5db; margin: 2px 0 0; }
+.adm-card-role   { font-size: clamp(11px, 3.0vw, 12px); color: var(--adm-text-muted); margin: 0; }
+.adm-card-salary { font-size: clamp(11px, 2.8vw, 12px); color: var(--adm-text); margin: 2px 0 0; }
 
 .adm-times { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .adm-time-in, .adm-time-out {
@@ -630,14 +621,13 @@
 
 /* Status label (leave / unauthorized-leave / half-day) */
 .adm-status-label {
-  font-size: 10px;
+  font-size: clamp(10px, 2.8vw, 11px);
   font-weight: 600;
   letter-spacing: .06em;
   text-transform: uppercase;
   margin-top: 4px;
   opacity: .9;
 }
-@media (min-width: 768px) { .adm-status-label { font-size: 11px; } }
 /* Status label color variants */
 .adm-status--leave               { color: var(--clr-leave); }
 .adm-status--unauthorized-leave  { color: var(--clr-unauth); }
@@ -646,45 +636,9 @@
 .adm-time--late  { color: var(--clr-late); }
 .adm-time--early { color: var(--clr-early); }
 .adm-time--half  { color: var(--clr-half); }
-.adm-status-chip {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  margin-top: 3px;
-  opacity: .85;
-}
-@media (min-width: 768px) { .adm-status-chip { font-size: 10px; } }
 
 /* Placeholder --:-- when no time recorded */
-.adm-time-placeholder {
-  color: rgba(255,255,255,.25);
-}
-
-/* Half-day inline badge (next to salary) */
-.adm-half-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  margin-left: 7px;
-  padding: 2px 7px 2px 5px;
-  border-radius: 20px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .04em;
-  color: rgba(255,255,255,.40);
-  background: rgba(20,184,166,.08);
-  border: 1px solid rgba(20,184,166,.22);
-  vertical-align: middle;
-  line-height: 1.5;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
-}
-.adm-half-badge-frac {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--clr-half);
-  line-height: 1;
-}
+.adm-time-placeholder { color: rgba(255,255,255,.25); }
 
 /* Info button (top-right of card) */
 .adm-info-btn {
@@ -758,11 +712,10 @@
 .adm-bar-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
-  color: #d1d5db;
+  font-size: clamp(9px, 2.4vw, 11px);
+  color: var(--adm-text);
   font-family: 'Geist', 'Inter', sans-serif;
 }
-@media (min-width: 768px) { .adm-bar-labels { font-size: 11px; } }
 
 /* Progress bar */
 .adm-progress-track {
@@ -1093,21 +1046,6 @@
 }
 .adm-modal-confirm:active { transform: scale(.96); }
 
-/* ── Font responsive clamp updates ───────────────────── */
-.adm-card-name  { font-size: clamp(13px, 3.8vw, 15px); }
-.adm-card-role  { font-size: clamp(11px, 3.0vw, 12px); }
-.adm-card-salary { font-size: clamp(11px, 2.8vw, 12px); }
-.adm-header-date { font-size: clamp(18px, 2.2vw, 22px); }
-.adm-mobile-date { font-size: clamp(15px, 4.2vw, 17px); }
-.adm-bar-labels  { font-size: clamp(9px, 2.4vw, 11px); }
-.adm-topbar-brand { font-size: clamp(17px, 4.8vw, 20px); }
-
-/* ── Notif button micro-animation ────────────────────── */
-.adm-notif-btn {
-  transition: color 200ms ease, transform 150ms cubic-bezier(.22,1,.36,1);
-}
-.adm-notif-btn:active { transform: scale(.88); }
-
 /* ── FAB micro-animation ─────────────────────────────── */
 .adm-fab svg {
   transition: transform 200ms cubic-bezier(.22,1,.36,1);
@@ -1118,7 +1056,7 @@
 .adm-ctx-menu {
   position: fixed;
   z-index: 9000;
-  background: #1e2128;
+  background: var(--adm-bg);
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 10px;
   padding: 5px;
@@ -1180,57 +1118,6 @@
   height: 1px;
   background: rgba(255,255,255,.07);
   margin: 4px 8px;
-}
-
-/* ── Edit attendance modal extras ──────────────────────────── */
-.adm-edit-modal {
-  max-width: 360px;
-  width: calc(100vw - 32px);
-}
-.adm-edit-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 16px 0 4px;
-}
-.adm-edit-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.adm-edit-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--adm-text-muted);
-}
-.adm-edit-input {
-  padding: 9px 12px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 8px;
-  color: white;
-  font-size: 14px;
-  font-family: 'Geist', 'Inter', sans-serif;
-  outline: none;
-  transition: border-color 180ms ease;
-}
-.adm-edit-input:focus { border-color: var(--adm-gold); }
-.adm-edit-input-disabled {
-  opacity: .35;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-/* Dark theme for <input type="time"> */
-.adm-edit-input-time {
-  color-scheme: dark;
-  padding-right: 8px;
-}
-.adm-edit-error {
-  font-size: 12px;
-  color: var(--clr-unauth);
-  margin: 4px 0 0;
 }
 
 /* ── Office timing header (Time & Leave page) ──────────────── */

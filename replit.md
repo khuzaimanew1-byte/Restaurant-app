@@ -317,6 +317,29 @@ Whenever a UI pattern already exists as a shared React component or CSS class, y
 - TypeScript: no `any` unless unavoidable (e.g. CSS custom property casting).
 - Flutter: no `dynamic` unless unavoidable; type all Riverpod providers explicitly.
 
+### 12. Dead Code — Mandatory Removal (SSOT)
+
+**Any code or CSS that is not actively used must be deleted — no exceptions.**
+
+Dead code includes:
+- CSS classes defined in a stylesheet but never referenced in any JSX/TSX/HTML (grep before keeping).
+- Duplicate CSS rule blocks — if the same property is set twice for the same selector (e.g. a fixed-px font-size overridden later by a clamp), merge into one rule at the original location.
+- JS/TS functions, variables, types, or imports that are defined but never called or referenced.
+- Logic that runs but has zero observable effect (e.g. a `useEffect` that sets state that is never read, a computed value that is never rendered).
+- External resource fetches (fonts, images, textures via URL) that are not visually necessary — especially from third-party CDNs that add a network round-trip on every page load.
+
+**How to audit before adding new code:**
+1. Grep the codebase for every new CSS class before writing it — if it already exists, reuse it.
+2. Before removing a class, grep all `.tsx`/`.ts`/`.html` files to confirm zero references.
+3. For CSS, check for override blocks at the bottom of the file that duplicate rules from the top — merge the clamp/responsive value into the original rule and delete the override block.
+
+**Performance corollary (enforced the same as dead code):**
+- No `backdrop-filter: blur()` on elements that repeat more than 2–3 times on the same screen (e.g. employee cards). Each blurred layer is a separate GPU compositing pass.
+- No external texture or image URLs in CSS `background-image` unless the asset is self-hosted. Third-party URLs add a blocking network request on every page load.
+- Card/list item stagger animation delay must not exceed `index × 40ms` — last item must appear within 200 ms of first.
+- `will-change: transform, opacity` must be set on any element that runs a CSS `animation` (cards, modals, overlays).
+- `contain: layout style paint` must be set on repeated card/list-item components to isolate their layout pass from the rest of the document.
+
 ---
 
 ## User preferences

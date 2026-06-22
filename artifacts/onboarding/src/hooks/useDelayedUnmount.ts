@@ -13,7 +13,7 @@ import { useState, useEffect, useRef } from "react";
  *   const shouldRender = useDelayedUnmount(isOpen);
  *   return shouldRender ? <Modal /> : null;
  */
-export function useDelayedUnmount(isOpen: boolean, delayMs = 30000): boolean {
+export function useDelayedUnmount(isOpen: boolean, delayMs = 10000): boolean {
   const [shouldRender, setShouldRender] = useState(isOpen);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
