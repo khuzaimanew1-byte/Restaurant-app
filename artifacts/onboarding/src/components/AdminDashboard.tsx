@@ -454,30 +454,83 @@ const EmployeeCard = memo(function EmployeeCard({
 });
 
 function ContextMenu({
-  ctx, employees, timing, onAction, onClose, isBeingEdited,
+  ctx, isOpen, employees, timing, onAction, onClose, isBeingEdited,
 }: {
-  ctx: CtxMenu; employees: Employee[]; timing: OfficeTiming;
+  ctx: CtxMenu; isOpen: boolean;
+  employees: Employee[]; timing: OfficeTiming;
   isBeingEdited: boolean;
   onAction: (id: number, action: "edit" | LeaveStatus) => void;
   onClose: () => void;
 }) {
-  const emp     = employees.find(e => e.id === ctx.empId)!;
-  const halfOk  = canAssignHalfDay(emp, timing) || emp.leaveStatus === "half-day";
+  const emp    = employees.find(e => e.id === ctx.empId)!;
+  const halfOk = canAssignHalfDay(emp, timing) || emp.leaveStatus === "half-day";
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function down(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
-    }
-    function key(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
-    document.addEventListener("mousedown", down);
-    document.addEventListener("keydown", key);
-    return () => { document.removeEventListener("mousedown", down); document.removeEventListener("keydown", key); };
-  }, [onClose]);
+  /* ── Keyboard navigation ──────────────────────────────────
+     Items: 0=Edit  1=Leave  2=Unauthorized Leave  3=Half Day
+     Only non-disabled items are reachable via ↑↓ */
+  const itemDisabled = [false, false, false, !halfOk] as const;
+  const enabledIdxs  = itemDisabled.map((d, i) => (d ? -1 : i)).filter(i => i >= 0);
+  const [kbdIdx, setKbdIdx] = useState(-1);
+  const kbdIdxRef = useRef(-1); // always-fresh ref for use inside event handlers
 
-  const menuW = 196, menuH = 178;
-  const left  = Math.min(ctx.x, window.innerWidth  - menuW - 8);
-  const top   = Math.min(ctx.y, window.innerHeight - menuH - 8);
+  function moveFocus(delta: 1 | -1) {
+    const pos  = enabledIdxs.indexOf(kbdIdxRef.current);
+    const next = enabledIdxs[(pos + delta + enabledIdxs.length) % enabledIdxs.length];
+    kbdIdxRef.current = next;
+    setKbdIdx(next);
+  }
+
+  /* ── All close triggers — active only while mounted (isOpen or exit anim) */
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (!isOpen) return; // ignore during exit animation
+      if (e.key === "Escape")     { e.preventDefault(); onClose(); return; }
+      if (e.key === "ArrowDown")  { e.preventDefault(); moveFocus(1);  return; }
+      if (e.key === "ArrowUp")    { e.preventDefault(); moveFocus(-1); return; }
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        const idx = kbdIdxRef.current;
+        if (idx < 0 || itemDisabled[idx as 0|1|2|3]) return;
+        const actions = ["edit", "leave", "unauthorized-leave", "half-day"] as const;
+        onAction(ctx.empId, actions[idx]);
+        onClose();
+      }
+    };
+    const onWindowBlur  = () => onClose();
+    const onResize      = () => onClose();
+    const onPopState    = () => onClose();
+
+    /* capture phase so we beat any stopPropagation in child elements */
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("blur", onWindowBlur);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("popstate", onPopState);
+
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("blur", onWindowBlur);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("popstate", onPopState);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, onClose, ctx.empId]);
+
+  /* Reset keyboard focus each time the menu opens */
+  useEffect(() => {
+    if (isOpen) { kbdIdxRef.current = -1; setKbdIdx(-1); }
+  }, [isOpen]);
+
+  /* ── Viewport-safe positioning ─────────────────────────────
+     Clamp so the menu never overflows edges; reflow on window resize closes it anyway */
+  const menuW = 196, menuH = 184;
+  const left  = Math.min(Math.max(ctx.x, 8), window.innerWidth  - menuW - 8);
+  const top   = Math.min(Math.max(ctx.y, 8), window.innerHeight - menuH - 8);
 
   const TICK = (
     <svg className="adm-ctx-tick" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -485,60 +538,75 @@ function ContextMenu({
     </svg>
   );
 
-  /** Renders a context menu button; statusKey applies a CSS color class from --clr-* vars. */
-  const item = (
+  function item(
+    idx: 0 | 1 | 2 | 3,
     label: string,
     icon: React.ReactNode,
     action: () => void,
     statusKey?: string,
-    disabled?: boolean,
     active?: boolean,
-  ) => (
-    <button
-      className={[
-        "adm-ctx-item",
-        disabled              ? "adm-ctx-item-disabled"          : "",
-        active                ? "adm-ctx-item-active"            : "",
-        statusKey && !disabled ? `adm-ctx-item--${statusKey}`    : "",
-      ].filter(Boolean).join(" ")}
-      onClick={disabled ? undefined : action}
-      disabled={disabled}
-    >
-      {icon}
-      <span>{label}</span>
-      {active && TICK}
-    </button>
-  );
+  ) {
+    const disabled = itemDisabled[idx];
+    return (
+      <button
+        key={label}
+        className={[
+          "adm-ctx-item",
+          disabled              ? "adm-ctx-item-disabled"       : "",
+          active                ? "adm-ctx-item-active"         : "",
+          kbdIdx === idx        ? "adm-ctx-item-kbd-focus"      : "",
+          statusKey && !disabled ? `adm-ctx-item--${statusKey}` : "",
+        ].filter(Boolean).join(" ")}
+        onClick={disabled ? undefined : () => { action(); onClose(); }}
+        onPointerEnter={() => { kbdIdxRef.current = disabled ? -1 : idx; setKbdIdx(disabled ? -1 : idx); }}
+        disabled={disabled}
+        tabIndex={-1}
+        aria-checked={active}
+        role="menuitemcheckbox"
+      >
+        {icon}
+        <span>{label}</span>
+        {active && TICK}
+      </button>
+    );
+  }
 
   return (
-    <div ref={menuRef} className="adm-ctx-menu" style={{ left, top } as React.CSSProperties}>
-      {item("Edit", (
+    <div
+      ref={menuRef}
+      className="adm-ctx-menu"
+      data-closing={!isOpen ? "" : undefined}
+      style={{ left, top } as React.CSSProperties}
+      tabIndex={-1}
+      role="menu"
+      aria-label="Employee actions"
+    >
+      {item(0, "Edit", (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
         </svg>
-      ), () => { onAction(ctx.empId, "edit"); }, undefined, false, isBeingEdited)}
+      ), () => onAction(ctx.empId, "edit"), undefined, isBeingEdited)}
 
       <div className="adm-ctx-divider" />
 
-      {item("Leave", (
+      {item(1, "Leave", (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
         </svg>
-      ), () => { onAction(ctx.empId, "leave"); }, "leave", false, emp.leaveStatus === "leave")}
+      ), () => onAction(ctx.empId, "leave"), "leave", emp.leaveStatus === "leave")}
 
-      {item("Unauthorized Leave", (
+      {item(2, "Unauthorized Leave", (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
         </svg>
-      ), () => { onAction(ctx.empId, "unauthorized-leave"); }, "unauth", false, emp.leaveStatus === "unauthorized-leave")}
+      ), () => onAction(ctx.empId, "unauthorized-leave"), "unauth", emp.leaveStatus === "unauthorized-leave")}
 
-      {item("Half Day", (
+      {item(3, "Half Day", (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20V2z" fill="currentColor" stroke="none"/>
         </svg>
-      ), () => { onAction(ctx.empId, "half-day"); }, "half", !halfOk, emp.leaveStatus === "half-day")}
-
+      ), () => onAction(ctx.empId, "half-day"), "half", emp.leaveStatus === "half-day")}
     </div>
   );
 }
@@ -653,9 +721,36 @@ function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel:
   );
 }
 
-function AvatarDropdown({ onLogoutRequest, onClose }: { onLogoutRequest: () => void; onClose: () => void }) {
+function AvatarDropdown({
+  isOpen, triggerRefs, onLogoutRequest, onClose,
+}: {
+  isOpen: boolean;
+  triggerRefs: React.RefObject<HTMLElement | null>[];
+  onLogoutRequest: () => void;
+  onClose: () => void;
+}) {
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  /* Outside-click listener — always active while mounted (not gated on isOpen).
+     This is the fix: during exit animation isOpen=false but we still need to
+     respond if the user clicks again so we don't block interaction. */
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      const insideTrigger = triggerRefs.some(r => r.current?.contains(t));
+      const insideDrop    = dropRef.current?.contains(t);
+      if (!insideTrigger && !insideDrop) onClose();
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [onClose, triggerRefs]);
+
   return (
-    <div className="adm-avatar-dropdown">
+    <div
+      ref={dropRef}
+      className="adm-avatar-dropdown"
+      data-closing={!isOpen ? "" : undefined}
+    >
       <div className="adm-dropdown-header">
         <div className="adm-dropdown-avatar">A</div>
         <div className="adm-dropdown-info">
@@ -690,24 +785,30 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
   const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
-  const [ctxMenuData,    setCtxMenuData]    = useState<CtxMenu | null>(null); // last known position for unmount countdown
+  const [ctxMenuData,    setCtxMenuData]    = useState<CtxMenu | null>(null);
   const [editingId,      setEditingId]      = useState<number | null>(null);
 
-  // ── useDelayedUnmount — keeps overlays mounted for 60 s after close (Rule 3) ──
+  /* ── useDelayedUnmount ─────────────────────────────────────────────────────
+     Heavy panels (LogoutModal, AddEmployee) keep 60 s cache for quick re-open.
+     Context menu and avatar dropdown use only 220/200 ms — just enough for their
+     CSS exit animations. This fixes the "menu stays visible" bug where the old
+     60 s delay kept both rendered (and fully visible) long after closing.       */
   const shouldRenderLogout   = useDelayedUnmount(logoutModalOpen);
   const shouldRenderAddEmp   = useDelayedUnmount(showAddEmployee);
-  const shouldRenderDropdown = useDelayedUnmount(dropdownOpen);
-  const shouldRenderCtx      = useDelayedUnmount(!!ctxMenu);
+  const shouldRenderDropdown = useDelayedUnmount(dropdownOpen, 220);
+  const shouldRenderCtx      = useDelayedUnmount(!!ctxMenu, 220);
 
-  // Keep last ctxMenu data available during the unmount countdown
+  /* Keep last ctxMenu data during the exit-animation window */
   useEffect(() => { if (ctxMenu) setCtxMenuData(ctxMenu); }, [ctxMenu]);
 
   const debouncedQuery = useDebounce(rawQuery, 280);
 
   const searchRef          = useRef<HTMLInputElement>(null);
   const mobileSearchRef    = useRef<HTMLInputElement>(null);
-  const desktopDropdownRef = useRef<HTMLDivElement>(null);
-  const mobileDropdownRef  = useRef<HTMLDivElement>(null);
+  /* Refs to the avatar trigger buttons — passed to AvatarDropdown for outside-click */
+  const desktopAvatarRef   = useRef<HTMLDivElement>(null);
+  const mobileAvatarRef    = useRef<HTMLButtonElement>(null);
+  const dropdownTriggerRefs = [desktopAvatarRef, mobileAvatarRef] as React.RefObject<HTMLElement | null>[];
 
   const today        = getTodayStr();
   const presentCount  = useMemo(() => employees.filter(e => !e.leaveStatus && e.checkIn).length, [employees]);
@@ -767,17 +868,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     });
   }, []);
   const requestLogout = useCallback(() => { setDropdownOpen(false); setLogoutModal(true); }, []);
-
-  useEffect(() => {
-    if (!dropdownOpen) return;
-    function handle(e: MouseEvent) {
-      const t = e.target as Node;
-      if (!desktopDropdownRef.current?.contains(t) && !mobileDropdownRef.current?.contains(t))
-        setDropdownOpen(false);
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, [dropdownOpen]);
+  const closeDropdown = useCallback(() => setDropdownOpen(false), []);
 
   const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus) => {
     if (action === "edit") {
@@ -872,12 +963,18 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               </svg>
               <span className="adm-notif-dot" />
             </button>
-            <div className="adm-profile-wrap" ref={desktopDropdownRef}>
+            <div className="adm-profile-wrap">
               <div
+                ref={desktopAvatarRef}
                 className={`adm-profile-avatar${dropdownOpen ? " adm-profile-avatar-open" : ""}`}
                 onClick={() => setDropdownOpen(v => !v)} title="Account">A</div>
               {shouldRenderDropdown && (
-                <AvatarDropdown onLogoutRequest={requestLogout} onClose={() => setDropdownOpen(false)} />
+                <AvatarDropdown
+                  isOpen={dropdownOpen}
+                  triggerRefs={dropdownTriggerRefs}
+                  onLogoutRequest={requestLogout}
+                  onClose={closeDropdown}
+                />
               )}
             </div>
           </div>
@@ -914,14 +1011,20 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 </svg>
               )}
             </button>
-            <div className="adm-topbar-avatar-wrap" ref={mobileDropdownRef}>
+            <div className="adm-topbar-avatar-wrap">
               <button
+                ref={mobileAvatarRef}
                 className={`adm-topbar-profile${dropdownOpen ? " adm-topbar-profile-open" : ""}`}
                 onClick={() => setDropdownOpen(v => !v)} aria-label="Account">
                 <div className="adm-topbar-profile-avatar">A</div>
               </button>
               {shouldRenderDropdown && (
-                <AvatarDropdown onLogoutRequest={requestLogout} onClose={() => setDropdownOpen(false)} />
+                <AvatarDropdown
+                  isOpen={dropdownOpen}
+                  triggerRefs={dropdownTriggerRefs}
+                  onLogoutRequest={requestLogout}
+                  onClose={closeDropdown}
+                />
               )}
             </div>
           </div>
@@ -996,12 +1099,16 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
       </main>
 
-      {/* Context menu — kept mounted 60 s after close (Rule 3) */}
+      {/* Context menu — mounted while open or during 220ms exit animation */}
       {shouldRenderCtx && ctxMenuData && (
         <ContextMenu
-          ctx={ctxMenuData} employees={employees} timing={officeTiming}
+          ctx={ctxMenuData}
+          isOpen={!!ctxMenu}
+          employees={employees}
+          timing={officeTiming}
           isBeingEdited={editingId === ctxMenuData.empId}
-          onAction={handleCtxAction} onClose={() => setCtxMenu(null)}
+          onAction={handleCtxAction}
+          onClose={() => setCtxMenu(null)}
         />
       )}
 
