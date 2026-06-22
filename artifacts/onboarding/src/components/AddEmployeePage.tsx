@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useLayoutEffect, memo } from "react";
 import { Button } from "./ui/Button";
 import { TextInput } from "./ui/Input";
-import { Tag } from "./ui/Tag";
 import "../styles/add-employee.css";
 
 // ── Palette for avatar fallback colours ───────────────────────────────────
@@ -206,15 +205,15 @@ export function AddEmployeePage({
   return (
     <div className={`ae-root${!isOpen ? " ae-root--closing" : ""}`}>
 
-      {/* ── Top bar ── */}
-      <header className="ae-topbar">
+      {/* ── Top bar — global .topbar chrome from index.css ── */}
+      <header className="topbar">
         <button className="pg-icon-btn" onClick={onClose} aria-label="Back">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
         </button>
-        <h2 className="ae-topbar-title">Add Employee</h2>
-        <div className="ae-topbar-spacer" />
+        <h2 className="t-ttl">Add Employee</h2>
+        <div className="t-sp" />
       </header>
 
       {/* ── Scrollable body ── */}
@@ -353,7 +352,13 @@ export function AddEmployeePage({
               {langs.length > 0 && (
                 <div className="ae-lang-tags">
                   {langs.map(l => (
-                    <Tag key={l} onRemove={() => setLangs(p => p.filter(x => x !== l))}>{l}</Tag>
+                    <span key={l} className="ae-lang-tag">
+                      {l}
+                      <span
+                        className="ae-lang-del"
+                        onMouseDown={e => { e.preventDefault(); setLangs(p => p.filter(x => x !== l)); }}
+                        aria-label={`Remove ${l}`}>✕</span>
+                    </span>
                   ))}
                 </div>
               )}

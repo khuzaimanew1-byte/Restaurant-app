@@ -124,8 +124,35 @@ Apply automatically to all Dart/Flutter code:
 - **CSS classes first.** Always use CSS class names for styling. Inline `style` only for truly dynamic values: positions (`top`, `left`), computed heights, or CSS custom properties (e.g. `--bar-h`, `--ring-size`).
 - **CSS variables for every color.** No hardcoded color values in components or Flutter widgets. Every color comes from a design token variable (`var(--accent)`, `--chip-a`, etc.) or `AppColors.*`.
 - **Short, semantic variable names.** Prefer `--bg`, `--text-sub`, `--chip-a` over long descriptive names.
+- **CSS class name length: max 5–6 characters** for new classes. Examples: `.chip`, `.bnav`, `.bn-i`, `.bn-a`, `.t-ttl`, `.t-sp`. Existing longer names (`.adm-*`, `.ae-*`) are grandfathered — do not rename them without a broader refactor.
 - **Dark mode via attribute.** Web: `:root` = dark default, `[data-dark="false"]` = light override. Flutter: `ThemeData` pair driven by Riverpod.
 - **No dead CSS.** Remove any class, variable, or keyframe not referenced by a live component.
+
+### 1a. SEO-Semantic HTML (SSOT — auto-applied)
+
+Use the correct semantic HTML element as the outer container for every UI region. Never use `<div>` when a semantic tag exists.
+
+| Region | Tag |
+|--------|-----|
+| Primary navigation (sidebar, bottom nav) | `<nav>` with `aria-label` |
+| Page topbar / header | `<header>` with `role="banner"` on the outermost (page-level) one |
+| Page footer content | `<footer>` |
+| Primary heading on a page | `<h1>` (one per page) |
+| Secondary section title | `<h2>` |
+| Card/section | `<article>` or `<section>` (with a heading) |
+| Interactive trigger | `<button>` (never `<div onClick>`) |
+
+Active nav item rule: always set `aria-current="page"` on the active `<button>` or `<a>` inside `<nav>`.
+
+### 1b. Shared Element Threshold (SSOT — auto-applied)
+
+| Reuse count | Action required |
+|-------------|-----------------|
+| Element used on **2+ pages** | Extract to a **React component** in `components/` |
+| Styling used on **3+ pages** | Move to **`index.css`** as a global class |
+| Styling used on **1–2 pages** | Keep in the page's own CSS file |
+
+These rules apply automatically to every new element. Do not wait to be told.
 
 ### 2. DRY — No Duplication
 
@@ -281,14 +308,18 @@ Any repeated visual pattern must have one SSOT. For topbars the SSOT is the CSS 
 
 | Element | SSOT mechanism | Usage |
 |---------|---------------|-------|
-| Page topbar chrome | `--topbar-bg` / `--topbar-bd` / `--topbar-shadow` / `--topbar-h` in `:root` | Each page's topbar class copies the "shared chrome" comment block and uses these vars directly — **single class per element, no `.pg-topbar` class in HTML** |
+| Page topbar chrome | `.topbar` in `index.css` + `--topbar-*` vars in `:root` | `<header className="topbar">` — one shared global class used on every page |
+| Topbar title | `.t-ttl` in `index.css` | `<h2 className="t-ttl">` — flex:1 title inside .topbar |
+| Topbar spacer | `.t-sp` in `index.css` | `<div className="t-sp" />` — mirrors icon-btn width for symmetry |
+| Chip / pill base | `.chip` in `index.css` | Structure only (no color). Add `.adm-chip-p`, `.adm-chip-h`, or context rules for color |
 | 38×38 icon button | `.pg-icon-btn` in `index.css` GLOBAL section | Back arrows, close (×), toggle buttons — single class, no companion class |
 
 **Topbar token SSOT** (in `:root` — never hardcode these per-page):
 - `--topbar-bg` / `--topbar-bd` / `--topbar-shadow` / `--topbar-h`
 
 **Rules:**
-- New page with a topbar → define `.<page>-topbar` in CSS with the `/* shared topbar chrome */` comment block using `--topbar-*` vars. Use only that one class in HTML.
+- New page with a topbar → use `<header className="topbar">` directly. No per-page topbar class in HTML.
+- To hide the mobile topbar when a sidebar is present → add `@media (min-width: 768px) { .adm-main .topbar { display: none; } }` in the page's CSS.
 - New icon button (back, close, toggle) → use `className="pg-icon-btn"`. Override only `border-radius` if a round shape is needed.
 - Adding a new repeated element → ask: is it always used with another class, or truly standalone? If standalone → create one shared class. If always paired → merge and use CSS vars for shared values.
 
@@ -301,10 +332,13 @@ Whenever a UI pattern already exists as a shared React component or CSS class, y
 | Primary CTA button | `<Button>` from `components/ui/Button.tsx` → `.cta-btn` |
 | Text / email / tel input with floating label | `<TextInput>` from `components/ui/Input.tsx` → `.inp-wrap/.inp/.inp-label/.inp-line` |
 | Password input with show/hide toggle | `<PasswordInput>` from `components/ui/Input.tsx` |
-| Removable chip / pill tag | `<Tag onRemove={...}>` from `components/ui/Tag.tsx` → `.ae-lang-tag` |
-| Attendance status badge | `<StatusTag status="...">` from `components/ui/Tag.tsx` → `.adm-status-label/.adm-status--*` |
+| Removable chip / pill tag | Inline `<span className="ae-lang-tag">…<span className="ae-lang-del">✕</span></span>` — no wrapper component needed |
+| Attendance status badge | `<StatusTag status="...">` from `components/ui/StatusTag.tsx` → `.adm-status-label/.adm-status--*` |
 | 38×38 icon button | `.pg-icon-btn` CSS class |
-| Page topbar | `.<page>-topbar` CSS class using `--topbar-*` vars |
+| Page topbar | `.topbar` global CSS class (index.css) — same class on every page, no per-page topbar class |
+| Topbar title | `.t-ttl` global CSS class (index.css) |
+| Sidebar + mobile nav + bottom nav | `<Navbar>` from `components/Navbar.tsx` — exports `Navbar`, `AvatarDropdown`, `NavItem` |
+| Chip / pill structure | `.chip` global CSS class (index.css) — add color via `.adm-chip-p`, `.adm-chip-h`, or context rules |
 
 **Rule:** Before writing any `<button>`, `<input>`, or label/badge JSX inline, check `components/ui/` first. If a shared component exists for it, use that — do **not** duplicate the HTML or CSS.
 

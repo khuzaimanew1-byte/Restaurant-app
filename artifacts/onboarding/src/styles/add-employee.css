@@ -37,27 +37,9 @@
   to   { transform: translateX(100%); opacity: 0; }
 }
 
-/* ── Top bar ── */
-.ae-topbar {
-  /* shared topbar chrome — matches all page topbars via --topbar-* vars (SSOT) */
-  display: flex; align-items: center;
-  height: var(--topbar-h); flex-shrink: 0;
-  background: var(--topbar-bg);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--topbar-bd);
-  box-shadow: var(--topbar-shadow);
-  /* page-specific layout */
-  gap: 12px;
-  padding: 0 20px;
-  position: relative; z-index: 2;
-}
+/* ── Top bar: uses global .topbar chrome from index.css ── */
 /* .ae-back-btn → replaced by .pg-icon-btn (global shared class) */
-.ae-topbar-title {
-  flex: 1;
-  font-size: 17px; font-weight: 700;
-  color: var(--adm-text); letter-spacing: -.02em;
-}
-.ae-topbar-spacer { width: 38px; flex-shrink: 0; }
+/* Title → .t-ttl | Spacer → .t-sp (both global in index.css) */
 
 /* ── Scroll + content ── */
 .ae-scroll {
