@@ -775,21 +775,26 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
   const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
-  const [ctxMenuData,    setCtxMenuData]    = useState<CtxMenu | null>(null);
   const [editingId,      setEditingId]      = useState<number | null>(null);
 
   /* ── useDelayedUnmount ─────────────────────────────────────────────────────
      Heavy panels (LogoutModal, AddEmployee) keep 60 s cache for quick re-open.
-     Context menu and avatar dropdown use only 220/200 ms — just enough for their
-     CSS exit animations. This fixes the "menu stays visible" bug where the old
-     60 s delay kept both rendered (and fully visible) long after closing.       */
+     Context menu and avatar dropdown use only 220 ms — just enough for their
+     CSS exit animations.                                                        */
   const shouldRenderLogout   = useDelayedUnmount(logoutModalOpen);
   const shouldRenderAddEmp   = useDelayedUnmount(showAddEmployee);
   const shouldRenderDropdown = useDelayedUnmount(dropdownOpen, 220);
   const shouldRenderCtx      = useDelayedUnmount(!!ctxMenu, 220);
 
-  /* Keep last ctxMenu data during the exit-animation window */
-  useEffect(() => { if (ctxMenu) setCtxMenuData(ctxMenu); }, [ctxMenu]);
+  /* ── ctxMenuData — ref instead of state ────────────────────────────────────
+     Original pattern used useState + useEffect to track last known position for
+     the exit animation window. Problem: useEffect runs AFTER render, causing:
+       1. Two-render delay before ContextMenu first mounts (listeners absent)
+       2. One-render flash at old position when switching cards
+     Fix: update a ref SYNCHRONOUSLY during render — zero delay, zero flash.    */
+  const ctxMenuDataRef = useRef<CtxMenu | null>(null);
+  if (ctxMenu) ctxMenuDataRef.current = ctxMenu; // sync update during render
+  const ctxMenuData = ctxMenuDataRef.current;      // null only before first open
 
   const debouncedQuery = useDebounce(rawQuery, 280);
 
