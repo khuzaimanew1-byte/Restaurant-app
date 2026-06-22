@@ -404,14 +404,14 @@ const EmployeeCard = memo(function EmployeeCard({
             </div>
           ) : isLeave ? (
             /* Leave / unauthorized-leave: pill only, no time slots */
-            <div className={`adm-status-label adm-status--${status}`}>
+            <div className="adm-status-label">
               {STATUS_LABEL[status]}
             </div>
           ) : (
             /* Present / late / half-day / early: pill + time slots */
             <>
               {status !== "normal" && (
-                <div className={`adm-status-label adm-status--${status}`}>
+                <div className="adm-status-label">
                   {STATUS_LABEL[status]}
                 </div>
               )}
