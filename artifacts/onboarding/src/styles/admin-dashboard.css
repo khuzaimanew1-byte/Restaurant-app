@@ -306,20 +306,9 @@
   box-shadow: 0 0 24px rgba(212,175,55,.40);
 }
 
-/* ── Mobile top bar ── */
+/* ── Mobile top bar — page-specific overrides only; base chrome from .topbar (index.css) ── */
 .adm-topbar {
-  /* shared topbar chrome — matches all page topbars via --topbar-* vars (SSOT) */
-  display: flex; align-items: center;
-  height: var(--topbar-h); flex-shrink: 0;
-  background: var(--topbar-bg);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--topbar-bd);
-  box-shadow: var(--topbar-shadow);
-  /* page-specific layout */
   justify-content: space-between;
-  padding: 0 16px;
-  position: sticky; top: 0; z-index: 50;
-  gap: 8px;
 }
 @media (min-width: 768px) { .adm-topbar { display: none; } }
 

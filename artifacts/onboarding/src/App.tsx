@@ -1,4 +1,5 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useCallback } from "react";
+import { type NewEmployeeData } from "./components/AddEmployeePage";
 
 /* ── Route-level code splitting ─────────────────────────────────────────────
    Every top-level page is lazy-loaded so the initial JS bundle only contains
@@ -16,8 +17,11 @@ const ResetPasswordScreen = lazy(() =>
 const AdminDashboard = lazy(() =>
   import("./components/AdminDashboard").then(m => ({ default: m.AdminDashboard }))
 );
+const AddEmployeePage = lazy(() =>
+  import("./components/AddEmployeePage").then(m => ({ default: m.AddEmployeePage }))
+);
 
-type View = "onboarding" | "login" | "admin-dashboard" | "new-password";
+type View = "onboarding" | "login" | "admin-dashboard" | "new-password" | "add-employee";
 
 const SESSION_KEY = "reset_token";
 const AUTH_KEY    = "auth_token";
@@ -41,6 +45,7 @@ function getValidToken(): string | null {
 function getInitialView(): View {
   const path = window.location.pathname;
   if (getValidToken()) {
+    if (path === "/admin/add-employee") return "add-employee";
     if (!path.startsWith("/admin/")) {
       window.history.replaceState({}, "", "/admin/dashboard");
     }
@@ -75,8 +80,8 @@ export default function App() {
 
   const token        = getValidToken();
   const guardedView: View = token
-    ? "admin-dashboard"
-    : view === "admin-dashboard" ? "login" : view;
+    ? (view === "add-employee" ? "add-employee" : "admin-dashboard")
+    : (view === "admin-dashboard" || view === "add-employee") ? "login" : view;
 
   const goTo = (v: View, dir: "fwd" | "back" = "fwd") => {
     const paths: Record<View, string> = {
@@ -84,11 +89,19 @@ export default function App() {
       login:             "/login",
       "admin-dashboard": "/admin/dashboard",
       "new-password":    "/new-password",
+      "add-employee":    "/admin/add-employee",
     };
     navigate(paths[v]);
     setViewDir(dir);
     setView(v);
   };
+
+  /* Store new-employee data in sessionStorage so AdminDashboard can pick it
+     up on re-mount without needing shared state between the two pages.       */
+  const handleAddEmployeeSave = useCallback((data: NewEmployeeData) => {
+    sessionStorage.setItem("pending_employee", JSON.stringify(data));
+    goTo("admin-dashboard", "back");
+  }, []);
 
   const handleResetVerified = (resetToken: string) => {
     sessionStorage.setItem(SESSION_KEY, resetToken);
@@ -110,9 +123,24 @@ export default function App() {
   if (guardedView === "admin-dashboard") return (
     <div className={viewClass}>
       <Suspense fallback={<div className="adm-lazy-fallback" />}>
-        <AdminDashboard onLogout={handleLogout} />
+        <AdminDashboard
+          onLogout={handleLogout}
+          onAddEmployee={() => goTo("add-employee", "fwd")}
+        />
       </Suspense>
     </div>
+  );
+
+  /* AddEmployeePage is its own top-level page — no AdminDashboard DOM while it's active.
+     Its own ae-slide-in animation handles the entrance; App.tsx view-back handles the exit. */
+  if (guardedView === "add-employee") return (
+    <Suspense fallback={<div className="adm-lazy-fallback" />}>
+      <AddEmployeePage
+        isOpen={true}
+        onClose={() => goTo("admin-dashboard", "back")}
+        onSave={handleAddEmployeeSave}
+      />
+    </Suspense>
   );
 
   if (guardedView === "new-password") {

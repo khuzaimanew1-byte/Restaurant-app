@@ -202,7 +202,7 @@ export function AddEmployeePage({
   }
 
   return (
-    <div className={`ae-root${!isOpen ? " ae-root--closing" : ""}`}>
+    <div className="ae-root">
 
       {/* ── Top bar — global .topbar chrome from index.css ── */}
       <header className="topbar">

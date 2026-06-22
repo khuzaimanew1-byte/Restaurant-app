@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
 import { useDebounce }       from "../hooks/useDebounce";
 import { useDelayedUnmount } from "../hooks/useDelayedUnmount";
-import { AddEmployeePage, type NewEmployeeData } from "./AddEmployeePage";
+import { type NewEmployeeData } from "./AddEmployeePage";
 import "../styles/main-bg.css";
 import "../styles/admin-dashboard.css";
 
@@ -764,26 +764,22 @@ function AvatarDropdown({
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────
 
-export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
+export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => void; onAddEmployee: () => void }) {
   const [activeNav,      setActiveNav]      = useState<NavItem>("dashboard");
   const [employees,      setEmployees]      = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [officeTiming,   setOfficeTiming]   = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
   const [rawQuery,        setRawQuery]       = useState("");
   const [mobileSearchOpen, setMobileSearch] = useState(false);
-  const [showAddEmployee,  setShowAddEmployee] = useState(
-    () => window.location.pathname === "/admin/add-employee"
-  );
   const [dropdownOpen,   setDropdownOpen]   = useState(false);
   const [logoutModalOpen, setLogoutModal]   = useState(false);
   const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
   const [editingId,      setEditingId]      = useState<number | null>(null);
 
   /* ── useDelayedUnmount ─────────────────────────────────────────────────────
-     Heavy panels (LogoutModal, AddEmployee) keep 60 s cache for quick re-open.
+     LogoutModal keeps 60 s cache for quick re-open.
      Context menu and avatar dropdown use only 220 ms — just enough for their
      CSS exit animations.                                                        */
   const shouldRenderLogout   = useDelayedUnmount(logoutModalOpen);
-  const shouldRenderAddEmp   = useDelayedUnmount(showAddEmployee);
   const shouldRenderDropdown = useDelayedUnmount(dropdownOpen, 220);
   const shouldRenderCtx      = useDelayedUnmount(!!ctxMenu, 220);
 
@@ -829,42 +825,31 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const openSearch  = useCallback(() => { setMobileSearch(true); setTimeout(() => mobileSearchRef.current?.focus(), 300); }, []);
   const closeSearch = useCallback(() => { setMobileSearch(false); setRawQuery(""); }, []);
 
-  // ── URL-sync for Add Employee page ───────────────────────────────────────
-  const openAddEmployee = useCallback(() => {
-    window.history.pushState({}, "", "/admin/add-employee");
-    setShowAddEmployee(true);
-  }, []);
-
-  const closeAddEmployee = useCallback(() => {
-    window.history.pushState({}, "", "/admin/dashboard");
-    setShowAddEmployee(false);
-  }, []);
-
+  // ── Pending employee from AddEmployeePage (sessionStorage message bus) ──────
   useEffect(() => {
-    function onPopState() {
-      setShowAddEmployee(window.location.pathname === "/admin/add-employee");
-    }
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    const raw = sessionStorage.getItem("pending_employee");
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw) as NewEmployeeData;
+      setEmployees(prev => {
+        const nextId = Math.max(0, ...prev.map(e => e.id)) + 1;
+        return [...prev, {
+          id: nextId,
+          name: data.name,
+          role: data.role || "Staff",
+          salary: data.salary,
+          checkIn: "", checkOut: "",
+          leaveStatus: null,
+          att: 0, perf: 0,
+          avatar: data.avatar,
+          initials: data.initials,
+          color: data.color,
+        }];
+      });
+    } catch {}
+    sessionStorage.removeItem("pending_employee");
   }, []);
 
-  const handleAddEmployee = useCallback((data: NewEmployeeData) => {
-    setEmployees(prev => {
-      const nextId = Math.max(0, ...prev.map(e => e.id)) + 1;
-      return [...prev, {
-        id: nextId,
-        name: data.name,
-        role: data.role || "Staff",
-        salary: data.salary,
-        checkIn: "", checkOut: "",
-        leaveStatus: null,
-        att: 0, perf: 0,
-        avatar: data.avatar,
-        initials: data.initials,
-        color: data.color,
-      }];
-    });
-  }, []);
   const requestLogout = useCallback(() => { setDropdownOpen(false); setLogoutModal(true); }, []);
   const closeDropdown = useCallback(() => setDropdownOpen(false), []);
 
@@ -991,8 +976,8 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           </div>
         </header>
 
-        {/* Mobile sticky top bar */}
-        <header className="adm-topbar">
+        {/* Mobile sticky top bar — .topbar base from index.css + .adm-topbar page overrides */}
+        <header className="topbar adm-topbar">
           <div className={`adm-topbar-logo${mobileSearchOpen ? " adm-topbar-logo-hide" : ""}`}>
             <RestaurantLogo size={26} />
             <span className="adm-topbar-brand">MyRestaurant</span>
@@ -1085,7 +1070,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
 
         {/* FAB */}
-        <button className="adm-fab" aria-label="Add" onClick={openAddEmployee}>
+        <button className="adm-fab" aria-label="Add" onClick={onAddEmployee}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
@@ -1126,14 +1111,7 @@ export function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         <LogoutModal onConfirm={onLogout} onCancel={() => setLogoutModal(false)} />
       )}
 
-      {/* Add Employee page — /admin/add-employee — kept mounted 60 s after close (Rule 3) */}
-      {shouldRenderAddEmp && (
-        <AddEmployeePage
-          isOpen={showAddEmployee}
-          onClose={closeAddEmployee}
-          onSave={handleAddEmployee}
-        />
-      )}
+      {/* AddEmployeePage is a separate route — /admin/add-employee — rendered by App.tsx */}
     </div>
   );
 }
