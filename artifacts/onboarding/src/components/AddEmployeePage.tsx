@@ -321,8 +321,8 @@ export function AddEmployeePage({
               </div>
             </div>
 
-            {/* Row 3: Experience */}
-            <div className="ae-field">
+            {/* Row 3: Experience — spans both right cols for consistent visual rhythm */}
+            <div className="ae-field ae-s1-exp">
               <TextInput label="Experience" value={experience} onChange={v => setExperience(v)} variant="compact" icon={<ExpSVG />} />
             </div>
 

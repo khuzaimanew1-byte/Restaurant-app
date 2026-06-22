@@ -64,7 +64,8 @@
 .ae-s1-lft .ae-av-sec { padding-top: 0; margin-bottom: 0; }
 .ae-s1-lft .ae-sal-sec { margin-bottom: 0; }
 
-/* Shift Timing — spans both right field columns on desktop (row 4) */
+/* Experience + Shift Timing — both span right two cols for consistent rhythm */
+.ae-s1-exp { grid-column: 2 / 4; }
 .ae-s1-sft { grid-column: 2 / 4; }
 
 @media (max-width: 640px) {
@@ -76,7 +77,8 @@
     grid-column: 1 / -1;
     grid-row: auto;
   }
-  /* Shift Timing: full width on mobile */
+  /* Experience + Shift Timing: full width on mobile */
+  .ae-s1-exp { grid-column: 1 / -1; }
   .ae-s1-sft { grid-column: 1 / -1; }
 }
 
