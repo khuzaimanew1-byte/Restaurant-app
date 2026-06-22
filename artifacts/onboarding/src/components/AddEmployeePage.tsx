@@ -30,7 +30,6 @@ const CameraSVG   = () => <svg width="34" height="34" viewBox="0 0 24 24" fill="
 const CameraSmSVG = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
 const CheckSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 const TrashSVG    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
-const ExpSVG = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>;
 const ChevSVG = ({ open }: { open: boolean }) => (
   /* ae-chev-svg defines transition: transform .2s in CSS — only rotation is dynamic */
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -223,15 +222,15 @@ export function AddEmployeePage({
         <div className="ae-content">
 
           {/* ════════════════════════════════════════════════════
-              SECTION 1 — Top
-              Desktop: [Photo+Salary col] | [Name] | [DOB]
-                                           [Role]  | [Joining]
-                                           [Shift Timing ←→]
-              Mobile: Photo → Salary → 2-col fields below
+              SECTION 1 — Top: left=Photo+Salary · right=2-col fields
+              Desktop: [Photo+Salary] | [Name          ] [Spoken Lang  ]
+                                        [Role          ] [Joining Date  ]
+                                        [Experience    ] [Shift Timing  ]
+              Mobile: Photo+Salary centred · fields 2-col below
           ════════════════════════════════════════════════════ */}
           <div className="ae-sec1">
 
-            {/* Left sticky column: Photo (top) + Salary (bottom) */}
+            {/* Left: Photo + Salary — independent flex column */}
             <div className="ae-s1-lft">
               <div className="ae-av-sec">
                 <div className="ae-av-halo">
@@ -260,7 +259,6 @@ export function AddEmployeePage({
                 <input ref={fileRef} type="file" accept="image/*" className="ae-av-file"
                   onChange={e => { if (e.target.files?.[0]) applyImageFile(e.target.files[0]); }} />
               </div>
-
               <div className="ae-sal-sec">
                 <div className="ae-sal-pill">
                   <span ref={salSizerRef} className="ae-sal-sizer" aria-hidden />
@@ -284,93 +282,115 @@ export function AddEmployeePage({
               </div>
             </div>
 
-            {/* Row 1: Full Name */}
-            <div className="ae-field">
-              <TextInput label="Full Name" value={name} onChange={v => setName(v)} autoComplete="name" variant="compact" icon={<PersonSVG />} />
-            </div>
+            {/* Right: independent 2-col grid, vertically centred against photo */}
+            <div className="ae-s1-rgt">
 
-            {/* Row 1: Date of Birth */}
-            <div className="ae-field">
-              <div className="ae-fi-wrap">
-                <span className="ae-date-ico" onClick={() => dobRef.current?.showPicker?.()}>
-                  <CalSVG />
-                </span>
-                <div className={`ae-date-wrap${!dob ? " empty" : ""}`} data-ph="Date of Birth">
-                  <input ref={dobRef}
-                    className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
-                    type="date" value={dob} onChange={e => setDob(e.target.value)} />
+              {/* Row 1: Full Name */}
+              <div className="ae-field">
+                <TextInput label="Full Name" value={name} onChange={v => setName(v)} autoComplete="name" variant="compact" icon={<PersonSVG />} />
+              </div>
+
+              {/* Row 1: Spoken Language (moved from Section 3) */}
+              <div className="ae-field">
+                <TextInput
+                  label="Spoken Language" value={langInput} onChange={v => setLangInput(v)}
+                  variant="compact" icon={<GlobeSVG />}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addLang(); }
+                    else if (e.key === "Backspace" && !langInput && langs.length) setLangs(p => p.slice(0, -1));
+                  }}
+                />
+                {langs.length > 0 && (
+                  <div className="ae-lang-tags">
+                    {langs.map(l => (
+                      <span key={l} className="ae-lang-tag">
+                        {l}
+                        <span
+                          className="ae-lang-del"
+                          onMouseDown={e => { e.preventDefault(); setLangs(p => p.filter(x => x !== l)); }}
+                          aria-label={`Remove ${l}`}>✕</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Row 2: Position / Role */}
+              <div className="ae-field">
+                <TextInput label="Position / Role" value={role} onChange={v => setRole(v)} variant="compact" icon={<BriefSVG />} />
+              </div>
+
+              {/* Row 2: Joining Date */}
+              <div className="ae-field">
+                <div className="ae-fi-wrap">
+                  <span className="ae-date-ico" onClick={() => joiningRef.current?.showPicker?.()}>
+                    <CalSVG />
+                  </span>
+                  <div className={`ae-date-wrap${!joiningDate ? " empty" : ""}`} data-ph="Joining Date">
+                    <input ref={joiningRef}
+                      className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
+                      type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Row 2: Position / Role */}
-            <div className="ae-field">
-              <TextInput label="Position / Role" value={role} onChange={v => setRole(v)} variant="compact" icon={<BriefSVG />} />
-            </div>
-
-            {/* Row 2: Joining Date */}
-            <div className="ae-field">
-              <div className="ae-fi-wrap">
-                <span className="ae-date-ico" onClick={() => joiningRef.current?.showPicker?.()}>
-                  <CalSVG />
-                </span>
-                <div className={`ae-date-wrap${!joiningDate ? " empty" : ""}`} data-ph="Joining Date">
-                  <input ref={joiningRef}
-                    className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
-                    type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
+              {/* Row 3: Experience — premium labeled duration field */}
+              <div className="ae-field ae-s1-exp">
+                <div className="ae-exp-wrap">
+                  <span className="ae-exp-lbl">
+                    <span className="ae-exp-lbl-full">Experience</span>
+                    <span className="ae-exp-lbl-short">Exp</span>
+                  </span>
+                  <div className="ae-exp-row">
+                    <input
+                      className="ae-exp-num" type="number" inputMode="numeric"
+                      min="0" max="50" placeholder="0"
+                      value={expYr}
+                      onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
+                      onChange={e => setExpYr(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                    />
+                    <span className="ae-exp-unit">YR</span>
+                    <div className="ae-exp-sep" />
+                    <input
+                      className="ae-exp-num" type="number" inputMode="numeric"
+                      min="0" max="11" placeholder="0"
+                      value={expMo}
+                      onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
+                      onChange={e => setExpMo(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                    />
+                    <span className="ae-exp-unit">MO</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Row 3 col 2: Experience — compact yr / mo numeric inline */}
-            <div className="ae-field ae-s1-exp">
-              <div className="ae-shift-row">
-                <span className="ae-shift-ico"><ExpSVG /></span>
-                <input
-                  className="ae-dur-inp" type="number" inputMode="numeric"
-                  min="0" max="50" placeholder="0"
-                  value={expYr}
-                  onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
-                  onChange={e => setExpYr(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                />
-                <span className="ae-dur-lbl">yr</span>
-                <input
-                  className="ae-dur-inp" type="number" inputMode="numeric"
-                  min="0" max="11" placeholder="0"
-                  value={expMo}
-                  onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
-                  onChange={e => setExpMo(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                />
-                <span className="ae-dur-lbl">mo</span>
+              {/* Row 3: Shift Timing */}
+              <div className="ae-field ae-s1-sft">
+                <div className="ae-shift-row">
+                  <span className="ae-shift-ico">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                    </svg>
+                  </span>
+                  <input
+                    ref={shiftStartRef}
+                    className="ae-shift-time-inp"
+                    type="time" value={shiftStart}
+                    onChange={e => setShiftStart(e.target.value)}
+                  />
+                  <span className="ae-shift-ico">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
+                    </svg>
+                  </span>
+                  <input
+                    ref={shiftEndRef}
+                    className="ae-shift-time-inp"
+                    type="time" value={shiftEnd}
+                    onChange={e => setShiftEnd(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Row 3 col 3: Shift Timing — pairs with Experience on same row */}
-            <div className="ae-field ae-s1-sft">
-              <div className="ae-shift-row">
-                <span className="ae-shift-ico">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-                  </svg>
-                </span>
-                <input
-                  ref={shiftStartRef}
-                  className="ae-shift-time-inp"
-                  type="time" value={shiftStart}
-                  onChange={e => setShiftStart(e.target.value)}
-                />
-                <span className="ae-shift-ico">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
-                  </svg>
-                </span>
-                <input
-                  ref={shiftEndRef}
-                  className="ae-shift-time-inp"
-                  type="time" value={shiftEnd}
-                  onChange={e => setShiftEnd(e.target.value)}
-                />
-              </div>
             </div>
 
           </div>
@@ -442,29 +462,18 @@ export function AddEmployeePage({
               <TextInput label="Email" value={email} onChange={v => setEmail(v)} type="email" autoComplete="email" variant="compact" icon={<MailSVG />} />
             </div>
 
-            {/* Spoken Language */}
-            <div className="ae-field ae-s3-lng">
-              <TextInput
-                label="Spoken Language" value={langInput} onChange={v => setLangInput(v)}
-                variant="compact" icon={<GlobeSVG />}
-                onKeyDown={e => {
-                  if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addLang(); }
-                  else if (e.key === "Backspace" && !langInput && langs.length) setLangs(p => p.slice(0, -1));
-                }}
-              />
-              {langs.length > 0 && (
-                <div className="ae-lang-tags">
-                  {langs.map(l => (
-                    <span key={l} className="ae-lang-tag">
-                      {l}
-                      <span
-                        className="ae-lang-del"
-                        onMouseDown={e => { e.preventDefault(); setLangs(p => p.filter(x => x !== l)); }}
-                        aria-label={`Remove ${l}`}>✕</span>
-                    </span>
-                  ))}
+            {/* Date of Birth (moved from Section 1) */}
+            <div className="ae-field ae-s3-dob">
+              <div className="ae-fi-wrap">
+                <span className="ae-date-ico" onClick={() => dobRef.current?.showPicker?.()}>
+                  <CalSVG />
+                </span>
+                <div className={`ae-date-wrap${!dob ? " empty" : ""}`} data-ph="Date of Birth">
+                  <input ref={dobRef}
+                    className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
+                    type="date" value={dob} onChange={e => setDob(e.target.value)} />
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Phone */}

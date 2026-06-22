@@ -35,26 +35,23 @@
 }
 
 /* ════════════════════════════════════════════════════════════
-   SECTION 1 — Top: Photo+Salary left col, 2 field cols right
-   Desktop: [Photo+Salary] | [Full Name   ] | [DOB         ]
-                             [Role        ] | [Joining Date ]
-                             [Shift Timing ←→ spans 2 cols  ]
-   Mobile:  Photo → Salary centred, then 2-col fields below
+   SECTION 1 — Top: two independent grids (left + right)
+   Desktop: [Photo+Salary] | [Name          ] [Spoken Lang  ]
+                              [Role          ] [Joining Date  ]
+                              [Experience    ] [Shift Timing  ]
+   Mobile:  Photo+Salary centred · right grid full-width below
 ════════════════════════════════════════════════════════════ */
 .ae-sec1 {
-  display: grid;
-  grid-template-columns: 182px 1fr 1fr;
-  gap: 20px clamp(24px, 4vw, 44px);
+  display: flex;
+  align-items: center;
+  gap: clamp(24px, 4vw, 44px);
   margin-bottom: 20px;
   position: relative; z-index: 1;
-  align-items: start;
 }
 
-/* Left sticky column: Photo + Salary — spans all 3 field rows, centered vertically */
+/* Left: Photo + Salary — independent fixed-width flex column */
 .ae-s1-lft {
-  grid-column: 1;
-  grid-row: 1 / 4;
-  align-self: center;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -65,20 +62,19 @@
 .ae-s1-lft .ae-av-sec { padding-top: 0; margin-bottom: 0; }
 .ae-s1-lft .ae-sal-sec { margin-bottom: 0; }
 
-/* Experience (col 2) + Shift Timing (col 3) auto-flow to their columns on desktop */
-/* ae-s1-exp has no explicit desktop column — grid auto-places it in col 2, row 3 */
-/* ae-s1-sft has no explicit desktop column — grid auto-places it in col 3, row 3 */
+/* Right: independent 2-col field grid — vertically centred by parent flexbox */
+.ae-s1-rgt {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px clamp(24px, 4vw, 44px);
+  align-items: start;
+}
 
 @media (max-width: 640px) {
-  .ae-sec1 {
-    grid-template-columns: 1fr 1fr;
-    gap: 28px 16px;
-  }
-  .ae-s1-lft {
-    grid-column: 1 / -1;
-    grid-row: auto;
-  }
-  /* Experience + Shift Timing: full width on mobile */
+  .ae-sec1 { flex-direction: column; align-items: stretch; }
+  .ae-s1-lft { align-self: center; }
+  .ae-s1-rgt { width: 100%; gap: 24px 16px; }
   .ae-s1-exp { grid-column: 1 / -1; }
   .ae-s1-sft { grid-column: 1 / -1; }
 }
@@ -134,9 +130,9 @@
     grid-template-columns: 1fr 1fr;
     gap: 28px 16px;
   }
-  /* Mobile reorder: Gender | Languages / Phone | CNIC / Email / Street */
+  /* Mobile reorder: Gender | DOB / Phone | CNIC / Email / Street */
   .ae-s3-gdr { order: 1; }
-  .ae-s3-lng { order: 2; }
+  .ae-s3-dob { order: 2; }
   .ae-s3-phn { order: 3; }
   .ae-s3-cni { order: 4; }
   .ae-s3-eml { order: 5; grid-column: 1 / -1; }
@@ -333,22 +329,49 @@
 .ae-date.ae-date-empty::-webkit-datetime-edit { opacity: 0; }
 .ae-date.ae-date-empty::-webkit-datetime-edit-fields-wrapper { opacity: 0; }
 
-/* Duration inputs (yr / mo) — numbers only, same visual as shift time inputs */
-.ae-dur-inp {
+/* ── Experience — premium labeled duration field ── */
+.ae-exp-wrap { display: flex; flex-direction: column; gap: 5px; }
+.ae-exp-lbl {
+  font-size: 9.5px; font-weight: 800; letter-spacing: 2px;
+  color: var(--adm-gold); text-transform: uppercase; user-select: none;
+}
+/* Responsive label: "Experience" on ≥380px, "Exp" when constrained */
+.ae-exp-lbl-short { display: none; }
+@media (max-width: 380px) {
+  .ae-exp-lbl-full  { display: none; }
+  .ae-exp-lbl-short { display: inline; }
+}
+.ae-exp-row {
+  position: relative; display: flex; align-items: center; gap: 8px;
+  padding-bottom: 8px;
+}
+.ae-exp-row::before {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1.5px; background: rgba(226,232,240,.14);
+}
+.ae-exp-row::after {
+  content: ''; position: absolute; bottom: 0; left: 0; width: 100%;
+  height: 2px; background: var(--adm-gold);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .35s cubic-bezier(0.16,1,0.3,1);
+}
+.ae-exp-row:focus-within::after { transform: scaleX(1); }
+.ae-exp-num {
   background: transparent; border: none; outline: none;
   color: var(--adm-text); font-family: 'Inter', sans-serif;
-  font-size: 13px; font-weight: 500;
-  width: 26px; text-align: center;
+  font-size: 14px; font-weight: 500;
+  width: 36px; text-align: center;
   color-scheme: dark;
   -moz-appearance: textfield;
 }
-.ae-dur-inp::-webkit-outer-spin-button,
-.ae-dur-inp::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.ae-dur-inp::placeholder { color: rgba(226,232,240,.35); }
-.ae-dur-lbl {
-  font-size: 9px; font-weight: 700; letter-spacing: 1px;
-  color: rgba(212,175,55,.55); user-select: none; flex-shrink: 0;
+.ae-exp-num::-webkit-outer-spin-button,
+.ae-exp-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ae-exp-num::placeholder { color: rgba(226,232,240,.35); }
+.ae-exp-unit {
+  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
+  color: var(--adm-gold); user-select: none; flex-shrink: 0; opacity: .75;
 }
+.ae-exp-sep { width: 1px; height: 12px; background: rgba(212,175,55,.28); flex-shrink: 0; }
 
 /* Shift timing — single underline field */
 .ae-shift-row {
