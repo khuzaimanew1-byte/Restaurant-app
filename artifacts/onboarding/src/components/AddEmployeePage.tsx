@@ -324,7 +324,7 @@ export function AddEmployeePage({
 
               {/* Row 2: Joining Date */}
               <div className="ae-field">
-                <div className="ae-fi-wrap" onClick={() => joiningRef.current?.showPicker?.()}>
+                <div className="ae-fi-wrap" onClick={() => { try { joiningRef.current?.showPicker?.(); } catch { /* cross-origin iframe blocks showPicker */ } }}>
                   <span className="ae-date-ico"><CalSVG /></span>
                   <div className={`ae-date-wrap${!joiningDate ? " empty" : ""}`} data-ph="Joining Date">
                     <input ref={joiningRef}
@@ -460,7 +460,7 @@ export function AddEmployeePage({
 
             {/* Date of Birth (moved from Section 1) */}
             <div className="ae-field ae-s3-dob">
-              <div className="ae-fi-wrap" onClick={() => dobRef.current?.showPicker?.()}>
+              <div className="ae-fi-wrap" onClick={() => { try { dobRef.current?.showPicker?.(); } catch { /* cross-origin iframe blocks showPicker */ } }}>
                 <span className="ae-date-ico"><CalSVG /></span>
                 <div className={`ae-date-wrap${!dob ? " empty" : ""}`} data-ph="Date of Birth">
                   <input ref={dobRef}
