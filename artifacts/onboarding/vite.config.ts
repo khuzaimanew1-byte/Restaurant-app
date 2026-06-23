@@ -26,15 +26,23 @@ if (!basePath) {
   );
 }
 
-/* Replit's WebSocket proxy hard-drops connections every ~35 seconds regardless
-   of ping/pong activity. Vite's default response is to poll the server and
-   then call location.reload() — causing the visible "auto refresh".
+/* Why this plugin exists
+   ─────────────────────
+   Replit's WebSocket proxy hard-drops every ~35 s. Vite's default response is:
+     await waitForSuccessfulPing(url.href);
+     location.reload();                      ← full page flash every 35 s
+   We replace that with a smart reconnect:
 
-   Fix: patch Vite's own client.mjs (via transform hook) to call
-   transport.connect() instead of location.reload(). Both symbols are in the
-   same closure, so we can reference them directly.  The patched path:
-     ✕ await waitForSuccessfulPing(url.href); location.reload();
-     ✓ await waitForSuccessfulPing(url.href); transport.connect(createHMRHandler(handleMessage)); */
+   • If Vite re-optimised deps while disconnected → browserHash in _metadata.json
+     will differ from the hash stored on page-load → we MUST do location.reload()
+     to avoid two React instances coexisting (stale chunk from memory + fresh chunk
+     from the new bundle).  Two React instances = "Invalid hook call" crash.
+
+   • If hash is unchanged → fast transport.connect() with no visible flash.
+
+   The initial hash is captured by appending a fetch to client.mjs itself so it
+   runs as soon as the HMR client module is evaluated (milliseconds after load,
+   long before the first 35-s disconnect window). */
 function viteHmrReconnect(): Plugin {
   return {
     name: "vite-hmr-reconnect",
@@ -42,10 +50,32 @@ function viteHmrReconnect(): Plugin {
     transform(code, id) {
       if (!id.includes("vite/dist/client/client.mjs")) return null;
 
+      /* Patch 1 — replace reconnect→reload with dep-hash-aware logic */
       const patched = code.replace(
         /await waitForSuccessfulPing\(url\.href\);\s*location\.reload\(\);/,
-        `console.debug("[vite] connecting...");
-transport.connect(createHMRHandler(handleMessage)).catch(() => location.reload());`,
+        `try {
+  const __resp = await fetch(
+    "/node_modules/.vite/deps/_metadata.json?t=" + Date.now(),
+    { cache: "no-store" },
+  );
+  const __meta = __resp.ok ? await __resp.json() : null;
+  const __srvHash = __meta && (__meta.browserHash || __meta.hash);
+  const __cliHash = typeof window !== "undefined" ? window.__viteDepHash : null;
+  if (__cliHash && __srvHash && __cliHash !== __srvHash) {
+    /* Dep optimisation happened while we were disconnected.
+       Must reload so the whole module graph uses one React instance. */
+    console.debug("[vite] dep hash changed (" + __cliHash + " → " + __srvHash + ") — reloading for module consistency");
+    location.reload();
+  } else {
+    console.debug("[vite] connecting...");
+    transport.connect(createHMRHandler(handleMessage)).catch(() => location.reload());
+  }
+} catch {
+  /* If the metadata fetch fails (e.g. offline), reconnect optimistically.
+     If that also fails, the .catch() above falls back to location.reload(). */
+  console.debug("[vite] connecting...");
+  transport.connect(createHMRHandler(handleMessage)).catch(() => location.reload());
+}`,
       );
 
       if (patched === code) {
@@ -58,7 +88,20 @@ transport.connect(createHMRHandler(handleMessage)).catch(() => location.reload()
         return null;
       }
 
-      return { code: patched, map: null };
+      /* Patch 2 — capture the dep browserHash as soon as client.mjs evaluates.
+         By the time a 35-s disconnect can occur, this fetch will have completed.
+         We append rather than prepend to avoid breaking client.mjs's own init. */
+      const withCapture =
+        patched +
+        `\n// [vite-hmr-reconnect] Capture initial dep hash for later comparison
+if (typeof window !== "undefined" && typeof fetch !== "undefined") {
+  fetch("/node_modules/.vite/deps/_metadata.json", { cache: "no-cache" })
+    .then(r => r.ok ? r.json() : null)
+    .then(meta => { if (meta) window.__viteDepHash = meta.browserHash || meta.hash; })
+    .catch(() => {});
+}\n`;
+
+      return { code: withCapture, map: null };
     },
   };
 }
