@@ -337,6 +337,11 @@
 .ae-exp-num::-webkit-outer-spin-button,
 .ae-exp-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .ae-exp-num::placeholder { color: rgba(226,232,240,.35); }
+.ae-exp-prefix {
+  font-size: 9px; font-weight: 800; letter-spacing: 2px;
+  color: var(--adm-gold); opacity: .75;
+  user-select: none; flex-shrink: 0;
+}
 .ae-exp-unit {
   font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
   color: rgba(212,175,55,.72); user-select: none; flex-shrink: 0;

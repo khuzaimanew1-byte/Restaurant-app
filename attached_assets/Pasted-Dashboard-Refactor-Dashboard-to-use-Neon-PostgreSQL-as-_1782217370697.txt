@@ -1,0 +1,121 @@
+Dashboard
+Refactor Dashboard to use Neon PostgreSQL as the single source of truth.
+
+SSOT RULES
+
+- Follow Single Source of Truth architecture.
+- Dashboard must not use hardcoded employee data.
+- Dashboard must not maintain duplicate employee state.
+- All employee cards must be generated from database data.
+
+DATA MODEL
+
+employee_profile
+- static employee information
+
+employee_status
+- operational dashboard information
+
+Link:
+employee_status.eid -> employee_profile.id
+
+PROFILE DATA
+
+Use employee_profile for:
+- avatar
+- name
+- role
+- salary
+
+STATUS DATA
+
+Use employee_status for:
+- att
+- perf
+- sts
+- sin
+- sout
+
+CARD RENDERING
+
+Display:
+- image
+- name
+- role
+- salary
+
+Status behavior:
+
+Present:
+- show timings
+- no status label
+
+Leave:
+- show ON LEAVE
+
+Unauthorized Leave:
+- show UNAUTHORIZED LEAVE
+
+Half Day:
+- show HALF DAY
+- timings allowed
+
+Do not derive status from timing display.
+
+STATUS VALUES
+
+Supported:
+- null
+- leave
+- unauth
+- half
+
+INITIAL VALUES
+
+att = 100
+perf = 100
+
+Do not add additional attendance/performance calculations.
+
+DATA FETCHING
+
+Create centralized data layer:
+- queries
+- mutations
+- services
+
+UI components must not query database directly.
+
+DASHBOARD FLOW
+
+Dashboard loads:
+1. Fetch employee_profile records.
+2. Fetch employee_status records.
+3. Build view model.
+4. Render cards.
+
+DEMO DATA
+
+Move existing dashboard demo employees into a dedicated seed/data file matching database schema.
+
+COMPONENT STRUCTURE
+
+Separate:
+- database layer
+- service layer
+- dashboard view model
+- presentation components
+
+Avoid mixed responsibilities.
+
+PRODUCTION READINESS
+
+- Strong typing for all entities.
+- Shared database types.
+- Centralized status definitions.
+- Centralized validation rules.
+- Consistent query layer.
+- No hardcoded employee data in components.
+- No duplicated business logic.
+
+Keep current UI, design system, responsiveness, animations, and card appearance unchanged.

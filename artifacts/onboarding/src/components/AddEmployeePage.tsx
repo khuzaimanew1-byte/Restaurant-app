@@ -188,15 +188,32 @@ export function AddEmployeePage({
     scheduleDraftSave();
   }, [scheduleDraftSave]);
 
-  // CNIC formatter — inserts dashes at positions 5 and 13
+  // CNIC formatter — XXXXX-XXXXXXX-X (5-7-1)
   const handleCnic = useCallback((raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 13);
     let out = digits;
-    if (digits.length > 5)  out = digits.slice(0, 5)  + "-" + digits.slice(5);
-    if (digits.length > 12) out = out.slice(0, 14) + "-" + out.slice(14);
+    if (digits.length > 12) {
+      out = digits.slice(0, 5) + "-" + digits.slice(5, 12) + "-" + digits.slice(12);
+    } else if (digits.length > 5) {
+      out = digits.slice(0, 5) + "-" + digits.slice(5);
+    }
     setCnic(out);
     scheduleDraftSave();
   }, [scheduleDraftSave]);
+
+  // Phone formatter — first 4 digits then dash (0300-1234567)
+  const handlePhone = useCallback((raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 11);
+    const out = digits.length > 4 ? digits.slice(0, 4) + "-" + digits.slice(4) : digits;
+    setPhone(out);
+    scheduleDraftSave();
+  }, [scheduleDraftSave]);
+
+  // Cancel — discard draft and go back to dashboard
+  const handleCancel = useCallback(() => {
+    localStorage.removeItem(DRAFT_KEY);
+    onClose();
+  }, [onClose]);
 
   // Salary — digits only, comma-separated thousands; stored as formatted string
   const handleSalaryInput = useCallback((raw: string) => {
@@ -372,14 +389,10 @@ export function AddEmployeePage({
                 </div>
               </div>
 
-              {/* Experience — EXP prefix, yr/mo independently editable, max 99y / 12m */}
+              {/* Experience — EXP prefix inside row, yr/mo independently clickable, max 99y/12m */}
               <div className="ae-field ae-s1-exp">
-                <div className="ae-shift-row" onClick={() => expYrRef.current?.focus()}>
-                  <span className="ae-shift-ico">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-                    </svg>
-                  </span>
+                <div className="ae-shift-row">
+                  <span className="ae-exp-prefix">EXP</span>
                   <input ref={expYrRef}
                     className="ae-exp-num" type="number" inputMode="numeric"
                     min="0" max="99" placeholder="0"
@@ -447,16 +460,16 @@ export function AddEmployeePage({
           <div className="ae-sec3">
 
             {/* Gender */}
-            <div className="ae-field">
-              <div className="ae-fi-wrap ae-gender-wrap" onClick={() => setGenderOpen(o => !o)}>
+            <div className="ae-field" style={{ position: "relative" }}>
+              <div className="ae-fi-wrap" onClick={() => setGenderOpen(o => !o)} style={{ cursor: "pointer" }}>
                 <span className="ae-date-ico"><UsersSVG /></span>
-                <span className="ae-gender-val">{gender}</span>
+                <span className="ae-csel-val">{gender}</span>
                 <ChevSVG open={genderOpen} />
               </div>
               {genderOpen && (
-                <div className="ae-gender-drop">
+                <div className="ae-csel-opts">
                   {GENDERS.map(g => (
-                    <button key={g} className={`ae-gender-opt${gender === g ? " ae-gender-opt-active" : ""}`}
+                    <button key={g} className={`ae-csel-opt${gender === g ? " ae-selected" : ""}`}
                       onClick={() => { setGender(g); setGenderOpen(false); scheduleDraftSave(); }}>
                       {g}
                     </button>
@@ -474,7 +487,7 @@ export function AddEmployeePage({
 
             {/* Phone */}
             <div className="ae-field">
-              <TextInput label="Phone" value={phone} onChange={v => { setPhone(v); scheduleDraftSave(); }}
+              <TextInput label="Phone" value={phone} onChange={handlePhone}
                 variant="compact" icon={<PhoneSVG />} />
             </div>
 
@@ -505,8 +518,13 @@ export function AddEmployeePage({
 
           </div>
 
-          {/* ── Submit ── */}
-          <div className="ae-submit-row">
+          {/* ── Actions ── */}
+          <div className="ae-act">
+            <button className="ae-btn-cancel" onClick={handleCancel} aria-label="Cancel" disabled={isPending}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
             <Button onClick={handleCreate} disabled={isPending}>
               {isPending ? "Creating…" : "Create Employee"}
             </Button>
