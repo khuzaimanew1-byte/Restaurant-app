@@ -2,8 +2,39 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import { rm } from "node:fs/promises";
+import { createRequire } from "node:module";
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
+
+const swcPlugin = {
+  name: "swc-decorator-metadata",
+  setup(build) {
+    build.onLoad({ filter: /\.tsx?$/ }, async (args) => {
+      const { transform } = require("@swc/core");
+      const fs = await import("node:fs/promises");
+      const source = await fs.readFile(args.path, "utf8");
+      const isTs = args.path.endsWith(".ts") || args.path.endsWith(".tsx");
+      const result = await transform(source, {
+        filename: args.path,
+        jsc: {
+          parser: { syntax: isTs ? "typescript" : "ecmascript", decorators: true },
+          transform: {
+            decoratorMetadata: true,
+            legacyDecorator: true,
+          },
+          target: "es2022",
+        },
+        sourceMaps: true,
+        inlineSourcesContent: true,
+      });
+      return {
+        contents: result.code,
+        loader: "js",
+      };
+    });
+  },
+};
 
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
@@ -17,6 +48,7 @@ async function buildAll() {
     outdir:      distDir,
     outExtension: { ".js": ".mjs" },
     logLevel:    "info",
+    plugins:     [swcPlugin],
     external: [
       // NestJS packages — loaded from node_modules at runtime
       "@nestjs/*",
@@ -54,7 +86,6 @@ async function buildAll() {
       "@prisma/client",
       "@mikro-orm/*",
       "@grpc/*",
-      "@swc/*",
       "@aws-sdk/*",
       "@azure/*",
       "@opentelemetry/*",
