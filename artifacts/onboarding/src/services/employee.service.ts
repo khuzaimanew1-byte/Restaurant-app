@@ -2,11 +2,25 @@
     Attaches JWT from localStorage on every request.
     Caller is responsible for redirect on 401.               */
 
-// ── View model (mirrors EmployeeCard from api-server/employees.types.ts) ──
+// ── Status type — SSOT for all frontend status handling ───────────────────
 export type UiStatus = "leave" | "unauthorized-leave" | "half-day" | "late" | null;
 
 /** @deprecated Use UiStatus — kept as alias so existing references compile */
 export type UiLeaveStatus = UiStatus;
+
+/** DB token → UI display token (SSOT — import this everywhere, never inline) */
+export function dbStatusToUi(s: "leave" | "unauth" | "half" | "late" | null): UiStatus {
+  if (s === "unauth") return "unauthorized-leave";
+  if (s === "half")   return "half-day";
+  return s; // "leave" | "late" | null pass through
+}
+
+/** UI display token → DB token (SSOT — import this everywhere, never inline) */
+export function uiStatusToDb(s: UiStatus): "leave" | "unauth" | "half" | "late" | null {
+  if (s === "unauthorized-leave") return "unauth";
+  if (s === "half-day")           return "half";
+  return s as "leave" | "late" | null; // "leave", "late", null pass through
+}
 
 export interface EmployeeCard {
   id:          number;

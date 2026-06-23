@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   updateEmployeeStatus,
+  dbStatusToUi,
   type UpdateStatusPayload,
   type EmployeeCard,
 } from "../services/employee.service";
@@ -27,14 +28,10 @@ export function useUpdateEmployeeStatus() {
         return old.map(emp => {
           if (emp.id !== eid) return emp;
 
-          /* Map DB status token → UI token for optimistic display */
+          /* Map DB status token → UI token via SSOT function from employee.service */
           let leaveStatus = emp.leaveStatus;
           if ("sts" in payload) {
-            const sts = payload.sts;
-            leaveStatus =
-              sts === "unauth" ? "unauthorized-leave" :
-              sts === "half"   ? "half-day"           :
-              (sts ?? null);   // "leave", "late", null pass through
+            leaveStatus = dbStatusToUi(payload.sts ?? null);
           }
 
           /* Derive checkIn/checkOut from shift object */

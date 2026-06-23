@@ -3,15 +3,15 @@ import { useDebounce }              from "../hooks/useDebounce";
 import { useDelayedUnmount }        from "../hooks/useDelayedUnmount";
 import { useEmployees }             from "../hooks/useEmployees";
 import { useUpdateEmployeeStatus }  from "../hooks/useUpdateEmployeeStatus";
-import { type EmployeeCard }        from "../services/employee.service";
+import { type EmployeeCard, type UiStatus, uiStatusToDb } from "../services/employee.service";
 import { Navigation, type NavItem } from "./ui/Navigation";
 import { Topbar }                   from "./ui/Topbar";
+import { StatusTag }                from "./ui/StatusTag";
 import "../styles/main-bg.css";
 import "../styles/admin-dashboard.css";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type LeaveStatus = "leave" | "unauthorized-leave" | "half-day" | null;
 type DisplayStatus =
   | "unauthorized-leave" | "leave" | "half-day"
   | "early-departure" | "late-arrival" | "arrival" | "normal";
@@ -347,9 +347,7 @@ const EmployeeCard = memo(function EmployeeCard({
               {editError && <p className="adm-inline-error">{editError}</p>}
             </div>
           ) : isLeave ? (
-            <div className={`adm-status-label adm-status--${status}`}>
-              {STATUS_LABEL[status]}
-            </div>
+            <StatusTag status={emp.leaveStatus} />
           ) : (
             <div className="adm-times">
               <span className={`adm-time-in${arrStatus ? ` adm-time--${arrStatus}` : ""}`}>
@@ -402,7 +400,7 @@ function ContextMenu({
   ctx: CtxMenu; isOpen: boolean;
   employees: Employee[]; timing: OfficeTiming;
   isBeingEdited: boolean;
-  onAction: (id: number, action: "edit" | LeaveStatus) => void;
+  onAction: (id: number, action: "edit" | UiStatus) => void;
   onClose: () => void;
 }) {
   const emp    = employees.find(e => e.id === ctx.empId)!;
@@ -667,15 +665,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
   const openSearch  = useCallback(() => { setMobileSearch(true); setTimeout(() => mobileSearchRef.current?.focus(), 300); }, []);
   const closeSearch = useCallback(() => { setMobileSearch(false); setRawQuery(""); }, []);
 
-  /** Maps UI leave status → DB sts token.
-      Context menu fires UI tokens; the API expects DB tokens.             */
-  const uiToDbSts = (s: LeaveStatus): "leave" | "unauth" | "half" | null => {
-    if (s === "unauthorized-leave") return "unauth";
-    if (s === "half-day")           return "half";
-    return s; // "leave" | null
-  };
-
-  const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus) => {
+  const handleCtxAction = useCallback((empId: number, action: "edit" | UiStatus) => {
     if (action === "edit") {
       setEditingId(prev => prev === empId ? null : empId);
       return;
@@ -684,14 +674,14 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
     const emp = employees.find(e => e.id === empId);
     if (!emp) return;
 
-    const newStatus: LeaveStatus = emp.leaveStatus === action ? null : action;
+    const newStatus: UiStatus = emp.leaveStatus === action ? null : action;
     const clearTimes      = newStatus === "leave" || newStatus === "unauthorized-leave";
     const restoreDefaults = newStatus === null && !emp.checkIn && !emp.checkOut;
 
     updateMutation.mutate({
       eid: empId,
       payload: {
-        sts:  uiToDbSts(newStatus),
+        sts: uiStatusToDb(newStatus), /* SSOT mapping from employee.service.ts */
         shift: clearTimes ? null : {
           in:  restoreDefaults ? officeTiming.start : (emp.checkIn  || null),
           out: restoreDefaults ? officeTiming.end   : (emp.checkOut || null),

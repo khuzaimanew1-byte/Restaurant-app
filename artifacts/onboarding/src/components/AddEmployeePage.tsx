@@ -460,8 +460,8 @@ export function AddEmployeePage({
           <div className="ae-sec3">
 
             {/* Gender */}
-            <div className="ae-field" style={{ position: "relative" }}>
-              <div className="ae-fi-wrap" onClick={() => setGenderOpen(o => !o)} style={{ cursor: "pointer" }}>
+            <div className="ae-field">
+              <div className="ae-fi-wrap ae-gender-wrap" onClick={() => setGenderOpen(o => !o)}>
                 <span className="ae-date-ico"><UsersSVG /></span>
                 <span className="ae-csel-val">{gender}</span>
                 <ChevSVG open={genderOpen} />

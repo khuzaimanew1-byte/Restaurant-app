@@ -40,8 +40,8 @@ export interface TopbarProps {
   /* Search — state lives in dashboard (drives employee filtering) */
   rawQuery: string;
   onQueryChange: (v: string) => void;
-  searchRef: RefObject<HTMLInputElement>;
-  mobileSearchRef: RefObject<HTMLInputElement>;
+  searchRef: RefObject<HTMLInputElement | null>;
+  mobileSearchRef: RefObject<HTMLInputElement | null>;
   mobileSearchOpen: boolean;
   onOpenSearch: () => void;
   onCloseSearch: () => void;

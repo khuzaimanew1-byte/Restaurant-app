@@ -5,3 +5,4 @@
 - [Per-page CSS splitting](per-page-css-split.md) — CSS split from one 2690-line file into per-component files; global index.css is 266 lines; each page CSS imported in its lazy component.
 - [AddEmployeePage SSOT fix](add-employee-ssot-fix.md) — was broken (onSave prop required but never passed); now uses useCreateEmployee hook internally with all 15+ fields sent to DB; draft persists to localStorage key emp_draft_v1.
 - [Vite split-React crash fix](vite-split-react-crash.md) — "Invalid hook call" crash caused by Replit WebSocket drop + dep re-optimisation; fixed in viteHmrReconnect plugin in vite.config.ts.
+- [Frontend status SSOT](frontend-status-ssot.md) — `dbStatusToUi` / `uiStatusToDb` live in `employee.service.ts`; never inline these mappings in components or hooks.

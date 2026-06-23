@@ -349,7 +349,7 @@
 
 .adm-topbar-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .adm-topbar-toggle {
-  color: #d1d5db;
+  color: var(--adm-text-muted);
   background: none;
   border: none;
   cursor: pointer;
@@ -570,7 +570,7 @@
 }
 @media (min-width: 768px) { .adm-card-name { font-size: 16px; } }
 .adm-card-role  { font-size: 12px; color: var(--adm-text-muted); margin: 0; }
-.adm-card-salary { font-size: 12px; color: #d1d5db; margin: 2px 0 0; }
+.adm-card-salary { font-size: 12px; color: var(--adm-text-muted); margin: 2px 0 0; }
 
 .adm-times { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .adm-time-in, .adm-time-out {
@@ -593,10 +593,11 @@
   opacity: .9;
 }
 @media (min-width: 768px) { .adm-status-label { font-size: 11px; } }
-/* Status label color variants */
+/* Status label color variants — mirrors UiStatus values (SSOT: StatusTag.tsx) */
 .adm-status--leave               { color: var(--clr-leave); }
 .adm-status--unauthorized-leave  { color: var(--clr-unauth); }
 .adm-status--half-day            { color: var(--clr-half); }
+.adm-status--late                { color: var(--clr-late); }
 /* Time slot color overrides */
 .adm-time--late  { color: var(--clr-late); }
 .adm-time--early { color: var(--clr-early); }
@@ -675,7 +676,7 @@
   background: none;
   border: none;
   outline: none;
-  color: #F1F5F9;
+  color: var(--adm-text);
   font-size: 11px;
   width: 100%;
   padding: 0;
@@ -685,7 +686,7 @@
 .adm-inline-input::-webkit-datetime-edit { padding: 0; }
 .adm-inline-input::-webkit-datetime-edit-fields-wrapper { padding: 0; }
 .adm-inline-input::-webkit-datetime-edit-hour-field,
-.adm-inline-input::-webkit-datetime-edit-minute-field { color: #F1F5F9; }
+.adm-inline-input::-webkit-datetime-edit-minute-field { color: var(--adm-text); }
 .adm-inline-input::-webkit-datetime-edit-ampm-field { color: var(--accent); font-size: 9px; letter-spacing: .03em; }
 .adm-inline-input-disabled { opacity: .35; pointer-events: none; }
 .adm-inline-error { font-size: 10px; color: var(--clr-unauth); margin: 0; }
@@ -715,7 +716,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #d1d5db;
+  color: var(--adm-text-muted);
   font-family: 'Geist', 'Inter', sans-serif;
 }
 @media (min-width: 768px) { .adm-bar-labels { font-size: 11px; } }
@@ -755,7 +756,7 @@
   width: 56px; height: 56px;
   border-radius: 50%;
   background: var(--adm-gold);
-  color: #1A1B20;
+  color: var(--adm-bg);
   border: none;
   cursor: pointer;
   box-shadow: 0 4px 20px rgba(212,175,55,.40);
@@ -1069,7 +1070,7 @@
 .adm-ctx-menu {
   position: fixed;
   z-index: 9000;
-  background: #1e2128;
+  background: var(--adm-bg);
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 10px;
   padding: 5px;
@@ -1254,7 +1255,7 @@
   background: var(--adm-gold);
   border: none;
   border-radius: 7px;
-  color: #181A1F;
+  color: var(--adm-bg);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;

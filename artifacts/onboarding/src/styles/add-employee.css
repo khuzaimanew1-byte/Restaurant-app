@@ -387,15 +387,8 @@
 .ae-shift-time-inp::-webkit-datetime-edit-ampm-field    { color: var(--adm-gold); font-size: 9px; font-weight: 700; letter-spacing: .03em; }
 .ae-shift-time-inp::-webkit-datetime-edit-text          { color: rgba(226,232,240,.28); }
 
-/* Gender dropdown */
-.ae-csel { flex: 1; outline: none; }
-.ae-csel-face {
-  display: flex; align-items: center; gap: 8px;
-  color: var(--adm-text); font-family: 'Inter', sans-serif; font-size: 14px;
-  user-select: none; cursor: pointer;
-}
-/* icon slot — reuses gold accent, matches other field icons */
-.ae-csel-icon { display: flex; color: var(--adm-gold); opacity: .75; flex-shrink: 0; }
+/* Gender dropdown — wrapper is the clickable trigger */
+.ae-gender-wrap { cursor: pointer; user-select: none; }
 /* value text takes remaining space, pushes chevron to the right */
 .ae-csel-val  { flex: 1; }
 .ae-chev-svg  { color: var(--adm-gold); opacity: .75; }
