@@ -1,7 +1,9 @@
 import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
-import { useDebounce }       from "../hooks/useDebounce";
-import { useDelayedUnmount } from "../hooks/useDelayedUnmount";
-import { type NewEmployeeData } from "./AddEmployeePage";
+import { useDebounce }              from "../hooks/useDebounce";
+import { useDelayedUnmount }        from "../hooks/useDelayedUnmount";
+import { useEmployees }             from "../hooks/useEmployees";
+import { useUpdateEmployeeStatus }  from "../hooks/useUpdateEmployeeStatus";
+import { type EmployeeCard }        from "../services/employee.service";
 import { Navigation, type NavItem } from "./ui/Navigation";
 import { Topbar }                   from "./ui/Topbar";
 import "../styles/main-bg.css";
@@ -14,11 +16,9 @@ type DisplayStatus =
   | "unauthorized-leave" | "leave" | "half-day"
   | "early-departure" | "late-arrival" | "arrival" | "normal";
 
-interface Employee {
-  id: number; name: string; role: string; salary: string;
-  checkIn: string; checkOut: string; leaveStatus: LeaveStatus;
-  att: number; perf: number; avatar: string; initials: string; color: string;
-}
+/* EmployeeCard from the DB is the canonical employee shape — same fields
+   as the old local Employee interface; no need for a separate definition. */
+type Employee = EmployeeCard;
 
 interface OfficeTiming { start: string; end: string; }
 interface CtxMenu     { empId: number; x: number; y: number; }
@@ -189,46 +189,9 @@ const Highlight = memo(function Highlight({ text, query = "" }: { text: string; 
   );
 });
 
-// ── Seed data ──────────────────────────────────────────────────────────────
-
-const INITIAL_EMPLOYEES: Employee[] = [
-  {
-    id: 1, name: "Alex Rivera", role: "Senior Developer", salary: "$4,500",
-    checkIn: "09:15 AM", checkOut: "", leaveStatus: null, att: 80, perf: 60,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuD1bgJ9ObEX7Vmu2iodeu7ANsiyGaq3QqIV4cWRXrFs7iNvfixN5Pi1Bd0quN2nwqIw47xRZYRE_WzrWhIpY95KrALTGanCnM79dPhYaNbEntw6yMmqhc9yPEQMeBjjQL83NbIEAJdYjx18JZ_I7VSjZ2Rocv6HMa4IZ4yZdzdiCaRFiW5bxwaFqVEJSHL1CiynOn7vyhIM7-bWKBHQ13pcg-OGh7iAVXOyZkHm8muL1o5y52Qi9RRVShyLSHtedEfxYYYqjvqGnHMJ",
-    initials: "AR", color: "var(--av-p1)",
-  },
-  {
-    id: 2, name: "Sarah Chen", role: "UX Designer", salary: "$5,200",
-    checkIn: "07:50 AM", checkOut: "04:30 PM", leaveStatus: null, att: 80, perf: 80,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBn9FUaoKfhISyk0i7541LCL_Wne8GVJqIZ5Kh4R4-k1T2CNR9nrJseDhLdCVFn0IVlGMCi3ObqXLAW1heQFm2c3UAy58EAoLwiIvUyFxWlz0MnUYbGctN9HdTwRXf0JXR5U-IMcikQ6OzWsuSLyz8xCd74xF4ZOlicwh4v0K4Wntug0_hOAQg190FMP14qIg74oI478NPbXIiNLNjMhaIrWFNdZrVKsLWc7eTn_715wWnZK8ESsznSD5kJOA_BmCV3zQcCgm1s5-S5r",
-    initials: "SC", color: "var(--av-p2)",
-  },
-  {
-    id: 3, name: "James Wilson", role: "Product Manager", salary: "$8,000",
-    checkIn: "07:55 AM", checkOut: "06:20 PM", leaveStatus: null, att: 80, perf: 60,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDGR-7KzB18GmbpFkcXIIJMyEUWFY775MUOd3in9mdiC64fEbW2izZElN0zMWzbAIMH_NbyLfMBMSbHw9m2538zMnueCnlKR0jPgxCp1uo9XxImLja5La8-39M4tkLlG4qH0R_wKpN1p-GDAFAugZCssgOZi2wTYqSfw3feLrw21TKm4rFZPPGWzQRyt6qt6cHUcnXNo5WvVJdiov02YET-3LvBWRQzTe3eu4wG-XzRXj1rfZ6xxMjaoyVN_XrVjQVLTPfhNp7ovBw6",
-    initials: "JW", color: "var(--av-p3)",
-  },
-  {
-    id: 4, name: "Elena Rodriguez", role: "Data Analyst", salary: "$3,300",
-    checkIn: "", checkOut: "", leaveStatus: "leave", att: 90, perf: 80,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDXVk__1uWGE-_CAuEpIOAUKhi20HsF9WuN6Qx7TL9YYdcJVifaE1Jc_jTe-zfvjWK6DYPwnbK17Wikld6ZBfkESaJ_7FS3OQdmeM-mQgsmySemoJrnvtmCU7jz-XIdRCCIiPVRUvxEwVOP6MFN8q1Z26T5LgcEa8cl24Y48c7cblxVTXtI651wkF7h6ePBkaFDUdtMgDNPdPOc3IM4_3p9rLjIKyoyt6Tgz1_G49HYO9UwrDN9QJkykxr26tYr4Z7HtBles9yVUY4x",
-    initials: "ER", color: "var(--av-p4)",
-  },
-  {
-    id: 5, name: "Michael Chang", role: "Sous Chef", salary: "$4,800",
-    checkIn: "", checkOut: "", leaveStatus: "unauthorized-leave", att: 95, perf: 85,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDLTNppDitBL-LUEeaxBCqc0mH7i9QNK5oXjv0WIk341piN1t1jbHb_IiDU04tNJlovS2b8M761eF09xTFFthfLHinU7eKP65ofovLvikYSEaSPFseO02sWYQYARhRoo15vG0yN0jewg5gcaa4fxf_-cBnElNRwmC-4YfqjKa4FVucFFkp18q_EIMojqUWDtPykXs7ZeaGL_RSlhAx2Jywp_otPpLFm3B-H1sXV4W6-Cc3RxMQQeW07COmY1OMZQf-BYyLCBrNKo",
-    initials: "MC", color: "var(--av-p5)",
-  },
-  {
-    id: 6, name: "Olivia Smith", role: "Restaurant Manager", salary: "$6,000",
-    checkIn: "07:30 AM", checkOut: "06:30 PM", leaveStatus: null, att: 100, perf: 90,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBn9FUaoKfhISyk0i7541LCL_Wne8GVJqIZ5Kh4R4-k1T2CNR9nrJseDhLdCVFn0IVlGMCi3ObqXLAW1heQFm2c3UAy58EAoLwiIvUyFxWlz0MnUYbGctN9HdTwRXf0JXR5U-IMcikQ6OzWsuSLyz8xCd74xF4ZOlicwh4v0K4Wntug0_hOAQg190FMP14qIg74oI478NPbXIiNLNjMhaIrWFNdZrVKsLWc7eTn_715wWnZK8ESsznSD5kJOA_BmCV3zQcCgm1s5-S5r",
-    initials: "OS", color: "var(--av-p6)",
-  },
-];
+/* Seed data removed — employees are now loaded exclusively from the DB
+   via useEmployees() → GET /api/employees. See data/employee-seeds.ts
+   for the seed records inserted into Neon on first server boot.      */
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
@@ -647,8 +610,13 @@ function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel:
 // ── Main Dashboard ─────────────────────────────────────────────────────────
 
 export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => void; onAddEmployee: () => void }) {
+  /* ── DB data via React Query ─────────────────────────────────────────────
+     employees is the authoritative list from Neon — never hardcoded locally.
+     updateMutation sends PATCH /api/employees/:id/status with optimistic UI. */
+  const { data: employees = [], isLoading, isError } = useEmployees();
+  const updateMutation = useUpdateEmployeeStatus();
+
   const [activeNav,        setActiveNav]      = useState<NavItem>("dashboard");
-  const [employees,        setEmployees]      = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [officeTiming,     setOfficeTiming]   = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
   const [rawQuery,         setRawQuery]       = useState("");
   const [mobileSearchOpen, setMobileSearch]  = useState(false);
@@ -672,6 +640,12 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
   const searchRef       = useRef<HTMLInputElement>(null);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
+  /* Dismiss editing state whenever an update mutation fires */
+  useEffect(() => {
+    if (updateMutation.isPending) return;
+    /* nothing extra needed — editingId is cleared in handleEditSave */
+  }, [updateMutation.isPending]);
+
   const today        = getTodayStr();
   const presentCount = useMemo(() => employees.filter(e => !e.leaveStatus && e.checkIn).length, [employees]);
   const halfDayCount = useMemo(() => employees.filter(e => e.leaveStatus === "half-day").length, [employees]);
@@ -693,64 +667,53 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
   const openSearch  = useCallback(() => { setMobileSearch(true); setTimeout(() => mobileSearchRef.current?.focus(), 300); }, []);
   const closeSearch = useCallback(() => { setMobileSearch(false); setRawQuery(""); }, []);
 
-  /* Pending employee from AddEmployeePage (sessionStorage message bus) */
-  useEffect(() => {
-    const raw = sessionStorage.getItem("pending_employee");
-    if (!raw) return;
-    try {
-      const data = JSON.parse(raw) as NewEmployeeData;
-      setEmployees(prev => {
-        const nextId = Math.max(0, ...prev.map(e => e.id)) + 1;
-        return [...prev, {
-          id: nextId,
-          name: data.name,
-          role: data.role || "Staff",
-          salary: data.salary,
-          checkIn: "", checkOut: "",
-          leaveStatus: null,
-          att: 0, perf: 0,
-          avatar: data.avatar,
-          initials: data.initials,
-          color: data.color,
-        }];
-      });
-    } catch {}
-    sessionStorage.removeItem("pending_employee");
-  }, []);
+  /** Maps UI leave status → DB sts token.
+      Context menu fires UI tokens; the API expects DB tokens.             */
+  const uiToDbSts = (s: LeaveStatus): "leave" | "unauth" | "half" | null => {
+    if (s === "unauthorized-leave") return "unauth";
+    if (s === "half-day")           return "half";
+    return s; // "leave" | null
+  };
 
   const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus) => {
     if (action === "edit") {
       setEditingId(prev => prev === empId ? null : empId);
-    } else {
-      setEditingId(null);
-      setEmployees(prev => prev.map(e => {
-        if (e.id !== empId) return e;
-        const newStatus: LeaveStatus = e.leaveStatus === action ? null : action;
-        const clearTimes      = newStatus === "leave" || newStatus === "unauthorized-leave";
-        const restoreDefaults = newStatus === null && !e.checkIn && !e.checkOut;
-        return {
-          ...e,
-          leaveStatus: newStatus,
-          checkIn:  clearTimes ? "" : (restoreDefaults ? officeTiming.start : e.checkIn),
-          checkOut: clearTimes ? "" : (restoreDefaults ? officeTiming.end   : e.checkOut),
-        };
-      }));
+      return;
     }
-  }, [officeTiming]);
+    setEditingId(null);
+    const emp = employees.find(e => e.id === empId);
+    if (!emp) return;
+
+    const newStatus: LeaveStatus = emp.leaveStatus === action ? null : action;
+    const clearTimes      = newStatus === "leave" || newStatus === "unauthorized-leave";
+    const restoreDefaults = newStatus === null && !emp.checkIn && !emp.checkOut;
+
+    updateMutation.mutate({
+      eid: empId,
+      payload: {
+        sts:  uiToDbSts(newStatus),
+        sin:  clearTimes ? null : (restoreDefaults ? officeTiming.start : (emp.checkIn  || null)),
+        sout: clearTimes ? null : (restoreDefaults ? officeTiming.end   : (emp.checkOut || null)),
+      },
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employees, officeTiming, updateMutation.mutate]);
 
   const handleEditSave = useCallback((id: number, ci: string, co: string) => {
-    setEmployees(prev => prev.map(e => {
-      if (e.id !== id) return e;
-      const conflictsWithTimes = e.leaveStatus === "leave" || e.leaveStatus === "unauthorized-leave";
-      return {
-        ...e,
-        checkIn:     ci,
-        checkOut:    co,
-        leaveStatus: conflictsWithTimes ? null : e.leaveStatus,
-      };
-    }));
+    const emp = employees.find(e => e.id === id);
+    if (!emp) return;
+    const conflictsWithTimes = emp.leaveStatus === "leave" || emp.leaveStatus === "unauthorized-leave";
+    updateMutation.mutate({
+      eid: id,
+      payload: {
+        sin:  ci || null,
+        sout: co || null,
+        ...(conflictsWithTimes ? { sts: null } : {}),
+      },
+    });
     setEditingId(null);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employees, updateMutation.mutate]);
 
   const sharedCardProps = {
     timing: officeTiming,
@@ -811,9 +774,23 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
             <OfficeTimingHeader timing={officeTiming} onUpdate={setOfficeTiming} />
           )}
 
-          {filtered.length === 0 ? (
+          {/* Loading state — first fetch from DB */}
+          {isLoading && (
+            <div className="adm-empty">Loading employees…</div>
+          )}
+
+          {/* Error state — DB unreachable or auth failure */}
+          {isError && !isLoading && (
+            <div className="adm-empty">
+              Could not load employees. Check your connection and try again.
+            </div>
+          )}
+
+          {!isLoading && !isError && filtered.length === 0 && (
             <div className="adm-empty">No employees match your search.</div>
-          ) : (
+          )}
+
+          {!isLoading && !isError && filtered.length > 0 && (
             <div className="adm-grid">
               {filtered.map((emp, i) => (
                 <EmployeeCard key={emp.id} emp={emp} idx={i} {...sharedCardProps}

@@ -1,0 +1,371 @@
+Refactor the Employee Management system to a production-ready architecture using Neon PostgreSQL as the Single Source of Truth (SSOT).
+
+SSOT RULES
+
+* Database is the authoritative source of employee data.
+* No duplicated employee state.
+* No hardcoded employee records inside components.
+* No component-specific employee sources.
+* No local employee records after successful save.
+* All pages must render from fetched database data.
+* All employee operations must go through a centralized service/repository layer.
+
+DATABASE ARCHITECTURE
+
+Create:
+
+1. employee_profile
+   Static employee information.
+
+2. employee_status
+   Dashboard/runtime employee information.
+
+Relationship:
+
+employee_status.eid → employee_profile.id
+
+Use proper foreign key constraints and indexes.
+
+EMPLOYEE PROFILE TABLE
+
+Fields:
+
+id
+name
+role
+lang
+hire
+exp
+task
+cap
+spec
+gen
+email
+dob
+ph
+cnic
+addr
+sal
+img
+created_at
+updated_at
+
+FIELD MAPPING
+
+Full Name → name
+
+Position / Role → role
+
+Spoken Languages → lang
+
+Joining Date → hire
+
+Experience → exp
+
+Assigned Tasks → task
+
+Work Capabilities → cap
+
+Speciality → spec
+
+Gender → gen
+
+Email → email
+
+Date Of Birth → dob
+
+Phone → ph
+
+CNIC → cnic
+
+Street Address → addr
+
+Monthly Salary → sal
+
+Avatar → img
+
+FIELD RULES
+
+lang
+task
+cap
+spec
+
+must support multiple values and store full user-entered text.
+
+Examples:
+
+lang:
+[
+"English",
+"Urdu"
+]
+
+task:
+[
+"Inventory Management",
+"Cash Handling"
+]
+
+cap:
+[
+"Customer Communication",
+"POS Operations"
+]
+
+spec:
+[
+"Upselling"
+]
+
+Store complete text values.
+
+Do not truncate user content.
+
+SALARY
+
+Store as numeric value.
+
+Example:
+
+4500
+
+Do not store formatted currency strings.
+
+IMAGE
+
+Store image path or URL only.
+
+Do not store image binary inside database rows.
+
+EXPERIENCE
+
+Store as structured data.
+
+Examples:
+
+{ "y": 2 }
+
+{ "m": 3 }
+
+{ "y": 1, "m": 3 }
+
+Rules:
+
+* Do not store zero-value parts.
+* Maximum year: 99
+* Maximum month: 12
+
+DISPLAY EXAMPLES
+
+2y
+
+3m
+
+1y 3m
+
+EMPLOYEE STATUS TABLE
+
+Fields:
+
+id
+eid
+att
+perf
+sts
+sin
+sout
+created_at
+updated_at
+
+INITIAL RECORD
+
+When a new employee is created:
+
+att = 100
+
+perf = 100
+
+sts = null
+
+sin = null
+
+sout = null
+
+STATUS VALUES
+
+null
+
+leave
+
+unauth
+
+half
+
+STATUS DISPLAY RULES
+
+Present:
+
+* No status label.
+* Show timings when available.
+
+Leave:
+
+* Show ON LEAVE.
+
+Unauthorized Leave:
+
+* Show UNAUTHORIZED LEAVE.
+
+Half Day:
+
+* Show HALF DAY.
+* Timings may still exist.
+
+Status must be independent from timings.
+
+Do not derive status from displayed times.
+
+VALIDATION
+
+Required fields:
+
+* Full Name
+* Position / Role
+* CNIC
+
+Show inline validation errors.
+
+Do not use popup errors for field-level validation.
+
+Global popup errors should only appear for form-level failures.
+
+EXPERIENCE FIELD
+
+* Keep existing visual design.
+* Replace icon with EXP prefix.
+* Year and Month must be independently editable.
+* Cursor/focus must work correctly for both.
+* Month maximum: 12
+* Year maximum: 99
+
+DRAFT PERSISTENCE
+
+While editing:
+
+* Save form draft locally.
+* Restore draft after refresh.
+* Include all form fields.
+* Clear draft only after successful employee creation.
+
+SUBMIT FLOW
+
+Create Employee:
+
+1. Validate form.
+2. Upload/store image.
+3. Insert employee_profile record.
+4. Get created employee id.
+5. Create linked employee_status record.
+6. Clear local draft.
+7. Invalidate employee queries/cache.
+8. Redirect to dashboard.
+9. Dashboard must fetch fresh data from database.
+10. Newly created employee card must appear automatically.
+
+DASHBOARD DATA SOURCE
+
+employee_profile provides:
+
+name
+role
+sal
+img
+
+employee_status provides:
+
+att
+perf
+sts
+sin
+sout
+
+Join:
+
+employee_status.eid = employee_profile.id
+
+DASHBOARD CARD RULES
+
+Card data must be generated from joined employee_profile and employee_status records.
+
+Do not use mock objects inside dashboard components.
+
+DEMO / SEED DATA
+
+Move all demo employees into dedicated seed files.
+
+Seed data must match actual database schema.
+
+Use:
+
+employee_profile seed records
+
+employee_status seed records
+
+Application must be able to switch between seed data and Neon database without changing component logic.
+
+SERVICE / REPOSITORY LAYER
+
+Create centralized employee services.
+
+Examples:
+
+createEmployee()
+
+getEmployees()
+
+getEmployeeById()
+
+updateEmployee()
+
+deleteEmployee()
+
+createEmployeeStatus()
+
+updateEmployeeStatus()
+
+All pages, hooks, mutations, and components must use this layer.
+
+No direct database access from UI components.
+
+DATA FLOW
+
+Database
+↓
+Repository / Service Layer
+↓
+Queries / Mutations
+↓
+View Models
+↓
+UI Components
+
+Never bypass this flow.
+
+PRODUCTION REQUIREMENTS
+
+Adjust backend architecture, API routes, services, queries, mutations, page logic, component data flow, caching, validation, image handling, and state management as required to support this architecture.
+
+Create proper Neon schema definitions and migrations.
+
+Use shared types/interfaces for employee_profile and employee_status.
+
+Centralize validation rules.
+
+Centralize status definitions.
+
+Remove hardcoded employee records.
+
+Remove duplicate business logic.
+
+Maintain existing visual design, animations, responsiveness, styling, and user experience unless required by the new architecture.

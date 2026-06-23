@@ -1,5 +1,4 @@
-import { useState, lazy, Suspense, useCallback } from "react";
-import { type NewEmployeeData } from "./components/AddEmployeePage";
+import { useState, lazy, Suspense } from "react";
 
 /* ── Route-level code splitting ─────────────────────────────────────────────
    Every top-level page is lazy-loaded so the initial JS bundle only contains
@@ -96,12 +95,8 @@ export default function App() {
     setView(v);
   };
 
-  /* Store new-employee data in sessionStorage so AdminDashboard can pick it
-     up on re-mount without needing shared state between the two pages.       */
-  const handleAddEmployeeSave = useCallback((data: NewEmployeeData) => {
-    sessionStorage.setItem("pending_employee", JSON.stringify(data));
-    goTo("admin-dashboard", "back");
-  }, []);
+  /* AddEmployeePage POSTs directly to the API and invalidates the React Query
+     cache — no App-level save handler needed. onClose navigates back.       */
 
   const handleResetVerified = (resetToken: string) => {
     sessionStorage.setItem(SESSION_KEY, resetToken);
@@ -138,7 +133,6 @@ export default function App() {
       <AddEmployeePage
         isOpen={true}
         onClose={() => goTo("admin-dashboard", "back")}
-        onSave={handleAddEmployeeSave}
       />
     </Suspense>
   );
