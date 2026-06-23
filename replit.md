@@ -352,6 +352,38 @@ Whenever a UI pattern already exists as a shared React component or CSS class, y
 - TypeScript: no `any` unless unavoidable (e.g. CSS custom property casting).
 - Flutter: no `dynamic` unless unavoidable; type all Riverpod providers explicitly.
 
+### 13. Database — Folder & File SSOT
+
+**All database-related code lives in its own layer — never scattered in services or frontend.**
+
+| Concern | SSOT location |
+|---------|---------------|
+| Table definitions (schema) | `lib/db/src/schema/` — Drizzle schema is the single source of truth |
+| DB client + pool | `lib/db/src/index.ts` — shared across all server packages |
+| Seed / demo data | `artifacts/api-server/src/employees/seeds/index.ts` — server-side only, never import in UI |
+| Repository (queries) | `artifacts/api-server/src/*/[module].repository.ts` |
+| Runtime table creation | Allowed only as a boot-time safety net (`initTables()` in service `onModuleInit`). Must mirror the Drizzle schema exactly — the Drizzle schema is always considered authoritative. Future goal: migrate to `drizzle-kit push` only. |
+
+**Forbidden:**
+- Raw SQL `CREATE TABLE` statements outside `onModuleInit` safety nets
+- Seed data arrays anywhere in the frontend (`src/data/`, `src/components/`, etc.)
+- Importing `@workspace/db` (or `drizzle`/`pg`) in any UI package
+
+### 14. File Size & Decomposition (SSOT)
+
+| File type | Max lines | Action when exceeded |
+|-----------|-----------|---------------------|
+| React component | 400 | Extract sub-components to `components/ui/` or a feature subfolder |
+| NestJS service | 300 | Extract helpers to a `[module].helpers.ts` file |
+| Hook | 150 | Extract shared logic to a utility function |
+| CSS file (per-component) | 300 | Split into logical sections or extract shared rules to `index.css` |
+
+**Rules:**
+- A reusable sub-component used by **2+ pages** → always extract to `components/ui/`
+- A sub-component used only within one page → keep in that page's feature folder, not inline
+- Inline SVG icon components (≤ 3 lines each) may stay in the same file
+- Complex forms with many fields are exempt from the 400-line limit **only if** all sub-components are already extracted and the remaining lines are unavoidable field declarations
+
 ### 12. Dead Code — Mandatory Removal (SSOT)
 
 **Any code or CSS that is not actively used must be deleted — no exceptions.**

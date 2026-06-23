@@ -1,22 +1,40 @@
-import { useState, useRef, useCallback, useLayoutEffect, memo } from "react";
-import { Button } from "./ui/Button";
-import { TextInput } from "./ui/Input";
+import { useState, useRef, useCallback, useLayoutEffect } from "react";
+import { Button }     from "./ui/Button";
+import { TextInput }  from "./ui/Input";
+import { BulletList } from "./ui/BulletList";
+import { useCreateEmployee } from "../hooks/useCreateEmployee";
+import type { CreateEmployeePayload } from "../services/employee.service";
 import "../styles/add-bg.css";
 import "../styles/add-employee.css";
 
-// ── Palette for avatar fallback colours ───────────────────────────────────
-/* Avatar palette — hex SSOT lives in index.css :root as --av-p1…--av-p8 */
+/* ── Draft persistence ────────────────────────────────────────────────────
+   All text fields survive a page refresh. AvatarUrl excluded (data-URL too
+   large for localStorage). Draft cleared only after successful DB write.   */
+const DRAFT_KEY = "emp_draft_v1";
+
+interface Draft {
+  name: string; role: string; salary: string; gender: string;
+  cnic: string; phone: string; email: string; dob: string;
+  joiningDate: string; address: string; expYr: string; expMo: string;
+  langs: string[]; tasks: string[]; caps: string[]; specs: string[];
+}
+
+function readDraft(): Partial<Draft> {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as Draft) : {};
+  } catch { return {}; }
+}
+
+/* ── Avatar palette — hex SSOT in index.css :root --av-p1…--av-p8 ─────── */
 const AVATAR_PALETTE = [
   "var(--av-p1)","var(--av-p2)","var(--av-p3)","var(--av-p4)",
   "var(--av-p5)","var(--av-p6)","var(--av-p7)","var(--av-p8)",
 ];
 
-export interface NewEmployeeData {
-  name: string; role: string; salary: string;
-  avatar: string; initials: string; color: string;
-}
+const GENDERS = ["Male", "Female", "Other"];
 
-// ── Inline SVG atoms ──────────────────────────────────────────────────────
+/* ── Inline SVG icons ─────────────────────────────────────────────────── */
 const PersonSVG   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>;
 const CardSVG     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>;
 const PhoneSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>;
@@ -28,97 +46,68 @@ const UsersSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="
 const CalSVG      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 const CameraSVG   = () => <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
 const CameraSmSVG = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
-const CheckSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
-const TrashSVG    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>;
 const ChevSVG = ({ open }: { open: boolean }) => (
-  /* ae-chev-svg defines transition: transform .2s in CSS — only rotation is dynamic */
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-    className="ae-chev-svg"
-    style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" } as React.CSSProperties}>
+    className="ae-chev-svg" style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
     <polyline points="6 9 12 15 18 9"/>
   </svg>
 );
 
-const GENDERS = ["Male", "Female", "Other"];
-
-// ── BulletList sub-component ──────────────────────────────────────────────
-const BulletList = memo(function BulletList({
-  label, items, input, onInputChange, onAdd, onDelete, placeholder,
-}: {
-  label: string; items: string[]; input: string;
-  onInputChange: (v: string) => void;
-  onAdd: () => void;
-  onDelete: (i: number) => void;
-  placeholder: string;
-}) {
-  return (
-    <div>
-      <div className="ae-pro-hdr">{label}</div>
-      <div className="ae-bul-list">
-        {items.map((t, i) => (
-          <div key={t} className="ae-bul-item">
-            <div className="ae-bul-dot" />
-            <span className="ae-bul-txt">{t}</span>
-            <span className="ae-bul-del" onMouseDown={e => { e.preventDefault(); onDelete(i); }}><TrashSVG /></span>
-          </div>
-        ))}
-      </div>
-      <div className="ae-bul-inp-row">
-        <input
-          className="ae-bul-inp" type="text" placeholder={placeholder}
-          value={input} onChange={e => onInputChange(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); onAdd(); } }}
-        />
-        <span className="ae-bul-add" onClick={onAdd}><CheckSVG /></span>
-      </div>
-    </div>
-  );
-});
-
-// ── Main component ────────────────────────────────────────────────────────
+// ── Main component ─────────────────────────────────────────────────────────
 export function AddEmployeePage({
   onClose,
-  onSave,
   isOpen = true,
 }: {
   onClose: () => void;
-  onSave: (data: NewEmployeeData) => void;
   isOpen?: boolean;
 }) {
-  // Avatar
-  const [avatarUrl,   setAvatarUrl]   = useState("");
-  const [dragOver,    setDragOver]    = useState(false);
-  const fileRef     = useRef<HTMLInputElement>(null);
+  const createMutation = useCreateEmployee();
 
-  // Salary auto-resize refs (effect runs after salary state below)
-  const salInpRef   = useRef<HTMLInputElement>(null);
-  const salSizerRef = useRef<HTMLSpanElement>(null);
+  // Restore draft on first render only
+  const d = readDraft();
 
-  // Date input refs — for programmatic showPicker() via icon click
+  // Core fields — initialised from draft
+  const [name,        setName]        = useState(d.name        ?? "");
+  const [role,        setRole]        = useState(d.role        ?? "");
+  const [salary,      setSalary]      = useState(d.salary      ?? "");
+  const [gender,      setGender]      = useState(d.gender      ?? "Male");
+  const [genderOpen,  setGenderOpen]  = useState(false);
+  const [cnic,        setCnic]        = useState(d.cnic        ?? "");
+  const [phone,       setPhone]       = useState(d.phone       ?? "");
+  const [email,       setEmail]       = useState(d.email       ?? "");
+  const [dob,         setDob]         = useState(d.dob         ?? "");
+  const [joiningDate, setJoiningDate] = useState(d.joiningDate ?? "");
+  const [address,     setAddress]     = useState(d.address     ?? "");
+  const [expYr,       setExpYr]       = useState(d.expYr       ?? "");
+  const [expMo,       setExpMo]       = useState(d.expMo       ?? "");
+  const [langs,       setLangs]       = useState<string[]>(d.langs  ?? []);
+  const [langInput,   setLangInput]   = useState("");
+  const [tasks,       setTasks]       = useState<string[]>(d.tasks  ?? []);
+  const [taskInp,     setTaskInp]     = useState("");
+  const [caps,        setCaps]        = useState<string[]>(d.caps   ?? []);
+  const [capInp,      setCapInp]      = useState("");
+  const [specs,       setSpecs]       = useState<string[]>(d.specs  ?? []);
+  const [specInp,     setSpecInp]     = useState("");
+
+  // Avatar — not persisted to draft (data-URL too large for localStorage)
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [dragOver,  setDragOver]  = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Date + exp refs — for programmatic showPicker() via icon click
   const dobRef        = useRef<HTMLInputElement>(null);
   const joiningRef    = useRef<HTMLInputElement>(null);
   const shiftStartRef = useRef<HTMLInputElement>(null);
   const shiftEndRef   = useRef<HTMLInputElement>(null);
   const expYrRef      = useRef<HTMLInputElement>(null);
 
-  // Core fields
-  const [name,        setName]        = useState("");
-  const [role,        setRole]        = useState("");
-  const [salary,      setSalary]      = useState("");
-  const [gender,      setGender]      = useState("Male");
-  const [genderOpen,  setGenderOpen]  = useState(false);
-  const [cnic,        setCnic]        = useState("");
-  const [phone,       setPhone]       = useState("");
-  const [email,       setEmail]       = useState("");
-  const [dob,         setDob]         = useState("");
-  const [joiningDate, setJoiningDate] = useState("");
-  const [address,     setAddress]     = useState("");
-  const [shiftStart,  setShiftStart]  = useState("");
-  const [shiftEnd,    setShiftEnd]    = useState("");
-  const [expYr,       setExpYr]       = useState("");
-  const [expMo,       setExpMo]       = useState("");
+  // Shift timing (not stored in DB currently — future field)
+  const [shiftStart, setShiftStart] = useState("");
+  const [shiftEnd,   setShiftEnd]   = useState("");
 
-  // Salary pill auto-resize — runs after salary state is declared
+  // Salary pill auto-resize
+  const salInpRef   = useRef<HTMLInputElement>(null);
+  const salSizerRef = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
     if (!salSizerRef.current || !salInpRef.current) return;
     salSizerRef.current.textContent = salary || "XX,XXX";
@@ -126,29 +115,30 @@ export function AddEmployeePage({
     salInpRef.current.style.width = `${w}px`;
   }, [salary]);
 
-  // Language tags
-  const [langInput,   setLangInput]   = useState("");
-  const [langs,       setLangs]       = useState<string[]>([]);
+  // Persist draft on every field change (excludes avatar, shift timing)
+  // Using a ref-based approach to avoid stale closures without deps array bloat
+  const draftRef = useRef<Draft>({ name, role, salary, gender, cnic, phone, email, dob, joiningDate, address, expYr, expMo, langs, tasks, caps, specs });
+  draftRef.current = { name, role, salary, gender, cnic, phone, email, dob, joiningDate, address, expYr, expMo, langs, tasks, caps, specs };
+  // Debounced save — avoids writing on every keystroke
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleDraftSave = useCallback(() => {
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draftRef.current)); } catch { /* quota exceeded */ }
+    }, 400);
+  }, []);
 
-  // Pro lists
-  const [taskInp,  setTaskInp]  = useState("");
-  const [tasks,    setTasks]    = useState<string[]>([]);
-  const [capInp,   setCapInp]   = useState("");
-  const [caps,     setCaps]     = useState<string[]>([]);
-  const [specInp,  setSpecInp]  = useState("");
-  const [specs,    setSpecs]    = useState<string[]>([]);
-
-  // Field-level validation errors
+  // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Toast — used only for form-level (non-field) messages
+  // Toast — form-level only (field errors shown inline)
   const [toast, setToast] = useState("");
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(""), 3200);
   }, []);
 
-  // Image processing — resize to ≤160px height, WebP 82%
+  // Image processing — resize to ≤160px height, WebP 82% (rule 7d)
   const applyImageFile = useCallback((file: File) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -167,19 +157,24 @@ export function AddEmployeePage({
 
   const addLang = useCallback(() => {
     const t = langInput.trim();
-    if (t && !langs.includes(t)) setLangs(p => [...p, t]);
+    if (t && !langs.includes(t)) { setLangs(p => [...p, t]); scheduleDraftSave(); }
     setLangInput("");
-  }, [langInput, langs]);
+  }, [langInput, langs, scheduleDraftSave]);
 
-  const addItem = useCallback((val: string, setter: React.Dispatch<React.SetStateAction<string[]>>, inputSetter: React.Dispatch<React.SetStateAction<string>>) => {
+  const addItem = useCallback((
+    val: string,
+    setter: React.Dispatch<React.SetStateAction<string[]>>,
+    inputSetter: React.Dispatch<React.SetStateAction<string>>,
+  ) => {
     const t = val.trim();
-    if (t) setter(p => [...p, t]);
+    if (t) { setter(p => [...p, t]); scheduleDraftSave(); }
     inputSetter("");
-  }, []);
+  }, [scheduleDraftSave]);
 
   const delItem = useCallback((i: number, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
     setter(p => p.filter((_, idx) => idx !== i));
-  }, []);
+    scheduleDraftSave();
+  }, [scheduleDraftSave]);
 
   // CNIC formatter — inserts dashes at positions 5 and 13
   const handleCnic = useCallback((raw: string) => {
@@ -188,14 +183,17 @@ export function AddEmployeePage({
     if (digits.length > 5)  out = digits.slice(0, 5)  + "-" + digits.slice(5);
     if (digits.length > 12) out = out.slice(0, 14) + "-" + out.slice(14);
     setCnic(out);
-  }, []);
+    scheduleDraftSave();
+  }, [scheduleDraftSave]);
 
-  // Salary input — digits only, comma-separated thousands
+  // Salary — digits only, comma-separated thousands; stored as formatted string
   const handleSalaryInput = useCallback((raw: string) => {
     const digits = raw.replace(/\D/g, "");
     setSalary(digits ? Number(digits).toLocaleString("en-PK") : "");
-  }, []);
+    scheduleDraftSave();
+  }, [scheduleDraftSave]);
 
+  // ── Submit ────────────────────────────────────────────────────────────────
   function handleCreate() {
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = "Full Name is required";
@@ -204,20 +202,58 @@ export function AddEmployeePage({
     else if (cnic.replace(/\D/g, "").length < 13) errs.cnic = "Enter complete 13-digit CNIC";
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setErrors({});
-    const initials = name.trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-    const color    = AVATAR_PALETTE[name.charCodeAt(0) % AVATAR_PALETTE.length];
-    const salaryStr = salary ? `PKR ${salary}` : "";
-    onSave({ name: name.trim(), role: role.trim(), salary: salaryStr, avatar: avatarUrl, initials, color });
-    showToast(`Employee "${name.trim()}" created!`);
-    setTimeout(onClose, 900);
+
+    /* Build exp — omit zero values; max: 99y / 12m */
+    const expObj: { y?: number; m?: number } = {};
+    const yr = parseInt(expYr || "0", 10);
+    const mo = parseInt(expMo || "0", 10);
+    if (yr > 0) expObj.y = Math.min(99, yr);
+    if (mo > 0) expObj.m = Math.min(12, mo);
+
+    /* Derive initials/color server-side equivalent for optimistic avatar */
+    const initials = name.trim().split(/\s+/).map(w => w[0] ?? "").join("").slice(0, 2).toUpperCase();
+    const color    = AVATAR_PALETTE[name.charCodeAt(0) % AVATAR_PALETTE.length]!;
+    void initials; void color; // derived by server in toEmployeeCard
+
+    const payload: CreateEmployeePayload = {
+      name:  name.trim(),
+      role:  role.trim(),
+      cnic:  cnic.replace(/\D/g, ""),             // raw 13 digits — no dashes
+      sal:   salary ? parseInt(salary.replace(/,/g, ""), 10) : undefined,
+      gen:   gender                || undefined,
+      email: email.trim()          || undefined,
+      dob:   dob                   || undefined,
+      ph:    phone.trim()          || undefined,
+      hire:  joiningDate           || undefined,
+      addr:  address.trim()        || undefined,
+      img:   avatarUrl             || undefined,
+      lang:  langs.length  ? langs  : undefined,
+      task:  tasks.length  ? tasks  : undefined,
+      cap:   caps.length   ? caps   : undefined,
+      spec:  specs.length  ? specs  : undefined,
+      exp:   Object.keys(expObj).length ? expObj : undefined,
+    };
+
+    createMutation.mutate(payload, {
+      onSuccess: () => {
+        /* Clear draft only after confirmed DB write */
+        localStorage.removeItem(DRAFT_KEY);
+        onClose();
+      },
+      onError: (err) => {
+        showToast(err.message || "Failed to create employee. Please try again.");
+      },
+    });
   }
+
+  const isPending = createMutation.isPending;
 
   return (
     <div className="ae-root">
 
-      {/* ── Top bar — global .topbar chrome from index.css ── */}
+      {/* ── Top bar ── */}
       <header className="topbar">
-        <button className="pg-icon-btn" onClick={onClose} aria-label="Back">
+        <button className="pg-icon-btn" onClick={onClose} aria-label="Back" disabled={isPending}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
@@ -231,15 +267,11 @@ export function AddEmployeePage({
         <div className="ae-content">
 
           {/* ════════════════════════════════════════════════════
-              SECTION 1 — Top: left=Photo+Salary · right=2-col fields
-              Desktop: [Photo+Salary] | [Name          ] [Spoken Lang  ]
-                                        [Role          ] [Joining Date  ]
-                                        [Experience    ] [Shift Timing  ]
-              Mobile: Photo+Salary centred · fields 2-col below
+              SECTION 1 — Photo + Salary | 2-col fields
           ════════════════════════════════════════════════════ */}
           <div className="ae-sec1">
 
-            {/* Left: Photo + Salary — independent flex column */}
+            {/* Left: Photo + Salary */}
             <div className="ae-s1-lft">
               <div className="ae-av-sec">
                 <div className="ae-av-halo">
@@ -252,16 +284,10 @@ export function AddEmployeePage({
                   >
                     {avatarUrl && <img className="ae-av-img" src={avatarUrl} alt="" />}
                     {!avatarUrl && (
-                      <div className="ae-av-inner">
-                        <CameraSVG />
-                        <span>Upload Photo</span>
-                      </div>
+                      <div className="ae-av-inner"><CameraSVG /><span>Upload Photo</span></div>
                     )}
                     {avatarUrl && (
-                      <div className="ae-av-chg">
-                        <CameraSmSVG />
-                        <span>Change</span>
-                      </div>
+                      <div className="ae-av-chg"><CameraSmSVG /><span>Change</span></div>
                     )}
                   </div>
                 </div>
@@ -291,22 +317,21 @@ export function AddEmployeePage({
               </div>
             </div>
 
-            {/* Right: independent 2-col grid, vertically centred against photo */}
+            {/* Right: 2-col grid */}
             <div className="ae-s1-rgt">
 
-              {/* Row 1: Full Name */}
               <div className="ae-field">
-                <TextInput label="Full Name" value={name} onChange={v => { setName(v); if (errors.name) setErrors(p => ({...p, name: ""})); }} autoComplete="name" variant="compact" icon={<PersonSVG />} error={errors.name} />
+                <TextInput label="Full Name" value={name} onChange={v => { setName(v); scheduleDraftSave(); if (errors.name) setErrors(p => ({...p, name: ""})); }}
+                  autoComplete="name" variant="compact" icon={<PersonSVG />} error={errors.name} />
               </div>
 
-              {/* Row 1: Spoken Language (moved from Section 3) */}
               <div className="ae-field">
                 <TextInput
                   label="Spoken Language" value={langInput} onChange={v => setLangInput(v)}
                   variant="compact" icon={<GlobeSVG />}
                   onKeyDown={e => {
                     if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addLang(); }
-                    else if (e.key === "Backspace" && !langInput && langs.length) setLangs(p => p.slice(0, -1));
+                    else if (e.key === "Backspace" && !langInput && langs.length) { setLangs(p => p.slice(0, -1)); scheduleDraftSave(); }
                   }}
                 />
                 {langs.length > 0 && (
@@ -314,9 +339,8 @@ export function AddEmployeePage({
                     {langs.map(l => (
                       <span key={l} className="ae-lang-tag">
                         {l}
-                        <span
-                          className="ae-lang-del"
-                          onMouseDown={e => { e.preventDefault(); setLangs(p => p.filter(x => x !== l)); }}
+                        <span className="ae-lang-del"
+                          onMouseDown={e => { e.preventDefault(); setLangs(p => p.filter(x => x !== l)); scheduleDraftSave(); }}
                           aria-label={`Remove ${l}`}>✕</span>
                       </span>
                     ))}
@@ -324,24 +348,24 @@ export function AddEmployeePage({
                 )}
               </div>
 
-              {/* Row 2: Position / Role */}
               <div className="ae-field">
-                <TextInput label="Position / Role" value={role} onChange={v => { setRole(v); if (errors.role) setErrors(p => ({...p, role: ""})); }} variant="compact" icon={<BriefSVG />} error={errors.role} />
+                <TextInput label="Position / Role" value={role} onChange={v => { setRole(v); scheduleDraftSave(); if (errors.role) setErrors(p => ({...p, role: ""})); }}
+                  variant="compact" icon={<BriefSVG />} error={errors.role} />
               </div>
 
-              {/* Row 2: Joining Date */}
               <div className="ae-field">
                 <div className="ae-fi-wrap" onClick={() => { try { joiningRef.current?.showPicker?.(); } catch { /* cross-origin iframe blocks showPicker */ } }}>
                   <span className="ae-date-ico"><CalSVG /></span>
                   <div className={`ae-date-wrap${!joiningDate ? " empty" : ""}`} data-ph="Joining Date">
                     <input ref={joiningRef}
                       className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
-                      type="date" value={joiningDate} onChange={e => setJoiningDate(e.target.value)} />
+                      type="date" value={joiningDate}
+                      onChange={e => { setJoiningDate(e.target.value); scheduleDraftSave(); }} />
                   </div>
                 </div>
               </div>
 
-              {/* Row 3 col 1: Experience — same underline row pattern as shift timing */}
+              {/* Experience — EXP prefix, yr/mo independently editable, max 99y / 12m */}
               <div className="ae-field ae-s1-exp">
                 <div className="ae-shift-row" onClick={() => expYrRef.current?.focus()}>
                   <span className="ae-shift-ico">
@@ -349,28 +373,27 @@ export function AddEmployeePage({
                       <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
                     </svg>
                   </span>
-                  <input
-                    ref={expYrRef}
+                  <input ref={expYrRef}
                     className="ae-exp-num" type="number" inputMode="numeric"
-                    min="0" max="50" placeholder="0"
+                    min="0" max="99" placeholder="0"
                     value={expYr}
                     onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
-                    onChange={e => setExpYr(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                    onChange={e => { setExpYr(e.target.value.replace(/\D/g, "").slice(0, 2)); scheduleDraftSave(); }}
                   />
                   <span className="ae-exp-unit">Yrs</span>
                   <span className="ae-exp-dot" aria-hidden>·</span>
                   <input
                     className="ae-exp-num" type="number" inputMode="numeric"
-                    min="0" max="11" placeholder="0"
+                    min="0" max="12" placeholder="0"
                     value={expMo}
                     onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
-                    onChange={e => setExpMo(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                    onChange={e => { setExpMo(e.target.value.replace(/\D/g, "").slice(0, 2)); scheduleDraftSave(); }}
                   />
                   <span className="ae-exp-unit">Mo</span>
                 </div>
               </div>
 
-              {/* Row 3 col 2: Shift Timing — single row: in · start · out · end */}
+              {/* Shift Timing — single row */}
               <div className="ae-field ae-s1-sft">
                 <div className="ae-shift-row">
                   <span className="ae-shift-ico">
@@ -378,143 +401,115 @@ export function AddEmployeePage({
                       <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
                     </svg>
                   </span>
-                  <input
-                    ref={shiftStartRef}
-                    className="ae-shift-time-inp"
-                    type="time" value={shiftStart}
-                    onChange={e => setShiftStart(e.target.value)}
-                  />
+                  <input ref={shiftStartRef} className="ae-shift-time-inp" type="time" value={shiftStart} onChange={e => setShiftStart(e.target.value)} />
                   <span className="ae-shift-ico">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
                     </svg>
                   </span>
-                  <input
-                    ref={shiftEndRef}
-                    className="ae-shift-time-inp"
-                    type="time" value={shiftEnd}
-                    onChange={e => setShiftEnd(e.target.value)}
-                  />
+                  <input ref={shiftEndRef} className="ae-shift-time-inp" type="time" value={shiftEnd} onChange={e => setShiftEnd(e.target.value)} />
                 </div>
               </div>
 
             </div>
-
           </div>
 
           <hr className="ae-divider" />
 
           {/* ════════════════════════════════════════════════════
-              SECTION 2 — Middle
-              Desktop: [Assigned Tasks   ] | [Work Capabilities]
-                       [Speciality       ] |
-              Mobile:  Assigned Tasks → Work Capabilities → Speciality
+              SECTION 2 — Professional lists
           ════════════════════════════════════════════════════ */}
           <div className="ae-sec2">
             <div className="ae-s2-lft">
-              <BulletList label="Assigned Tasks"  items={tasks} input={taskInp} onInputChange={setTaskInp} placeholder="Add a task…"       onAdd={() => addItem(taskInp, setTasks, setTaskInp)} onDelete={(i: number) => delItem(i, setTasks)} />
-              <BulletList label="Speciality"      items={specs} input={specInp} onInputChange={setSpecInp} placeholder="Add a speciality…"  onAdd={() => addItem(specInp, setSpecs, setSpecInp)} onDelete={(i: number) => delItem(i, setSpecs)} />
+              <BulletList label="Assigned Tasks"  items={tasks} input={taskInp} onInputChange={setTaskInp} placeholder="Add a task…"
+                onAdd={() => addItem(taskInp, setTasks, setTaskInp)} onDelete={i => delItem(i, setTasks)} />
+              <BulletList label="Speciality"      items={specs} input={specInp} onInputChange={setSpecInp} placeholder="Add a speciality…"
+                onAdd={() => addItem(specInp, setSpecs, setSpecInp)} onDelete={i => delItem(i, setSpecs)} />
             </div>
             <div className="ae-s2-rgt">
-              <BulletList label="Work Capabilities" items={caps} input={capInp} onInputChange={setCapInp} placeholder="Add a capability…" onAdd={() => addItem(capInp, setCaps, setCapInp)} onDelete={(i: number) => delItem(i, setCaps)} />
+              <BulletList label="Work Capabilities" items={caps} input={capInp} onInputChange={setCapInp} placeholder="Add a capability…"
+                onAdd={() => addItem(capInp, setCaps, setCapInp)} onDelete={i => delItem(i, setCaps)} />
             </div>
           </div>
 
           <hr className="ae-divider" />
 
           {/* ════════════════════════════════════════════════════
-              SECTION 3 — Bottom personal fields
-              Desktop (3-col):
-                Row 1: Gender | CNIC | Languages
-                Row 2: Phone  | Email
-                Row 3: Street Address (full width)
-              Mobile (2-col, reordered via CSS order):
-                Row 1: Gender   | Languages
-                Row 2: CNIC     | Phone
-                Row 3: Email    (full width)
-                Row 4: Street   (full width)
+              SECTION 3 — Personal fields
           ════════════════════════════════════════════════════ */}
           <div className="ae-sec3">
 
             {/* Gender */}
-            <div className="ae-field ae-field-rel ae-s3-gdr">
-              <div className={`ae-fi-wrap${genderOpen ? " ae-focused" : ""}`}>
-                <div
-                  className={`ae-csel${genderOpen ? " ae-open" : ""}`}
-                  tabIndex={0}
-                  onBlur={() => setTimeout(() => setGenderOpen(false), 120)}
-                >
-                  <div className="ae-csel-face" onClick={() => setGenderOpen(v => !v)}>
-                    <span className="ae-csel-icon"><UsersSVG /></span>
-                    <span className="ae-csel-val">{gender}</span>
-                    <ChevSVG open={genderOpen} />
-                  </div>
-                  {genderOpen && (
-                    <div className="ae-csel-opts">
-                      {GENDERS.map(g => (
-                        <div key={g}
-                          className={`ae-csel-opt${gender === g ? " ae-selected" : ""}`}
-                          onMouseDown={e => { e.preventDefault(); setGender(g); setGenderOpen(false); }}
-                        >{g}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+            <div className="ae-field">
+              <div className="ae-fi-wrap ae-gender-wrap" onClick={() => setGenderOpen(o => !o)}>
+                <span className="ae-date-ico"><UsersSVG /></span>
+                <span className="ae-gender-val">{gender}</span>
+                <ChevSVG open={genderOpen} />
               </div>
+              {genderOpen && (
+                <div className="ae-gender-drop">
+                  {GENDERS.map(g => (
+                    <button key={g} className={`ae-gender-opt${gender === g ? " ae-gender-opt-active" : ""}`}
+                      onClick={() => { setGender(g); setGenderOpen(false); scheduleDraftSave(); }}>
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* CNIC */}
+            <div className="ae-field">
+              <TextInput label="CNIC" value={cnic} onChange={handleCnic}
+                variant="compact" icon={<CardSVG />} error={errors.cnic}
+                placeholder="XXXXX-XXXXXXX-X" />
+            </div>
+
+            {/* Phone */}
+            <div className="ae-field">
+              <TextInput label="Phone" value={phone} onChange={v => { setPhone(v); scheduleDraftSave(); }}
+                variant="compact" icon={<PhoneSVG />} />
             </div>
 
             {/* Email */}
-            <div className="ae-field ae-s3-eml">
-              <TextInput label="Email" value={email} onChange={v => setEmail(v)} type="email" autoComplete="email" variant="compact" icon={<MailSVG />} />
+            <div className="ae-field">
+              <TextInput label="Email" value={email} onChange={v => { setEmail(v); scheduleDraftSave(); }}
+                autoComplete="email" variant="compact" icon={<MailSVG />} />
             </div>
 
-            {/* Date of Birth (moved from Section 1) */}
-            <div className="ae-field ae-s3-dob">
-              <div className="ae-fi-wrap" onClick={() => { try { dobRef.current?.showPicker?.(); } catch { /* cross-origin iframe blocks showPicker */ } }}>
+            {/* Date of Birth */}
+            <div className="ae-field">
+              <div className="ae-fi-wrap" onClick={() => { try { dobRef.current?.showPicker?.(); } catch { /* noop */ } }}>
                 <span className="ae-date-ico"><CalSVG /></span>
                 <div className={`ae-date-wrap${!dob ? " empty" : ""}`} data-ph="Date of Birth">
                   <input ref={dobRef}
                     className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
-                    type="date" value={dob} onChange={e => setDob(e.target.value)} />
+                    type="date" value={dob}
+                    onChange={e => { setDob(e.target.value); scheduleDraftSave(); }} />
                 </div>
               </div>
             </div>
 
-            {/* Phone */}
-            <div className="ae-field ae-s3-phn">
-              <TextInput label="Phone" value={phone} onChange={v => setPhone(v)} type="tel" variant="compact" icon={<PhoneSVG />} />
-            </div>
-
-            {/* CNIC */}
-            <div className="ae-field ae-s3-cni">
-              <TextInput label="CNIC" value={cnic} onChange={v => { handleCnic(v); if (errors.cnic) setErrors(p => ({...p, cnic: ""})); }} maxLength={15} variant="compact" icon={<CardSVG />} error={errors.cnic} />
-            </div>
-
-            {/* Street Address — always full width */}
-            <div className="ae-field ae-s3-adr ae-span-full">
-              <TextInput label="Street Address" value={address} onChange={v => setAddress(v)} variant="compact" icon={<PinSVG />} />
+            {/* Street Address — full width */}
+            <div className="ae-field ae-field-addr">
+              <TextInput label="Street Address" value={address} onChange={v => { setAddress(v); scheduleDraftSave(); }}
+                variant="compact" icon={<PinSVG />} />
             </div>
 
           </div>
 
-          {/* ── Actions — right-aligned ── */}
-          <div className="ae-act">
-            <button className="ae-btn-cancel" onClick={onClose} title="Discard">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-            <Button onClick={handleCreate}>Create Employee</Button>
+          {/* ── Submit ── */}
+          <div className="ae-submit-row">
+            <Button onClick={handleCreate} disabled={isPending}>
+              {isPending ? "Creating…" : "Create Employee"}
+            </Button>
           </div>
 
         </div>
       </div>
 
-      {/* ── Toast ── */}
-      <div className={`ae-toast${toast ? " ae-toast-show" : ""}`}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
-        {toast}
-      </div>
+      {/* ── Toast — form-level errors only ── */}
+      {toast && <div className="ae-toast" role="alert">{toast}</div>}
 
     </div>
   );

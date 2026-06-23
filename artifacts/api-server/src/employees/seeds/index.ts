@@ -1,31 +1,23 @@
-/* Seed data — matches employee_profile + employee_status schema exactly.
-   Used by EmployeesService.onModuleInit() to populate an empty database.
-   Do NOT import this in any UI component — it is server-side only.         */
+/* Employee seed data — inserted on first boot when the DB is empty.
+   SSOT: only this file holds demo employee records.
+   Never import this in any UI component — server-side only.          */
 
 export interface ProfileSeed {
-  name:  string;
-  role:  string;
-  cnic:  string;
-  sal:   number;
-  img:   string;
-  lang:  string[];
-  task:  string[];
-  cap:   string[];
-  spec:  string[];
-  gen:   string;
+  name: string; role: string; cnic: string; sal: number; gen: string;
+  img:  string; lang: string[]; task: string[]; cap: string[]; spec: string[];
 }
 
 export interface StatusSeed {
   att:  number;
   perf: number;
-  sts:  string | null;
+  sts:  "leave" | "unauth" | null;
   sin:  string | null;
   sout: string | null;
 }
 
 export const PROFILE_SEEDS: ProfileSeed[] = [
   {
-    name: "Alex Rivera",  role: "Senior Developer",   cnic: "4210112345671",
+    name: "Alex Rivera", role: "Senior Developer", cnic: "4210112345671",
     sal: 4500, gen: "Male",
     img: "https://lh3.googleusercontent.com/aida-public/AB6AXuD1bgJ9ObEX7Vmu2iodeu7ANsiyGaq3QqIV4cWRXrFs7iNvfixN5Pi1Bd0quN2nwqIw47xRZYRE_WzrWhIpY95KrALTGanCnM79dPhYaNbEntw6yMmqhc9yPEQMeBjjQL83NbIEAJdYjx18JZ_I7VSjZ2Rocv6HMa4IZ4yZdzdiCaRFiW5bxwaFqVEJSHL1CiynOn7vyhIM7-bWKBHQ13pcg-OGh7iAVXOyZkHm8muL1o5y52Qi9RRVShyLSHtedEfxYYYqjvqGnHMJ",
     lang: ["English", "Spanish"], task: ["Backend Development", "Code Review"],
@@ -69,10 +61,10 @@ export const PROFILE_SEEDS: ProfileSeed[] = [
 ];
 
 export const STATUS_SEEDS: StatusSeed[] = [
-  { att: 80,  perf: 60, sts: null,    sin: "09:15 AM", sout: null       },
-  { att: 80,  perf: 80, sts: null,    sin: "07:50 AM", sout: "04:30 PM" },
-  { att: 80,  perf: 60, sts: null,    sin: "07:55 AM", sout: "06:20 PM" },
-  { att: 90,  perf: 80, sts: "leave", sin: null,       sout: null       },
-  { att: 95,  perf: 85, sts: "unauth",sin: null,       sout: null       },
-  { att: 100, perf: 90, sts: null,    sin: "07:30 AM", sout: "06:30 PM" },
+  { att: 80,  perf: 60, sts: null,    sin: "09:15 AM", sout: null        },
+  { att: 80,  perf: 80, sts: null,    sin: "07:50 AM", sout: "04:30 PM"  },
+  { att: 80,  perf: 60, sts: null,    sin: "07:55 AM", sout: "06:20 PM"  },
+  { att: 90,  perf: 80, sts: "leave", sin: null,       sout: null        },
+  { att: 95,  perf: 85, sts: "unauth",sin: null,       sout: null        },
+  { att: 100, perf: 90, sts: null,    sin: "07:30 AM", sout: "06:30 PM"  },
 ];

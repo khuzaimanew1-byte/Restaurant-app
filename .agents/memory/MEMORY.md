@@ -3,3 +3,4 @@
 - [Onboarding design system](onboarding-design-system.md) — Slate+Amber palette SSOT, Apple-level rules (spacing, animation, psychology, glass), dark-only; no light mode ever.
 - [Flutter SSOT compliance](flutter-ssot-compliance.md) — AppTextStyles tokens, AppColors additions, Riverpod LoginNotifier, setState exceptions.
 - [Per-page CSS splitting](per-page-css-split.md) — CSS split from one 2690-line file into per-component files; global index.css is 266 lines; each page CSS imported in its lazy component.
+- [AddEmployeePage SSOT fix](add-employee-ssot-fix.md) — was broken (onSave prop required but never passed); now uses useCreateEmployee hook internally with all 15+ fields sent to DB; draft persists to localStorage key emp_draft_v1.
