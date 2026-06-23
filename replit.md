@@ -337,7 +337,8 @@ Whenever a UI pattern already exists as a shared React component or CSS class, y
 | 38×38 icon button | `.pg-icon-btn` CSS class |
 | Page topbar | `.topbar` global CSS class (index.css) — same class on every page, no per-page topbar class |
 | Topbar title | `.t-ttl` global CSS class (index.css) |
-| Sidebar + mobile nav + bottom nav | `<Navbar>` from `components/Navbar.tsx` — exports `Navbar`, `AvatarDropdown`, `NavItem` |
+| Desktop topbar + mobile topbar | `<Topbar>` from `components/ui/Topbar.tsx` — owns dropdown state; search state stays in dashboard |
+| Sidebar + mobile nav + bottom nav | `<Navigation>` from `components/ui/Navigation.tsx` — exports `Navigation`, `RestaurantLogo`, `NavItem` |
 | Chip / pill structure | `.chip` global CSS class (index.css) — add color via `.adm-chip-p`, `.adm-chip-h`, or context rules |
 
 **Rule:** Before writing any `<button>`, `<input>`, or label/badge JSX inline, check `components/ui/` first. If a shared component exists for it, use that — do **not** duplicate the HTML or CSS.

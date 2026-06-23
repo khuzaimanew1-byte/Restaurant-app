@@ -26,7 +26,7 @@ const BOTTOM_NAV_ITEMS: { id: NavItem; label: string }[] = [
   { id: "settings",      label: "Settings"  },
 ];
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Icons ───────────────────────────────────────────────────────────────────
 
 function NavIcon({ id }: { id: NavItem }) {
   switch (id) {
@@ -67,9 +67,11 @@ function NavIcon({ id }: { id: NavItem }) {
   }
 }
 
-export function RestaurantLogo({ size = 28 }: { size?: number }) {
+// ── Restaurant logo icon ────────────────────────────────────────────────────
+/* Color from .adm-restaurant-logo CSS class → var(--adm-gold) */
+
+export const RestaurantLogo = memo(function RestaurantLogo({ size = 28 }: { size?: number }) {
   return (
-    /* Color from .adm-restaurant-logo CSS class → var(--adm-gold) */
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
       className="adm-restaurant-logo">
@@ -78,7 +80,7 @@ export function RestaurantLogo({ size = 28 }: { size?: number }) {
       <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
     </svg>
   );
-}
+});
 
 // ── Navigation — Desktop Sidebar + Mobile Bottom Nav ───────────────────────
 
@@ -92,7 +94,7 @@ export const Navigation = memo(function Navigation({
   return (
     <>
       {/* Desktop Sidebar */}
-      <nav className="adm-sidebar">
+      <nav className="adm-sidebar" aria-label="Sidebar navigation">
         <div className="adm-sidebar-logo">
           <RestaurantLogo size={30} />
           <h1 className="adm-sidebar-brand">MyRestaurant</h1>

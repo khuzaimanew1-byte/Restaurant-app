@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
 import { useDebounce }       from "../hooks/useDebounce";
 import { useDelayedUnmount } from "../hooks/useDelayedUnmount";
 import { type NewEmployeeData } from "./AddEmployeePage";
+import { Navigation, type NavItem } from "./ui/Navigation";
+import { Topbar }                   from "./ui/Topbar";
 import "../styles/main-bg.css";
 import "../styles/admin-dashboard.css";
 
@@ -11,7 +13,6 @@ type LeaveStatus = "leave" | "unauthorized-leave" | "half-day" | null;
 type DisplayStatus =
   | "unauthorized-leave" | "leave" | "half-day"
   | "early-departure" | "late-arrival" | "arrival" | "normal";
-type NavItem = "dashboard" | "leave" | "analytics" | "settings" | "notifications";
 
 interface Employee {
   id: number; name: string; role: string; salary: string;
@@ -50,22 +51,22 @@ const STATUS_LABEL: Record<DisplayStatus, string> = {
 const SORT_NO_CHECKOUT: Record<DisplayStatus, number> = {
   "unauthorized-leave": 0,
   "leave":              1,
-  "late-arrival":       3,  // rank 3 — below half-day (2)
-  "arrival":            5,  // rank 4
-  "normal":             9,  // No Check-in, lowest
-  "half-day":           99, // shouldn't appear without checkout
-  "early-departure":    99, // shouldn't appear without checkout
+  "late-arrival":       3,
+  "arrival":            5,
+  "normal":             9,
+  "half-day":           99,
+  "early-departure":    99,
 };
 
 // Priority when employee HAS a checkout (even slots 2,4,6,7,10)
 const SORT_WITH_CHECKOUT: Record<DisplayStatus, number> = {
   "unauthorized-leave": 0,
   "leave":              1,
-  "half-day":           2,  // rank 3 — above late-arrival no-checkout (3)
-  "early-departure":    4,  // rank 4
-  "late-arrival":       6,  // rank 5 — below arrival no-checkout (5)
-  "arrival":            7,  // rank 6/7 — normal departure
-  "normal":             10, // edge case
+  "half-day":           2,
+  "early-departure":    4,
+  "late-arrival":       6,
+  "arrival":            7,
+  "normal":             10,
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -218,7 +219,7 @@ const INITIAL_EMPLOYEES: Employee[] = [
   {
     id: 5, name: "Michael Chang", role: "Sous Chef", salary: "$4,800",
     checkIn: "", checkOut: "", leaveStatus: "unauthorized-leave", att: 95, perf: 85,
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDLTNppDitBL-LUEeaxBCqc0mH7i9QNK5oXjv0WIk341piN1t1jbHb_IiDU04tNJXpFJovS2b8M761eF09xTFFthfLHinU7eKP65ofovLvikYSEaSPFseO02sWYQYARhRoo15vG0yN0jewg5gcaa4fxf_-cBnElNRwmC-4YfqjKa4FVucFFkp18q_EIMojqUWDtPykXs7ZeaGL_RSlhAx2Jywp_otPpLFm3B-H1sXV4W6-Cc3RxMQQeW07COmY1OMZQf-BYyLCBrNKo",
+    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDLTNppDitBL-LUEeaxBCqc0mH7i9QNK5oXjv0WIk341piN1t1jbHb_IiDU04tNJlovS2b8M761eF09xTFFthfLHinU7eKP65ofovLvikYSEaSPFseO02sWYQYARhRoo15vG0yN0jewg5gcaa4fxf_-cBnElNRwmC-4YfqjKa4FVucFFkp18q_EIMojqUWDtPykXs7ZeaGL_RSlhAx2Jywp_otPpLFm3B-H1sXV4W6-Cc3RxMQQeW07COmY1OMZQf-BYyLCBrNKo",
     initials: "MC", color: "var(--av-p5)",
   },
   {
@@ -227,21 +228,6 @@ const INITIAL_EMPLOYEES: Employee[] = [
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBn9FUaoKfhISyk0i7541LCL_Wne8GVJqIZ5Kh4R4-k1T2CNR9nrJseDhLdCVFn0IVlGMCi3ObqXLAW1heQFm2c3UAy58EAoLwiIvUyFxWlz0MnUYbGctN9HdTwRXf0JXR5U-IMcikQ6OzWsuSLyz8xCd74xF4ZOlicwh4v0K4Wntug0_hOAQg190FMP14qIg74oI478NPbXIiNLNjMhaIrWFNdZrVKsLWc7eTn_715wWnZK8ESsznSD5kJOA_BmCV3zQcCgm1s5-S5r",
     initials: "OS", color: "var(--av-p6)",
   },
-];
-
-const NAV_ITEMS: { id: NavItem; label: string }[] = [
-  { id: "dashboard",  label: "Dashboard"    },
-  { id: "leave",      label: "Time & Leave" },
-  { id: "analytics",  label: "Analytics"    },
-  { id: "settings",   label: "Settings"     },
-];
-
-const BOTTOM_NAV_ITEMS: { id: NavItem; label: string }[] = [
-  { id: "dashboard",     label: "Dashboard" },
-  { id: "leave",         label: "Time"      },
-  { id: "notifications", label: "Alerts"    },
-  { id: "analytics",     label: "Analytics" },
-  { id: "settings",      label: "Settings"  },
 ];
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -297,7 +283,6 @@ const EmployeeCard = memo(function EmployeeCard({
   const isLeave   = status === "leave" || status === "unauthorized-leave";
   const isHalf    = status === "half-day";
 
-  // Inline edit local state
   const [ci24,      setCi24]      = useState("");
   const [co24,      setCo24]      = useState("");
   const [editError, setEditError] = useState("");
@@ -316,25 +301,21 @@ const EmployeeCard = memo(function EmployeeCard({
     onEditSave(emp.id, to12h(ci24), to12h(co24));
   }
 
-  // Independent time slot CSS keys — no inline hex, colors live in CSS vars
-  // arrStatus: late arrival = "late", else null (default text color)
+  /* Independent time slot CSS keys — no inline hex, colors live in CSS vars */
   const arrStatus = getArrivalStatus(emp, timing);
   const depStatus = isHalf ? "half" : (emp.leaveStatus ? null : getDepartureStatus(emp, timing));
 
-  // Dot CSS key: leave status > checkout departure > arrival
   let dotCss: string | null;
   if (emp.leaveStatus) {
     dotCss = statusCss;
   } else if (emp.checkOut) {
-    dotCss = depStatus; // null = normal departure
+    dotCss = depStatus;
   } else {
-    dotCss = arrStatus; // null = no check-in yet
+    dotCss = arrStatus;
   }
 
-  // Pulse only while actively checked in (no checkout, no leave)
   const shouldPulse = !emp.leaveStatus && !!emp.checkIn && !emp.checkOut;
 
-  // Always show both slots; --:-- when no value recorded
   const displayIn  = emp.checkIn  || "--:--";
   const displayOut = emp.checkOut || "--:--";
 
@@ -379,7 +360,6 @@ const EmployeeCard = memo(function EmployeeCard({
           <p className="adm-card-role"><Highlight text={emp.role} query={query} /></p>
           <p className="adm-card-salary"><Highlight text={emp.salary} query={query} /></p>
 
-          {/* Inline edit mode */}
           {isEditing ? (
             <div className="adm-inline-edit">
               <div className="adm-inline-time-row">
@@ -404,7 +384,6 @@ const EmployeeCard = memo(function EmployeeCard({
               {editError && <p className="adm-inline-error">{editError}</p>}
             </div>
           ) : isLeave ? (
-            /* Status label color comes from CSS class — no inline style */
             <div className={`adm-status-label adm-status--${status}`}>
               {STATUS_LABEL[status]}
             </div>
@@ -468,12 +447,11 @@ function ContextMenu({
   const menuRef = useRef<HTMLDivElement>(null);
 
   /* ── Keyboard navigation ──────────────────────────────────
-     Items: 0=Edit  1=Leave  2=Unauthorized Leave  3=Half Day
-     Only non-disabled items are reachable via ↑↓ */
+     Items: 0=Edit  1=Leave  2=Unauthorized Leave  3=Half Day */
   const itemDisabled = [false, false, false, !halfOk] as const;
   const enabledIdxs  = itemDisabled.map((d, i) => (d ? -1 : i)).filter(i => i >= 0);
   const [kbdIdx, setKbdIdx] = useState(-1);
-  const kbdIdxRef = useRef(-1); // always-fresh ref for use inside event handlers
+  const kbdIdxRef = useRef(-1);
 
   function moveFocus(delta: 1 | -1) {
     const pos  = enabledIdxs.indexOf(kbdIdxRef.current);
@@ -482,20 +460,13 @@ function ContextMenu({
     setKbdIdx(next);
   }
 
-  /* ── All close triggers ────────────────────────────────────────────────────
-     mousedown (bubble) matches the original proven pattern — fires after target
-     handlers, avoids race with contextmenu event that capture-phase pointerdown
-     introduced (pointerdown captures BEFORE contextmenu, causing spurious close
-     when right-clicking a card while menu is already open).
-     Escape is checked BEFORE the isOpen guard so it always works.            */
+  /* mousedown (bubble) fires after target handlers, avoids race with contextmenu */
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
     }
     function onKey(e: KeyboardEvent) {
-      /* Escape works even during exit animation (220ms window) */
       if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
-      /* Arrow nav + Enter only while fully open */
       if (!isOpen) return;
       if (e.key === "ArrowDown") { e.preventDefault(); moveFocus(1);  return; }
       if (e.key === "ArrowUp")   { e.preventDefault(); moveFocus(-1); return; }
@@ -528,13 +499,10 @@ function ContextMenu({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, onClose, ctx.empId]);
 
-  /* Reset keyboard focus each time the menu opens */
   useEffect(() => {
     if (isOpen) { kbdIdxRef.current = -1; setKbdIdx(-1); }
   }, [isOpen]);
 
-  /* ── Viewport-safe positioning ─────────────────────────────
-     Clamp so the menu never overflows edges; reflow on window resize closes it anyway */
   const menuW = 196, menuH = 184;
   const left  = Math.min(Math.max(ctx.x, 8), window.innerWidth  - menuW - 8);
   const top   = Math.min(Math.max(ctx.y, 8), window.innerHeight - menuH - 8);
@@ -655,58 +623,6 @@ function OfficeTimingHeader({ timing, onUpdate }: {
   );
 }
 
-function NavIcon({ id }: { id: NavItem }) {
-  switch (id) {
-    case "dashboard":
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
-        </svg>
-      );
-    case "leave":
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
-          <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-      );
-    case "analytics":
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-        </svg>
-      );
-    case "settings":
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      );
-    case "notifications":
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-      );
-  }
-}
-
-function RestaurantLogo({ size = 28 }: { size?: number }) {
-  return (
-    /* Color comes from .adm-restaurant-logo CSS class → var(--adm-gold) */
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-      className="adm-restaurant-logo">
-      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
-      <path d="M7 2v20"/>
-      <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>
-    </svg>
-  );
-}
-
 function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="adm-modal-overlay" onClick={onCancel}>
@@ -728,86 +644,38 @@ function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel:
   );
 }
 
-function AvatarDropdown({
-  isOpen, onLogoutRequest, onClose,
-}: {
-  isOpen: boolean;
-  onLogoutRequest: () => void;
-  onClose: () => void;
-}) {
-  /* No internal outside-click listener — the parent (AdminDashboard) owns it
-     via container div refs, matching the original proven mousedown pattern. */
-  return (
-    <div
-      className="adm-avatar-dropdown"
-      data-closing={!isOpen ? "" : undefined}
-    >
-      <div className="adm-dropdown-header">
-        <div className="adm-dropdown-avatar">A</div>
-        <div className="adm-dropdown-info">
-          <span className="adm-dropdown-name">Admin</span>
-          <span className="adm-dropdown-role">Administrator</span>
-        </div>
-      </div>
-      <div className="adm-dropdown-divider" />
-      <button className="adm-dropdown-logout"
-        onClick={() => { onClose(); onLogoutRequest(); }}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-        Sign out
-      </button>
-    </div>
-  );
-}
-
 // ── Main Dashboard ─────────────────────────────────────────────────────────
 
 export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => void; onAddEmployee: () => void }) {
-  const [activeNav,      setActiveNav]      = useState<NavItem>("dashboard");
-  const [employees,      setEmployees]      = useState<Employee[]>(INITIAL_EMPLOYEES);
-  const [officeTiming,   setOfficeTiming]   = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
-  const [rawQuery,        setRawQuery]       = useState("");
-  const [mobileSearchOpen, setMobileSearch] = useState(false);
-  const [dropdownOpen,   setDropdownOpen]   = useState(false);
-  const [logoutModalOpen, setLogoutModal]   = useState(false);
-  const [ctxMenu,        setCtxMenu]        = useState<CtxMenu | null>(null);
-  const [editingId,      setEditingId]      = useState<number | null>(null);
+  const [activeNav,        setActiveNav]      = useState<NavItem>("dashboard");
+  const [employees,        setEmployees]      = useState<Employee[]>(INITIAL_EMPLOYEES);
+  const [officeTiming,     setOfficeTiming]   = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
+  const [rawQuery,         setRawQuery]       = useState("");
+  const [mobileSearchOpen, setMobileSearch]  = useState(false);
+  const [logoutModalOpen,  setLogoutModal]   = useState(false);
+  const [ctxMenu,          setCtxMenu]       = useState<CtxMenu | null>(null);
+  const [editingId,        setEditingId]     = useState<number | null>(null);
 
   /* ── useDelayedUnmount ─────────────────────────────────────────────────────
-     LogoutModal keeps 60 s cache for quick re-open.
-     Context menu and avatar dropdown use only 220 ms — just enough for their
-     CSS exit animations.                                                        */
-  const shouldRenderLogout   = useDelayedUnmount(logoutModalOpen);
-  const shouldRenderDropdown = useDelayedUnmount(dropdownOpen, 220);
-  const shouldRenderCtx      = useDelayedUnmount(!!ctxMenu, 220);
+     LogoutModal: 60 s default cache. ContextMenu: 220 ms for CSS exit animation. */
+  const shouldRenderLogout = useDelayedUnmount(logoutModalOpen);
+  const shouldRenderCtx    = useDelayedUnmount(!!ctxMenu, 220);
 
-  /* ── ctxMenuData — ref instead of state ────────────────────────────────────
-     Original pattern used useState + useEffect to track last known position for
-     the exit animation window. Problem: useEffect runs AFTER render, causing:
-       1. Two-render delay before ContextMenu first mounts (listeners absent)
-       2. One-render flash at old position when switching cards
-     Fix: update a ref SYNCHRONOUSLY during render — zero delay, zero flash.    */
+  /* ctxMenuData — ref so position is available during 220 ms exit window */
   const ctxMenuDataRef = useRef<CtxMenu | null>(null);
-  if (ctxMenu) ctxMenuDataRef.current = ctxMenu; // sync update during render
-  const ctxMenuData = ctxMenuDataRef.current;      // null only before first open
+  if (ctxMenu) ctxMenuDataRef.current = ctxMenu;
+  const ctxMenuData = ctxMenuDataRef.current;
 
   const debouncedQuery = useDebounce(rawQuery, 280);
 
-  const searchRef          = useRef<HTMLInputElement>(null);
-  const mobileSearchRef    = useRef<HTMLInputElement>(null);
-  /* Container div refs — wrap avatar button + dropdown panel together.
-     mousedown containment check on the CONTAINER means clicking anywhere
-     inside (avatar button OR dropdown panel) never triggers outside-close.
-     This mirrors the original proven pattern. */
-  const desktopDropdownRef = useRef<HTMLDivElement>(null);
-  const mobileDropdownRef  = useRef<HTMLDivElement>(null);
+  /* Search refs passed to Topbar — state (rawQuery) stays here, drives filtering */
+  const searchRef       = useRef<HTMLInputElement>(null);
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
 
   const today        = getTodayStr();
-  const presentCount  = useMemo(() => employees.filter(e => !e.leaveStatus && e.checkIn).length, [employees]);
-  const halfDayCount  = useMemo(() => employees.filter(e => e.leaveStatus === "half-day").length, [employees]);
-  const totalCount    = employees.length;
+  const presentCount = useMemo(() => employees.filter(e => !e.leaveStatus && e.checkIn).length, [employees]);
+  const halfDayCount = useMemo(() => employees.filter(e => e.leaveStatus === "half-day").length, [employees]);
+  const totalCount   = employees.length;
 
   const sorted = useMemo(() => sortedEmployees(employees, officeTiming), [employees, officeTiming]);
 
@@ -825,7 +693,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
   const openSearch  = useCallback(() => { setMobileSearch(true); setTimeout(() => mobileSearchRef.current?.focus(), 300); }, []);
   const closeSearch = useCallback(() => { setMobileSearch(false); setRawQuery(""); }, []);
 
-  // ── Pending employee from AddEmployeePage (sessionStorage message bus) ──────
+  /* Pending employee from AddEmployeePage (sessionStorage message bus) */
   useEffect(() => {
     const raw = sessionStorage.getItem("pending_employee");
     if (!raw) return;
@@ -850,24 +718,6 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
     sessionStorage.removeItem("pending_employee");
   }, []);
 
-  const requestLogout = useCallback(() => { setDropdownOpen(false); setLogoutModal(true); }, []);
-  const closeDropdown = useCallback(() => setDropdownOpen(false), []);
-
-  /* ── Avatar dropdown outside-click ─────────────────────────────────────────
-     Active whenever the dropdown is mounted (open OR 220ms exit animation).
-     Container refs include BOTH the avatar button and the dropdown panel, so
-     clicking either never triggers close — same as the original mousedown pattern.  */
-  useEffect(() => {
-    if (!shouldRenderDropdown) return;
-    function handleMouseDown(e: MouseEvent) {
-      const t = e.target as Node;
-      if (!desktopDropdownRef.current?.contains(t) && !mobileDropdownRef.current?.contains(t))
-        setDropdownOpen(false);
-    }
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
-  }, [shouldRenderDropdown]);
-
   const handleCtxAction = useCallback((empId: number, action: "edit" | LeaveStatus) => {
     if (action === "edit") {
       setEditingId(prev => prev === empId ? null : empId);
@@ -876,7 +726,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
       setEmployees(prev => prev.map(e => {
         if (e.id !== empId) return e;
         const newStatus: LeaveStatus = e.leaveStatus === action ? null : action;
-        const clearTimes     = newStatus === "leave" || newStatus === "unauthorized-leave";
+        const clearTimes      = newStatus === "leave" || newStatus === "unauthorized-leave";
         const restoreDefaults = newStatus === null && !e.checkIn && !e.checkOut;
         return {
           ...e,
@@ -912,117 +762,24 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
   return (
     <div className="adm-root">
 
-      {/* ── Desktop Sidebar ── */}
-      <nav className="adm-sidebar">
-        <div className="adm-sidebar-logo">
-          <RestaurantLogo size={30} />
-          <h1 className="adm-sidebar-brand">MyRestaurant</h1>
-        </div>
-        <div className="adm-sidebar-nav">
-          {NAV_ITEMS.map(item => (
-            <button key={item.id}
-              className={`nav-item adm-nav-item${activeNav === item.id ? " adm-nav-active" : ""}`}
-              onClick={() => setActiveNav(item.id)}>
-              <NavIcon id={item.id} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* ── Desktop Sidebar + Mobile Bottom Nav ── */}
+      <Navigation activeNav={activeNav} onNavChange={setActiveNav} />
 
       {/* ── Main content ── */}
       <main className="adm-main">
 
-        {/* Desktop top header */}
-        <header className="topbar adm-header">
-          <div className="adm-header-left">
-            <div className="adm-header-date-row">
-              <h2 className="adm-header-date">{today}</h2>
-            </div>
-          </div>
-          <div className="adm-header-right">
-            <div className="adm-search-wrap">
-              <svg className="adm-search-icon-inner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input
-                ref={searchRef}
-                className="adm-search-input"
-                placeholder="Search employees..."
-                value={rawQuery}
-                autoComplete="off"
-                onChange={e => setRawQuery(e.target.value)}
-                onKeyDown={e => { if (e.key === "Escape") setRawQuery(""); }}
-              />
-            </div>
-            <button className="adm-notif-btn" aria-label="Notifications">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-              <span className="adm-notif-dot" />
-            </button>
-            <div className="adm-profile-wrap" ref={desktopDropdownRef}>
-              <div
-                className={`adm-profile-avatar${dropdownOpen ? " adm-profile-avatar-open" : ""}`}
-                onClick={() => setDropdownOpen(v => !v)} title="Account">A</div>
-              {shouldRenderDropdown && (
-                <AvatarDropdown
-                  isOpen={dropdownOpen}
-                  onLogoutRequest={requestLogout}
-                  onClose={closeDropdown}
-                />
-              )}
-            </div>
-          </div>
-        </header>
-
-        {/* Mobile sticky top bar — .topbar base from index.css + .adm-topbar page overrides */}
-        <header className="topbar adm-topbar">
-          <div className={`adm-topbar-logo${mobileSearchOpen ? " adm-topbar-logo-hide" : ""}`}>
-            <RestaurantLogo size={26} />
-            <span className="adm-topbar-brand">MyRestaurant</span>
-          </div>
-          <div className={`adm-topbar-search${mobileSearchOpen ? " adm-topbar-search-open" : ""}`}>
-            <input
-              ref={mobileSearchRef}
-              className="adm-topbar-search-input"
-              placeholder="Search staff..."
-              value={rawQuery}
-              autoComplete="off"
-              onChange={e => setRawQuery(e.target.value)}
-              onKeyDown={e => { if (e.key === "Escape") setRawQuery(""); }}
-            />
-          </div>
-          <div className="adm-topbar-actions">
-            <button className="adm-topbar-toggle"
-              onClick={mobileSearchOpen ? closeSearch : openSearch}
-              aria-label={mobileSearchOpen ? "Close search" : "Open search"}>
-              {mobileSearchOpen ? (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-              )}
-            </button>
-            <div className="adm-topbar-avatar-wrap" ref={mobileDropdownRef}>
-              <button
-                className={`adm-topbar-profile${dropdownOpen ? " adm-topbar-profile-open" : ""}`}
-                onClick={() => setDropdownOpen(v => !v)} aria-label="Account">
-                <div className="adm-topbar-profile-avatar">A</div>
-              </button>
-              {shouldRenderDropdown && (
-                <AvatarDropdown
-                  isOpen={dropdownOpen}
-                  onLogoutRequest={requestLogout}
-                  onClose={closeDropdown}
-                />
-              )}
-            </div>
-          </div>
-        </header>
+        {/* Desktop header + Mobile topbar — Topbar owns dropdown state */}
+        <Topbar
+          today={today}
+          rawQuery={rawQuery}
+          onQueryChange={setRawQuery}
+          searchRef={searchRef}
+          mobileSearchRef={mobileSearchRef}
+          mobileSearchOpen={mobileSearchOpen}
+          onOpenSearch={openSearch}
+          onCloseSearch={closeSearch}
+          onLogoutRequest={() => setLogoutModal(true)}
+        />
 
         {/* Desktop stats bar — below header: pills left, Total right */}
         <div className="adm-desktop-stats">
@@ -1050,7 +807,6 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
         {/* ── Content area ── */}
         <div key={activeNav} className="adm-content adm-content-enter">
 
-          {/* Time & Leave page: office timing header */}
           {activeNav === "leave" && (
             <OfficeTimingHeader timing={officeTiming} onUpdate={setOfficeTiming} />
           )}
@@ -1076,24 +832,9 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
           </svg>
         </button>
 
-        {/* Bottom nav — mobile only */}
-        <nav className="adm-bottom-nav">
-          {BOTTOM_NAV_ITEMS.map(item => (
-            <button key={item.id}
-              className={`nav-item adm-bnav-item${activeNav === item.id ? " adm-bnav-active" : ""}`}
-              onClick={() => setActiveNav(item.id)}>
-              <div className="adm-bnav-icon-wrap">
-                <NavIcon id={item.id} />
-                {item.id === "notifications" && <span className="adm-bnav-notif-dot" />}
-              </div>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-
       </main>
 
-      {/* Context menu — mounted while open or during 220ms exit animation */}
+      {/* Context menu — mounted while open or during 220 ms exit animation */}
       {shouldRenderCtx && ctxMenuData && (
         <ContextMenu
           ctx={ctxMenuData}
@@ -1111,7 +852,6 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
         <LogoutModal onConfirm={onLogout} onCancel={() => setLogoutModal(false)} />
       )}
 
-      {/* AddEmployeePage is a separate route — /admin/add-employee — rendered by App.tsx */}
     </div>
   );
 }
