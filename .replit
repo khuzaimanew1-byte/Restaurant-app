@@ -126,6 +126,7 @@ externalPort = 3000
 [userenv.shared]
 ADMIN_GMAIL = "khuzaimanew1@gmail.com"
 SENDING_GMAIL = "usamasif090@gmail.com"
+PORT = "8080"
 
 [nix]
 channel = "stable-25_05"
