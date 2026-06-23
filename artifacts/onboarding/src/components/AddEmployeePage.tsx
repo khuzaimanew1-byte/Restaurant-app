@@ -1,4 +1,7 @@
-import { useState, useRef, useCallback, useLayoutEffect } from "react";
+import {
+  useState, useRef, useCallback, useLayoutEffect,
+  type Dispatch, type SetStateAction,
+} from "react";
 import { Button }     from "./ui/Button";
 import { TextInput }  from "./ui/Input";
 import { BulletList } from "./ui/BulletList";
@@ -132,10 +135,19 @@ export function AddEmployeePage({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Toast — form-level only (field errors shown inline)
-  const [toast, setToast] = useState("");
+  // Two-phase: mount element first, then add ae-toast-show on next frame to trigger CSS transition
+  const [toast,     setToast]     = useState("");
+  const [toastShow, setToastShow] = useState(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast(msg);
-    setTimeout(() => setToast(""), 3200);
+    setToastShow(false);
+    requestAnimationFrame(() => setToastShow(true));
+    toastTimerRef.current = setTimeout(() => {
+      setToastShow(false);
+      setTimeout(() => setToast(""), 380); // wait for CSS exit transition (350ms + buffer)
+    }, 3200);
   }, []);
 
   // Image processing — resize to ≤160px height, WebP 82% (rule 7d)
@@ -163,15 +175,15 @@ export function AddEmployeePage({
 
   const addItem = useCallback((
     val: string,
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
-    inputSetter: React.Dispatch<React.SetStateAction<string>>,
+    setter: Dispatch<SetStateAction<string[]>>,
+    inputSetter: Dispatch<SetStateAction<string>>,
   ) => {
     const t = val.trim();
     if (t) { setter(p => [...p, t]); scheduleDraftSave(); }
     inputSetter("");
   }, [scheduleDraftSave]);
 
-  const delItem = useCallback((i: number, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+  const delItem = useCallback((i: number, setter: Dispatch<SetStateAction<string[]>>) => {
     setter(p => p.filter((_, idx) => idx !== i));
     scheduleDraftSave();
   }, [scheduleDraftSave]);
@@ -209,11 +221,6 @@ export function AddEmployeePage({
     const mo = parseInt(expMo || "0", 10);
     if (yr > 0) expObj.y = Math.min(99, yr);
     if (mo > 0) expObj.m = Math.min(12, mo);
-
-    /* Derive initials/color server-side equivalent for optimistic avatar */
-    const initials = name.trim().split(/\s+/).map(w => w[0] ?? "").join("").slice(0, 2).toUpperCase();
-    const color    = AVATAR_PALETTE[name.charCodeAt(0) % AVATAR_PALETTE.length]!;
-    void initials; void color; // derived by server in toEmployeeCard
 
     const payload: CreateEmployeePayload = {
       name:  name.trim(),
@@ -508,8 +515,12 @@ export function AddEmployeePage({
         </div>
       </div>
 
-      {/* ── Toast — form-level errors only ── */}
-      {toast && <div className="ae-toast" role="alert">{toast}</div>}
+      {/* ── Toast — animates in via ae-toast-show class (CSS transition in add-employee.css) */}
+      {toast && (
+        <div className={`ae-toast${toastShow ? " ae-toast-show" : ""}`} role="alert">
+          {toast}
+        </div>
+      )}
 
     </div>
   );
