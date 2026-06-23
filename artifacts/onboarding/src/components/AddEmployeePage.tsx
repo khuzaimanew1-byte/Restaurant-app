@@ -38,7 +38,6 @@ const ChevSVG = ({ open }: { open: boolean }) => (
     <polyline points="6 9 12 15 18 9"/>
   </svg>
 );
-const ClockSVG = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 
 const GENDERS = ["Male", "Female", "Other"];
 
@@ -139,7 +138,10 @@ export function AddEmployeePage({
   const [specInp,  setSpecInp]  = useState("");
   const [specs,    setSpecs]    = useState<string[]>([]);
 
-  // Toast
+  // Field-level validation errors
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Toast — used only for form-level (non-field) messages
   const [toast, setToast] = useState("");
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -195,8 +197,13 @@ export function AddEmployeePage({
   }, []);
 
   function handleCreate() {
-    if (!name.trim()) { showToast("Full Name is required"); return; }
-    if (!role.trim()) { showToast("Position / Role is required"); return; }
+    const errs: Record<string, string> = {};
+    if (!name.trim()) errs.name = "Full Name is required";
+    if (!role.trim()) errs.role = "Position / Role is required";
+    if (!cnic.trim()) errs.cnic = "CNIC is required";
+    else if (cnic.replace(/\D/g, "").length < 13) errs.cnic = "Enter complete 13-digit CNIC";
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    setErrors({});
     const initials = name.trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
     const color    = AVATAR_PALETTE[name.charCodeAt(0) % AVATAR_PALETTE.length];
     const salaryStr = salary ? `PKR ${salary}` : "";
@@ -289,7 +296,7 @@ export function AddEmployeePage({
 
               {/* Row 1: Full Name */}
               <div className="ae-field">
-                <TextInput label="Full Name" value={name} onChange={v => setName(v)} autoComplete="name" variant="compact" icon={<PersonSVG />} />
+                <TextInput label="Full Name" value={name} onChange={v => { setName(v); if (errors.name) setErrors(p => ({...p, name: ""})); }} autoComplete="name" variant="compact" icon={<PersonSVG />} error={errors.name} />
               </div>
 
               {/* Row 1: Spoken Language (moved from Section 3) */}
@@ -319,7 +326,7 @@ export function AddEmployeePage({
 
               {/* Row 2: Position / Role */}
               <div className="ae-field">
-                <TextInput label="Position / Role" value={role} onChange={v => setRole(v)} variant="compact" icon={<BriefSVG />} />
+                <TextInput label="Position / Role" value={role} onChange={v => { setRole(v); if (errors.role) setErrors(p => ({...p, role: ""})); }} variant="compact" icon={<BriefSVG />} error={errors.role} />
               </div>
 
               {/* Row 2: Joining Date */}
@@ -364,27 +371,31 @@ export function AddEmployeePage({
                 </div>
               </div>
 
-              {/* Row 3 col 2: Shift Timing — two separate integrated fields */}
+              {/* Row 3 col 2: Shift Timing — single row: in · start · out · end */}
               <div className="ae-field ae-s1-sft">
-                <div className="ae-shift-stack">
-                  <div className="ae-fi-wrap" onClick={() => shiftStartRef.current?.focus()}>
-                    <span className="ae-date-ico"><ClockSVG /></span>
-                    <input
-                      ref={shiftStartRef}
-                      className="ae-shift-time-inp"
-                      type="time" value={shiftStart}
-                      onChange={e => setShiftStart(e.target.value)}
-                    />
-                  </div>
-                  <div className="ae-fi-wrap" onClick={() => shiftEndRef.current?.focus()}>
-                    <span className="ae-date-ico"><ClockSVG /></span>
-                    <input
-                      ref={shiftEndRef}
-                      className="ae-shift-time-inp"
-                      type="time" value={shiftEnd}
-                      onChange={e => setShiftEnd(e.target.value)}
-                    />
-                  </div>
+                <div className="ae-shift-row">
+                  <span className="ae-shift-ico">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                    </svg>
+                  </span>
+                  <input
+                    ref={shiftStartRef}
+                    className="ae-shift-time-inp"
+                    type="time" value={shiftStart}
+                    onChange={e => setShiftStart(e.target.value)}
+                  />
+                  <span className="ae-shift-ico">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
+                    </svg>
+                  </span>
+                  <input
+                    ref={shiftEndRef}
+                    className="ae-shift-time-inp"
+                    type="time" value={shiftEnd}
+                    onChange={e => setShiftEnd(e.target.value)}
+                  />
                 </div>
               </div>
 
@@ -477,7 +488,7 @@ export function AddEmployeePage({
 
             {/* CNIC */}
             <div className="ae-field ae-s3-cni">
-              <TextInput label="CNIC" value={cnic} onChange={v => handleCnic(v)} maxLength={15} variant="compact" icon={<CardSVG />} />
+              <TextInput label="CNIC" value={cnic} onChange={v => { handleCnic(v); if (errors.cnic) setErrors(p => ({...p, cnic: ""})); }} maxLength={15} variant="compact" icon={<CardSVG />} error={errors.cnic} />
             </div>
 
             {/* Street Address — always full width */}

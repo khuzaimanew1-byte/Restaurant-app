@@ -158,11 +158,11 @@
   padding-top: 4px; margin-bottom: 12px; position: relative; z-index: 1;
 }
 .ae-av-halo {
-  width: 182px; height: 182px; border-radius: 50%;
+  width: 162px; height: 162px; border-radius: 50%;
   border: 1px solid rgba(212,175,55,.22);
   display: flex; align-items: center; justify-content: center;
   position: relative; flex-shrink: 0;
-  box-shadow: 0 0 0 8px rgba(212,175,55,.04), 0 18px 48px rgba(0,0,0,.45);
+  box-shadow: 0 0 0 7px rgba(212,175,55,.04), 0 16px 42px rgba(0,0,0,.45);
 }
 .ae-av-halo::before, .ae-av-halo::after {
   content: ''; position: absolute;
@@ -174,7 +174,7 @@
 .ae-av-halo::before { top: -3.5px; left: 50%; margin-left: -3.5px; }
 .ae-av-halo::after  { bottom: -3.5px; left: 50%; margin-left: -3.5px; }
 .ae-av-ring {
-  width: 148px; height: 148px; border-radius: 50%;
+  width: 130px; height: 130px; border-radius: 50%;
   cursor: pointer;
   background: radial-gradient(circle at 50% 38%, #2e333d, #22272f);
   position: relative; overflow: hidden;
@@ -238,7 +238,7 @@
   position: relative;
   display: inline-flex; align-items: center; gap: 0;
   border: 1.5px solid rgba(212,175,55,.45);
-  border-radius: 100px; padding: 0 16px; height: 32px;
+  border-radius: 100px; padding: 0 12px; height: 28px;
   background: rgba(35,36,42,.6);
   transition: border-color .25s, box-shadow .25s;
 }
@@ -355,10 +355,27 @@
 /* ae-exp-sep: thin 1px divider between prefix and pairs, and between pairs */
 .ae-exp-sep { width: 1px; height: 12px; background: rgba(212,175,55,.25); flex-shrink: 0; }
 
-/* Shift timing — two separate stacked fields, each using ae-fi-wrap underline */
-.ae-shift-stack {
-  display: flex; flex-direction: column; gap: 8px;
+/* Shift timing — single row: in-arrow · start · out-arrow · end */
+.ae-shift-row {
+  position: relative; display: flex; align-items: center; gap: 6px;
+  padding-bottom: 8px;
 }
+.ae-shift-row::before {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1.5px; background: rgba(226,232,240,.14);
+}
+.ae-shift-row::after {
+  content: ''; position: absolute; bottom: 0; left: 0; width: 100%;
+  height: 2px; background: var(--adm-gold);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .35s cubic-bezier(0.16,1,0.3,1);
+}
+.ae-shift-row:focus-within::after { transform: scaleX(1); }
+.ae-shift-ico {
+  display: flex; align-items: center;
+  color: rgba(148,163,184,.55); flex-shrink: 0;
+}
+.ae-shift-row:focus-within .ae-shift-ico { color: var(--adm-gold); }
 .ae-shift-time-inp {
   background: transparent; border: none; outline: none;
   color: var(--adm-text); font-family: 'Inter', sans-serif;
