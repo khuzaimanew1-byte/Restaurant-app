@@ -105,37 +105,34 @@
 
 /* ════════════════════════════════════════════════════════════
    SECTION 3 — Bottom: personal info fields
-   Desktop (3-col):
-     Row 1: Gender | Email   | Languages
-     Row 2: Phone  | CNIC
-     Row 3: Street Address (full width)
-   Mobile (2-col, CSS order resequences fields):
-     Row 1: Gender   | Languages
-     Row 2: Phone    | CNIC
-     Row 3: Email    (full width)
-     Row 4: Street   (full width)
+   Flexbox auto-fit: 3 per row at desktop, 2 at tablet, 1 at mobile.
+   Last-row items auto-expand to fill remaining space (flex-grow: 1).
+   2 remaining → each 50%. 1 remaining → full width. No empty gaps.
 ════════════════════════════════════════════════════════════ */
 .ae-sec3 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 28px clamp(24px, 4vw, 44px);
   margin-bottom: 20px;
   position: relative; z-index: 1;
   align-items: start;
 }
-.ae-span-full { grid-column: 1 / -1; }
+.ae-sec3 .ae-field {
+  flex: 1 1 clamp(160px, 28%, 240px);
+  min-width: 0;
+}
+/* full-width override — address and any forced full-row field */
+.ae-span-full { flex: 1 1 100%; }
 
 @media (max-width: 640px) {
-  .ae-sec3 {
-    grid-template-columns: 1fr 1fr;
-    gap: 28px 16px;
-  }
+  .ae-sec3 { gap: 28px 16px; }
+  .ae-sec3 .ae-field { flex: 1 1 clamp(140px, 44%, 220px); }
   /* Mobile reorder: Gender | DOB / Phone | CNIC / Email / Street */
   .ae-s3-gdr { order: 1; }
   .ae-s3-dob { order: 2; }
   .ae-s3-phn { order: 3; }
   .ae-s3-cni { order: 4; }
-  .ae-s3-eml { order: 5; grid-column: 1 / -1; }
+  .ae-s3-eml { order: 5; flex: 1 1 100%; }  /* mobile: full width */
   .ae-s3-adr { order: 6; }
 }
 
@@ -329,38 +326,22 @@
 .ae-date.ae-date-empty::-webkit-datetime-edit { opacity: 0; }
 .ae-date.ae-date-empty::-webkit-datetime-edit-fields-wrapper { opacity: 0; }
 
-/* ── Experience — premium labeled duration field ── */
-.ae-exp-wrap { display: flex; flex-direction: column; gap: 5px; }
-.ae-exp-lbl {
-  font-size: 9.5px; font-weight: 800; letter-spacing: 2px;
-  color: var(--adm-gold); text-transform: uppercase; user-select: none;
+/* ── Experience — integrated inline field (uses ae-fi-wrap underline) ── */
+/* ae-exp-prefix: inline label acting as field icon/prefix */
+.ae-exp-prefix {
+  font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+  color: var(--adm-gold); text-transform: uppercase;
+  user-select: none; flex-shrink: 0;
 }
-/* Responsive label: "Experience" on ≥380px, "Exp" when constrained */
-.ae-exp-lbl-short { display: none; }
-@media (max-width: 380px) {
-  .ae-exp-lbl-full  { display: none; }
-  .ae-exp-lbl-short { display: inline; }
+/* ae-exp-pair: tightly couples one numeric input with its unit label */
+.ae-exp-pair {
+  display: flex; align-items: center; gap: 2px;
 }
-.ae-exp-row {
-  position: relative; display: flex; align-items: center; gap: 8px;
-  padding-bottom: 8px;
-}
-.ae-exp-row::before {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-  height: 1.5px; background: rgba(226,232,240,.14);
-}
-.ae-exp-row::after {
-  content: ''; position: absolute; bottom: 0; left: 0; width: 100%;
-  height: 2px; background: var(--adm-gold);
-  transform: scaleX(0); transform-origin: left;
-  transition: transform .35s cubic-bezier(0.16,1,0.3,1);
-}
-.ae-exp-row:focus-within::after { transform: scaleX(1); }
 .ae-exp-num {
   background: transparent; border: none; outline: none;
   color: var(--adm-text); font-family: 'Inter', sans-serif;
   font-size: 14px; font-weight: 500;
-  width: 36px; text-align: center;
+  width: 32px; text-align: center;
   color-scheme: dark;
   -moz-appearance: textfield;
 }
@@ -368,32 +349,16 @@
 .ae-exp-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .ae-exp-num::placeholder { color: rgba(226,232,240,.35); }
 .ae-exp-unit {
-  font-size: 10px; font-weight: 800; letter-spacing: 1.5px;
-  color: var(--adm-gold); user-select: none; flex-shrink: 0; opacity: .75;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  color: rgba(212,175,55,.72); user-select: none; flex-shrink: 0;
 }
-.ae-exp-sep { width: 1px; height: 12px; background: rgba(212,175,55,.28); flex-shrink: 0; }
+/* ae-exp-sep: thin 1px divider between prefix and pairs, and between pairs */
+.ae-exp-sep { width: 1px; height: 12px; background: rgba(212,175,55,.25); flex-shrink: 0; }
 
-/* Shift timing — single underline field */
-.ae-shift-row {
-  position: relative; display: flex; align-items: center; gap: 6px;
-  padding-bottom: 8px;
+/* Shift timing — two separate stacked fields, each using ae-fi-wrap underline */
+.ae-shift-stack {
+  display: flex; flex-direction: column; gap: 8px;
 }
-.ae-shift-row::before {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
-  height: 1.5px; background: rgba(226,232,240,.14);
-}
-.ae-shift-row::after {
-  content: ''; position: absolute; bottom: 0; left: 0; width: 100%;
-  height: 2px; background: var(--adm-gold);
-  transform: scaleX(0); transform-origin: left;
-  transition: transform .35s cubic-bezier(0.16,1,0.3,1);
-}
-.ae-shift-row:focus-within::after { transform: scaleX(1); }
-.ae-shift-ico {
-  display: flex; align-items: center;
-  color: rgba(148,163,184,.55); flex-shrink: 0;
-}
-.ae-shift-row:focus-within .ae-shift-ico { color: var(--adm-gold); }
 .ae-shift-time-inp {
   background: transparent; border: none; outline: none;
   color: var(--adm-text); font-family: 'Inter', sans-serif;
@@ -411,11 +376,15 @@
 /* Gender dropdown */
 .ae-csel { flex: 1; outline: none; }
 .ae-csel-face {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 8px;
   color: var(--adm-text); font-family: 'Inter', sans-serif; font-size: 14px;
   user-select: none; cursor: pointer;
 }
-.ae-csel-face svg { color: var(--adm-gold); opacity: .75; }
+/* icon slot — reuses gold accent, matches other field icons */
+.ae-csel-icon { display: flex; color: var(--adm-gold); opacity: .75; flex-shrink: 0; }
+/* value text takes remaining space, pushes chevron to the right */
+.ae-csel-val  { flex: 1; }
+.ae-chev-svg  { color: var(--adm-gold); opacity: .75; }
 .ae-csel-opts {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0;
   background: rgba(30,33,42,.88);

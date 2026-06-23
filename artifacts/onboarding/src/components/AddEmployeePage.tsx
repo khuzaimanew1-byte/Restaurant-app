@@ -38,6 +38,7 @@ const ChevSVG = ({ open }: { open: boolean }) => (
     <polyline points="6 9 12 15 18 9"/>
   </svg>
 );
+const ClockSVG = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 
 const GENDERS = ["Male", "Female", "Other"];
 
@@ -99,6 +100,7 @@ export function AddEmployeePage({
   const joiningRef    = useRef<HTMLInputElement>(null);
   const shiftStartRef = useRef<HTMLInputElement>(null);
   const shiftEndRef   = useRef<HTMLInputElement>(null);
+  const expYrRef      = useRef<HTMLInputElement>(null);
 
   // Core fields
   const [name,        setName]        = useState("");
@@ -322,10 +324,8 @@ export function AddEmployeePage({
 
               {/* Row 2: Joining Date */}
               <div className="ae-field">
-                <div className="ae-fi-wrap">
-                  <span className="ae-date-ico" onClick={() => joiningRef.current?.showPicker?.()}>
-                    <CalSVG />
-                  </span>
+                <div className="ae-fi-wrap" onClick={() => joiningRef.current?.showPicker?.()}>
+                  <span className="ae-date-ico"><CalSVG /></span>
                   <div className={`ae-date-wrap${!joiningDate ? " empty" : ""}`} data-ph="Joining Date">
                     <input ref={joiningRef}
                       className={`ae-fi ae-date${!joiningDate ? " ae-date-empty" : ""}`}
@@ -334,23 +334,24 @@ export function AddEmployeePage({
                 </div>
               </div>
 
-              {/* Row 3: Experience — premium labeled duration field */}
+              {/* Row 3 col 1: Experience — integrated inline field */}
               <div className="ae-field ae-s1-exp">
-                <div className="ae-exp-wrap">
-                  <span className="ae-exp-lbl">
-                    <span className="ae-exp-lbl-full">Experience</span>
-                    <span className="ae-exp-lbl-short">Exp</span>
-                  </span>
-                  <div className="ae-exp-row">
+                <div className="ae-fi-wrap" onClick={() => expYrRef.current?.focus()}>
+                  <span className="ae-exp-prefix">Exp</span>
+                  <div className="ae-exp-sep" />
+                  <div className="ae-exp-pair">
                     <input
+                      ref={expYrRef}
                       className="ae-exp-num" type="number" inputMode="numeric"
                       min="0" max="50" placeholder="0"
                       value={expYr}
                       onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
                       onChange={e => setExpYr(e.target.value.replace(/\D/g, "").slice(0, 2))}
                     />
-                    <span className="ae-exp-unit">YR</span>
-                    <div className="ae-exp-sep" />
+                    <span className="ae-exp-unit">Yrs</span>
+                  </div>
+                  <div className="ae-exp-sep" />
+                  <div className="ae-exp-pair">
                     <input
                       className="ae-exp-num" type="number" inputMode="numeric"
                       min="0" max="11" placeholder="0"
@@ -358,36 +359,32 @@ export function AddEmployeePage({
                       onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
                       onChange={e => setExpMo(e.target.value.replace(/\D/g, "").slice(0, 2))}
                     />
-                    <span className="ae-exp-unit">MO</span>
+                    <span className="ae-exp-unit">Mo</span>
                   </div>
                 </div>
               </div>
 
-              {/* Row 3: Shift Timing */}
+              {/* Row 3 col 2: Shift Timing — two separate integrated fields */}
               <div className="ae-field ae-s1-sft">
-                <div className="ae-shift-row">
-                  <span className="ae-shift-ico">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-                    </svg>
-                  </span>
-                  <input
-                    ref={shiftStartRef}
-                    className="ae-shift-time-inp"
-                    type="time" value={shiftStart}
-                    onChange={e => setShiftStart(e.target.value)}
-                  />
-                  <span className="ae-shift-ico">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
-                    </svg>
-                  </span>
-                  <input
-                    ref={shiftEndRef}
-                    className="ae-shift-time-inp"
-                    type="time" value={shiftEnd}
-                    onChange={e => setShiftEnd(e.target.value)}
-                  />
+                <div className="ae-shift-stack">
+                  <div className="ae-fi-wrap" onClick={() => shiftStartRef.current?.focus()}>
+                    <span className="ae-date-ico"><ClockSVG /></span>
+                    <input
+                      ref={shiftStartRef}
+                      className="ae-shift-time-inp"
+                      type="time" value={shiftStart}
+                      onChange={e => setShiftStart(e.target.value)}
+                    />
+                  </div>
+                  <div className="ae-fi-wrap" onClick={() => shiftEndRef.current?.focus()}>
+                    <span className="ae-date-ico"><ClockSVG /></span>
+                    <input
+                      ref={shiftEndRef}
+                      className="ae-shift-time-inp"
+                      type="time" value={shiftEnd}
+                      onChange={e => setShiftEnd(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -432,15 +429,14 @@ export function AddEmployeePage({
             {/* Gender */}
             <div className="ae-field ae-field-rel ae-s3-gdr">
               <div className={`ae-fi-wrap${genderOpen ? " ae-focused" : ""}`}>
-                <UsersSVG />
                 <div
                   className={`ae-csel${genderOpen ? " ae-open" : ""}`}
                   tabIndex={0}
                   onBlur={() => setTimeout(() => setGenderOpen(false), 120)}
                 >
-                  <div className="ae-csel-face"
-                    onClick={e => { e.stopPropagation(); setGenderOpen(v => !v); }}>
-                    <span>{gender}</span>
+                  <div className="ae-csel-face" onClick={() => setGenderOpen(v => !v)}>
+                    <span className="ae-csel-icon"><UsersSVG /></span>
+                    <span className="ae-csel-val">{gender}</span>
                     <ChevSVG open={genderOpen} />
                   </div>
                   {genderOpen && (
@@ -464,10 +460,8 @@ export function AddEmployeePage({
 
             {/* Date of Birth (moved from Section 1) */}
             <div className="ae-field ae-s3-dob">
-              <div className="ae-fi-wrap">
-                <span className="ae-date-ico" onClick={() => dobRef.current?.showPicker?.()}>
-                  <CalSVG />
-                </span>
+              <div className="ae-fi-wrap" onClick={() => dobRef.current?.showPicker?.()}>
+                <span className="ae-date-ico"><CalSVG /></span>
                 <div className={`ae-date-wrap${!dob ? " empty" : ""}`} data-ph="Date of Birth">
                   <input ref={dobRef}
                     className={`ae-fi ae-date${!dob ? " ae-date-empty" : ""}`}
