@@ -34,15 +34,29 @@ export function useUpdateEmployeeStatus() {
             leaveStatus =
               sts === "unauth" ? "unauthorized-leave" :
               sts === "half"   ? "half-day"           :
-              sts ?? null;
+              (sts ?? null);   // "leave", "late", null pass through
           }
+
+          /* Derive checkIn/checkOut from shift object */
+          let checkIn  = emp.checkIn;
+          let checkOut = emp.checkOut;
+          if ("shift" in payload) {
+            if (payload.shift === null) {
+              checkIn  = "";
+              checkOut = "";
+            } else {
+              checkIn  = payload.shift?.in  ?? emp.checkIn;
+              checkOut = payload.shift?.out ?? emp.checkOut;
+            }
+          }
+
           return {
             ...emp,
             leaveStatus,
-            checkIn:  "sin"  in payload ? (payload.sin  ?? "") : emp.checkIn,
-            checkOut: "sout" in payload ? (payload.sout ?? "") : emp.checkOut,
-            att:      payload.att  ?? emp.att,
-            perf:     payload.perf ?? emp.perf,
+            checkIn,
+            checkOut,
+            att:  payload.att  ?? emp.att,
+            perf: payload.perf ?? emp.perf,
           };
         });
       });

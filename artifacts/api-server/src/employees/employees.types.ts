@@ -1,23 +1,23 @@
 /* Shared types for the employees module — no NestJS/Drizzle imports here
    so these can be imported by any layer (controller, service, repo).       */
 
-export type DbStatus = "leave" | "unauth" | "half" | null;
+export type DbStatus = "leave" | "unauth" | "half" | "late" | null;
 
 /** Canonical mapping — DB → frontend UI token */
-export function dbStatusToUi(s: DbStatus): UiLeaveStatus {
+export function dbStatusToUi(s: DbStatus): UiStatus {
   if (s === "unauth") return "unauthorized-leave";
   if (s === "half")   return "half-day";
-  return s as UiLeaveStatus; // null | "leave"
+  return s as UiStatus; // null | "leave" | "late" pass through unchanged
 }
 
 /** Canonical mapping — frontend UI token → DB */
-export function uiStatusToDb(s: UiLeaveStatus): DbStatus {
+export function uiStatusToDb(s: UiStatus): DbStatus {
   if (s === "unauthorized-leave") return "unauth";
   if (s === "half-day")           return "half";
-  return s as DbStatus; // null | "leave"
+  return s as DbStatus; // null | "leave" | "late" pass through unchanged
 }
 
-export type UiLeaveStatus = "leave" | "unauthorized-leave" | "half-day" | null;
+export type UiStatus = "leave" | "unauthorized-leave" | "half-day" | "late" | null;
 
 /* Avatar palette — CSS vars SSOT is index.css :root --av-p1…--av-p8 */
 export const AVATAR_PALETTE_CSS = [
@@ -31,9 +31,9 @@ export interface EmployeeCard {
   name:        string;
   role:        string;
   salary:      string;       // formatted "PKR X,XXX" or ""
-  checkIn:     string;       // "" when null
-  checkOut:    string;       // "" when null
-  leaveStatus: UiLeaveStatus;
+  checkIn:     string;       // "" when null — derived from shift.in
+  checkOut:    string;       // "" when null — derived from shift.out
+  leaveStatus: UiStatus;
   att:         number;
   perf:        number;
   avatar:      string;       // img data-URL or remote URL
@@ -45,7 +45,7 @@ export interface EmployeeCard {
 export function toEmployeeCard(row: {
   id: number; name: string; role: string; sal: number | null; img: string | null;
   att: number | null; perf: number | null;
-  sts: string | null; sin: string | null; sout: string | null;
+  sts: string | null; shift: { in?: string; out?: string } | null;
 }): EmployeeCard {
   const initials = row.name.trim().split(/\s+/).map(w => w[0] ?? "").join("").slice(0, 2).toUpperCase();
   const color    = AVATAR_PALETTE_CSS[row.name.charCodeAt(0) % AVATAR_PALETTE_CSS.length]!;
@@ -55,8 +55,8 @@ export function toEmployeeCard(row: {
     name:        row.name,
     role:        row.role,
     salary,
-    checkIn:     row.sin  ?? "",
-    checkOut:    row.sout ?? "",
+    checkIn:     row.shift?.in  ?? "",
+    checkOut:    row.shift?.out ?? "",
     leaveStatus: dbStatusToUi(row.sts as DbStatus),
     att:         row.att  ?? 100,
     perf:        row.perf ?? 100,

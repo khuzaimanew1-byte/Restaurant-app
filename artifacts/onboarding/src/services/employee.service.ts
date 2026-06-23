@@ -3,16 +3,19 @@
     Caller is responsible for redirect on 401.               */
 
 // ── View model (mirrors EmployeeCard from api-server/employees.types.ts) ──
-export type UiLeaveStatus = "leave" | "unauthorized-leave" | "half-day" | null;
+export type UiStatus = "leave" | "unauthorized-leave" | "half-day" | "late" | null;
+
+/** @deprecated Use UiStatus — kept as alias so existing references compile */
+export type UiLeaveStatus = UiStatus;
 
 export interface EmployeeCard {
   id:          number;
   name:        string;
   role:        string;
   salary:      string;       // "PKR X,XXX" or ""
-  checkIn:     string;       // "" when null
-  checkOut:    string;       // "" when null
-  leaveStatus: UiLeaveStatus;
+  checkIn:     string;       // "" when null — derived from shift.in
+  checkOut:    string;       // "" when null — derived from shift.out
+  leaveStatus: UiStatus;
   att:         number;
   perf:        number;
   avatar:      string;
@@ -40,13 +43,13 @@ export interface CreateEmployeePayload {
   exp?:   { y?: number; m?: number };
 }
 
-/** sts uses DB-level tokens — unauth / half / leave / null */
+/** sts uses DB-level tokens — unauth / half / leave / late / null
+    shift contains in/out times; null clears both.                  */
 export interface UpdateStatusPayload {
-  sts?:  "leave" | "unauth" | "half" | null;
-  sin?:  string | null;
-  sout?: string | null;
-  att?:  number;
-  perf?: number;
+  sts?:   "leave" | "unauth" | "half" | "late" | null;
+  shift?: { in?: string | null; out?: string | null } | null;
+  att?:   number;
+  perf?:  number;
 }
 
 // ── Internals ─────────────────────────────────────────────────────────────

@@ -18,9 +18,9 @@ export class EmployeesService implements OnModuleInit {
     await this.seedIfEmpty();
   }
 
-  /* Safety-net: CREATE TABLE IF NOT EXISTS so the server boots on a fresh DB
-     without needing a separate migration step. Drizzle schema in lib/db is the
-     canonical definition — these raw queries must stay in sync with it.         */
+  /* Safety-net: CREATE TABLE IF NOT EXISTS so the server boots on a fresh DB.
+     Also runs idempotent ALTER TABLE migrations to keep existing DBs in sync.
+     Drizzle schema in lib/db is the canonical definition.                      */
   private async initTables() {
     const client = await (pool as import("pg").Pool).connect();
     try {
@@ -49,20 +49,46 @@ export class EmployeesService implements OnModuleInit {
       `);
       await client.query(`
         CREATE TABLE IF NOT EXISTS employee_status (
-          id         SERIAL PRIMARY KEY,
-          eid        INTEGER NOT NULL REFERENCES employee_profile(id) ON DELETE CASCADE,
-          att        INTEGER NOT NULL DEFAULT 100,
-          perf       INTEGER NOT NULL DEFAULT 100,
-          sts        VARCHAR(10),
-          sin        VARCHAR(20),
-          sout       VARCHAR(20),
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-          updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+          id    SERIAL PRIMARY KEY,
+          eid   INTEGER NOT NULL REFERENCES employee_profile(id) ON DELETE CASCADE,
+          att   INTEGER NOT NULL DEFAULT 100,
+          perf  INTEGER NOT NULL DEFAULT 100,
+          sts   VARCHAR(10),
+          shift JSONB
         )
       `);
       await client.query(
         `CREATE INDEX IF NOT EXISTS idx_emp_status_eid ON employee_status(eid)`,
       );
+
+      /* ── Idempotent migrations — run on every boot, safe to repeat ── */
+
+      /* Add shift column if old DB still lacks it */
+      await client.query(`
+        ALTER TABLE employee_status ADD COLUMN IF NOT EXISTS shift JSONB
+      `);
+
+      /* Migrate existing sin/sout data into shift JSONB */
+      await client.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'employee_status' AND column_name = 'sin'
+          ) THEN
+            UPDATE employee_status
+            SET shift = jsonb_strip_nulls(jsonb_build_object('in', sin, 'out', sout))
+            WHERE shift IS NULL AND (sin IS NOT NULL OR sout IS NOT NULL);
+          END IF;
+        END $$
+      `);
+
+      /* Drop legacy columns if they still exist */
+      await client.query(`ALTER TABLE employee_status DROP COLUMN IF EXISTS sin`);
+      await client.query(`ALTER TABLE employee_status DROP COLUMN IF EXISTS sout`);
+      await client.query(`ALTER TABLE employee_status DROP COLUMN IF EXISTS created_at`);
+      await client.query(`ALTER TABLE employee_status DROP COLUMN IF EXISTS updated_at`);
+
     } finally {
       client.release();
     }
@@ -82,7 +108,7 @@ export class EmployeesService implements OnModuleInit {
       });
       await this.repo.insertStatus(profile.id, {
         att: s.att, perf: s.perf, sts: s.sts as string | null,
-        sin: s.sin as string | null, sout: s.sout as string | null,
+        shift: s.shift ?? null,
       });
     }
   }
@@ -91,16 +117,15 @@ export class EmployeesService implements OnModuleInit {
   async getAll(): Promise<EmployeeCard[]> {
     const rows = await this.repo.findAll();
     return rows.map(r => toEmployeeCard({
-      id:   r.id,
-      name: r.name,
-      role: r.role,
-      sal:  r.sal ?? null,
-      img:  r.img ?? null,
-      att:  r.att ?? null,
-      perf: r.perf ?? null,
-      sts:  r.sts ?? null,
-      sin:  r.sin ?? null,
-      sout: r.sout ?? null,
+      id:    r.id,
+      name:  r.name,
+      role:  r.role,
+      sal:   r.sal   ?? null,
+      img:   r.img   ?? null,
+      att:   r.att   ?? null,
+      perf:  r.perf  ?? null,
+      sts:   r.sts   ?? null,
+      shift: (r.shift as { in?: string; out?: string } | null) ?? null,
     }));
   }
 
@@ -115,7 +140,8 @@ export class EmployeesService implements OnModuleInit {
       id: row.id, name: row.name, role: row.role,
       sal: row.sal ?? null, img: row.img ?? null,
       att: row.att ?? null, perf: row.perf ?? null,
-      sts: row.sts ?? null, sin: row.sin ?? null, sout: row.sout ?? null,
+      sts: row.sts ?? null,
+      shift: (row.shift as { in?: string; out?: string } | null) ?? null,
     });
   }
 
@@ -125,11 +151,10 @@ export class EmployeesService implements OnModuleInit {
     if (!exists) throw new NotFoundException(`Employee #${eid} not found`);
 
     const patch: Record<string, unknown> = {};
-    if ("sts"  in dto) patch["sts"]  = dto.sts  ?? null;
-    if ("sin"  in dto) patch["sin"]  = dto.sin  ?? null;
-    if ("sout" in dto) patch["sout"] = dto.sout ?? null;
-    if ("att"  in dto) patch["att"]  = dto.att;
-    if ("perf" in dto) patch["perf"] = dto.perf;
+    if ("sts"   in dto) patch["sts"]   = dto.sts   ?? null;
+    if ("shift" in dto) patch["shift"] = dto.shift  ?? null;
+    if ("att"   in dto) patch["att"]   = dto.att;
+    if ("perf"  in dto) patch["perf"]  = dto.perf;
 
     await this.repo.patchStatus(eid, patch as Parameters<EmployeesRepository["patchStatus"]>[1]);
 
@@ -139,7 +164,8 @@ export class EmployeesService implements OnModuleInit {
       id: row.id, name: row.name, role: row.role,
       sal: row.sal ?? null, img: row.img ?? null,
       att: row.att ?? null, perf: row.perf ?? null,
-      sts: row.sts ?? null, sin: row.sin ?? null, sout: row.sout ?? null,
+      sts: row.sts ?? null,
+      shift: (row.shift as { in?: string; out?: string } | null) ?? null,
     });
   }
 }

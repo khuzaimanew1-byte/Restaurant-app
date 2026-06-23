@@ -692,8 +692,10 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
       eid: empId,
       payload: {
         sts:  uiToDbSts(newStatus),
-        sin:  clearTimes ? null : (restoreDefaults ? officeTiming.start : (emp.checkIn  || null)),
-        sout: clearTimes ? null : (restoreDefaults ? officeTiming.end   : (emp.checkOut || null)),
+        shift: clearTimes ? null : {
+          in:  restoreDefaults ? officeTiming.start : (emp.checkIn  || null),
+          out: restoreDefaults ? officeTiming.end   : (emp.checkOut || null),
+        },
       },
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -706,8 +708,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
     updateMutation.mutate({
       eid: id,
       payload: {
-        sin:  ci || null,
-        sout: co || null,
+        shift: { in: ci || null, out: co || null },
         ...(conflictsWithTimes ? { sts: null } : {}),
       },
     });

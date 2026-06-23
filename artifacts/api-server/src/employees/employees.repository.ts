@@ -10,16 +10,15 @@ export class EmployeesRepository {
   async findAll() {
     return db
       .select({
-        id:   employeeProfile.id,
-        name: employeeProfile.name,
-        role: employeeProfile.role,
-        sal:  employeeProfile.sal,
-        img:  employeeProfile.img,
-        att:  employeeStatus.att,
-        perf: employeeStatus.perf,
-        sts:  employeeStatus.sts,
-        sin:  employeeStatus.sin,
-        sout: employeeStatus.sout,
+        id:    employeeProfile.id,
+        name:  employeeProfile.name,
+        role:  employeeProfile.role,
+        sal:   employeeProfile.sal,
+        img:   employeeProfile.img,
+        att:   employeeStatus.att,
+        perf:  employeeStatus.perf,
+        sts:   employeeStatus.sts,
+        shift: employeeStatus.shift,
       })
       .from(employeeProfile)
       .leftJoin(employeeStatus, eq(employeeStatus.eid, employeeProfile.id));
@@ -49,31 +48,29 @@ export class EmployeesRepository {
 
   async insertStatus(eid: number, data: {
     att?: number; perf?: number;
-    sts?: string | null; sin?: string | null; sout?: string | null;
+    sts?: string | null; shift?: { in?: string; out?: string } | null;
   } = {}) {
     const [row] = await db.insert(employeeStatus).values({
       eid,
-      att:  data.att  ?? 100,
-      perf: data.perf ?? 100,
-      sts:  (data.sts  ?? null) as string | null,
-      sin:  data.sin  ?? null,
-      sout: data.sout ?? null,
+      att:   data.att   ?? 100,
+      perf:  data.perf  ?? 100,
+      sts:   (data.sts  ?? null) as string | null,
+      shift: data.shift ?? null,
     }).returning();
     return row!;
   }
 
   async patchStatus(eid: number, patch: {
-    sts?: string | null; sin?: string | null; sout?: string | null;
+    sts?: string | null; shift?: { in?: string; out?: string } | null;
     att?: number; perf?: number;
   }) {
     /* Build set object explicitly — any is unavoidable for dynamic patch */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const update: Record<string, any> = { updated_at: new Date() };
-    if ("sts"  in patch) update["sts"]  = patch.sts  ?? null;
-    if ("sin"  in patch) update["sin"]  = patch.sin  ?? null;
-    if ("sout" in patch) update["sout"] = patch.sout ?? null;
-    if ("att"  in patch) update["att"]  = patch.att;
-    if ("perf" in patch) update["perf"] = patch.perf;
+    const update: Record<string, any> = {};
+    if ("sts"   in patch) update["sts"]   = patch.sts   ?? null;
+    if ("shift" in patch) update["shift"] = patch.shift ?? null;
+    if ("att"   in patch) update["att"]   = patch.att;
+    if ("perf"  in patch) update["perf"]  = patch.perf;
 
     const [row] = await db
       .update(employeeStatus)

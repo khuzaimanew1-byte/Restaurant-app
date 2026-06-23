@@ -27,15 +27,12 @@ export const employeeProfile = pgTable("employee_profile", {
 export const employeeStatus = pgTable(
   "employee_status",
   {
-    id:        serial("id").primaryKey(),
-    eid:       integer("eid").notNull().references(() => employeeProfile.id, { onDelete: "cascade" }),
-    att:       integer("att").notNull().default(100),
-    perf:      integer("perf").notNull().default(100),
-    sts:       varchar("sts",  { length: 10  }),
-    sin:       varchar("sin",  { length: 20  }),
-    sout:      varchar("sout", { length: 20  }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    id:    serial("id").primaryKey(),
+    eid:   integer("eid").notNull().references(() => employeeProfile.id, { onDelete: "cascade" }),
+    att:   integer("att").notNull().default(100),
+    perf:  integer("perf").notNull().default(100),
+    sts:   varchar("sts", { length: 10 }),
+    shift: jsonb("shift").$type<{ in?: string; out?: string }>(),
   },
   t => [index("idx_emp_status_eid").on(t.eid)],
 );

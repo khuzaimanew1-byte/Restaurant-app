@@ -8,11 +8,10 @@ export interface ProfileSeed {
 }
 
 export interface StatusSeed {
-  att:  number;
-  perf: number;
-  sts:  "leave" | "unauth" | null;
-  sin:  string | null;
-  sout: string | null;
+  att:   number;
+  perf:  number;
+  sts:   "leave" | "unauth" | "late" | null;
+  shift: { in?: string; out?: string } | null;
 }
 
 export const PROFILE_SEEDS: ProfileSeed[] = [
@@ -61,10 +60,10 @@ export const PROFILE_SEEDS: ProfileSeed[] = [
 ];
 
 export const STATUS_SEEDS: StatusSeed[] = [
-  { att: 80,  perf: 60, sts: null,    sin: "09:15 AM", sout: null        },
-  { att: 80,  perf: 80, sts: null,    sin: "07:50 AM", sout: "04:30 PM"  },
-  { att: 80,  perf: 60, sts: null,    sin: "07:55 AM", sout: "06:20 PM"  },
-  { att: 90,  perf: 80, sts: "leave", sin: null,       sout: null        },
-  { att: 95,  perf: 85, sts: "unauth",sin: null,       sout: null        },
-  { att: 100, perf: 90, sts: null,    sin: "07:30 AM", sout: "06:30 PM"  },
+  { att: 80,  perf: 60, sts: null,     shift: { in: "09:15 AM" }                  },
+  { att: 80,  perf: 80, sts: null,     shift: { in: "07:50 AM", out: "04:30 PM" } },
+  { att: 80,  perf: 60, sts: null,     shift: { in: "07:55 AM", out: "06:20 PM" } },
+  { att: 90,  perf: 80, sts: "leave",  shift: null                                 },
+  { att: 95,  perf: 85, sts: "unauth", shift: null                                 },
+  { att: 100, perf: 90, sts: null,     shift: { in: "07:30 AM", out: "06:30 PM" } },
 ];

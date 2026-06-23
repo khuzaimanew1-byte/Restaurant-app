@@ -1,16 +1,20 @@
-import { IsString, IsOptional, IsInt, IsIn, Min, Max } from "class-validator";
+import { IsString, IsOptional, IsInt, IsIn, Min, Max, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
 
-const VALID_STS = ["leave", "unauth", "half", null] as const;
+class ShiftDto {
+  @IsOptional() @IsString()
+  in?: string | null;
+
+  @IsOptional() @IsString()
+  out?: string | null;
+}
 
 export class UpdateStatusDto {
-  @IsOptional() @IsIn(["leave", "unauth", "half", null])
-  sts?: "leave" | "unauth" | "half" | null;
+  @IsOptional() @IsIn(["leave", "unauth", "half", "late", null])
+  sts?: "leave" | "unauth" | "half" | "late" | null;
 
-  @IsOptional() @IsString()
-  sin?: string | null;
-
-  @IsOptional() @IsString()
-  sout?: string | null;
+  @IsOptional() @ValidateNested() @Type(() => ShiftDto)
+  shift?: ShiftDto | null;
 
   @IsOptional() @IsInt() @Min(0) @Max(100)
   att?: number;
