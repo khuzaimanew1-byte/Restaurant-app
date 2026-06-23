@@ -75,8 +75,7 @@
   .ae-sec1 { flex-direction: column; align-items: stretch; }
   .ae-s1-lft { align-self: center; }
   .ae-s1-rgt { width: 100%; gap: 24px 16px; }
-  .ae-s1-exp { grid-column: 1 / -1; }
-  .ae-s1-sft { grid-column: 1 / -1; }
+  /* Experience and Shift stay as normal 1fr grid cells — no forced row breaks */
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -326,22 +325,12 @@
 .ae-date.ae-date-empty::-webkit-datetime-edit { opacity: 0; }
 .ae-date.ae-date-empty::-webkit-datetime-edit-fields-wrapper { opacity: 0; }
 
-/* ── Experience — integrated inline field (uses ae-fi-wrap underline) ── */
-/* ae-exp-prefix: inline label acting as field icon/prefix */
-.ae-exp-prefix {
-  font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
-  color: var(--adm-gold); text-transform: uppercase;
-  user-select: none; flex-shrink: 0;
-}
-/* ae-exp-pair: tightly couples one numeric input with its unit label */
-.ae-exp-pair {
-  display: flex; align-items: center; gap: 2px;
-}
+/* ── Experience — uses ae-shift-row underline; same visual language as shift timing ── */
 .ae-exp-num {
   background: transparent; border: none; outline: none;
   color: var(--adm-text); font-family: 'Inter', sans-serif;
-  font-size: 14px; font-weight: 500;
-  width: 32px; text-align: center;
+  font-size: 13px; font-weight: 500;
+  width: 28px; text-align: center;
   color-scheme: dark;
   -moz-appearance: textfield;
 }
@@ -352,8 +341,11 @@
   font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
   color: rgba(212,175,55,.72); user-select: none; flex-shrink: 0;
 }
-/* ae-exp-sep: thin 1px divider between prefix and pairs, and between pairs */
-.ae-exp-sep { width: 1px; height: 12px; background: rgba(212,175,55,.25); flex-shrink: 0; }
+/* mid-dot separates Yrs from Mo — less visual noise than a bar */
+.ae-exp-dot {
+  font-size: 13px; color: rgba(212,175,55,.35);
+  user-select: none; flex-shrink: 0; line-height: 1;
+}
 
 /* Shift timing — single row: in-arrow · start · out-arrow · end */
 .ae-shift-row {

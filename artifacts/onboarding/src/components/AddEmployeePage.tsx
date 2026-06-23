@@ -341,33 +341,32 @@ export function AddEmployeePage({
                 </div>
               </div>
 
-              {/* Row 3 col 1: Experience — integrated inline field */}
+              {/* Row 3 col 1: Experience — same underline row pattern as shift timing */}
               <div className="ae-field ae-s1-exp">
-                <div className="ae-fi-wrap" onClick={() => expYrRef.current?.focus()}>
-                  <span className="ae-exp-prefix">Exp</span>
-                  <div className="ae-exp-sep" />
-                  <div className="ae-exp-pair">
-                    <input
-                      ref={expYrRef}
-                      className="ae-exp-num" type="number" inputMode="numeric"
-                      min="0" max="50" placeholder="0"
-                      value={expYr}
-                      onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
-                      onChange={e => setExpYr(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                    />
-                    <span className="ae-exp-unit">Yrs</span>
-                  </div>
-                  <div className="ae-exp-sep" />
-                  <div className="ae-exp-pair">
-                    <input
-                      className="ae-exp-num" type="number" inputMode="numeric"
-                      min="0" max="11" placeholder="0"
-                      value={expMo}
-                      onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
-                      onChange={e => setExpMo(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                    />
-                    <span className="ae-exp-unit">Mo</span>
-                  </div>
+                <div className="ae-shift-row" onClick={() => expYrRef.current?.focus()}>
+                  <span className="ae-shift-ico">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                    </svg>
+                  </span>
+                  <input
+                    ref={expYrRef}
+                    className="ae-exp-num" type="number" inputMode="numeric"
+                    min="0" max="50" placeholder="0"
+                    value={expYr}
+                    onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
+                    onChange={e => setExpYr(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                  />
+                  <span className="ae-exp-unit">Yrs</span>
+                  <span className="ae-exp-dot" aria-hidden>·</span>
+                  <input
+                    className="ae-exp-num" type="number" inputMode="numeric"
+                    min="0" max="11" placeholder="0"
+                    value={expMo}
+                    onKeyDown={e => { if (!/[\d]|Backspace|Delete|ArrowLeft|ArrowRight|Tab/.test(e.key)) e.preventDefault(); }}
+                    onChange={e => setExpMo(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                  />
+                  <span className="ae-exp-unit">Mo</span>
                 </div>
               </div>
 
