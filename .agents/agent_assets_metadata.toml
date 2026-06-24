@@ -1,8 +1,0 @@
-uploads = []
-generated = []
-
-[[outputs]]
-id = "-AxoYXy2W8DIKedQBHGoQ"
-uri = "file://DASHBOARD_BLUEPRINT.md"
-type = "text"
-title = "Dashboard Blueprint — Complete Technical Reference"
