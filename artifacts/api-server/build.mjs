@@ -1,8 +1,8 @@
+import { build as esbuild } from "esbuild";
+import { readFile, rm } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { build as esbuild } from "esbuild";
-import { rm } from "node:fs/promises";
-import { createRequire } from "node:module";
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -12,8 +12,7 @@ const swcPlugin = {
   setup(build) {
     build.onLoad({ filter: /\.tsx?$/ }, async (args) => {
       const { transform } = require("@swc/core");
-      const fs = await import("node:fs/promises");
-      const source = await fs.readFile(args.path, "utf8");
+      const source = await readFile(args.path, "utf8");
       const isTs = args.path.endsWith(".ts") || args.path.endsWith(".tsx");
       const result = await transform(source, {
         filename: args.path,
@@ -50,17 +49,14 @@ async function buildAll() {
     logLevel:    "info",
     plugins:     [swcPlugin],
     external: [
-      // NestJS packages — loaded from node_modules at runtime
       "@nestjs/*",
       "class-validator",
       "class-transformer",
       "reflect-metadata",
-      // Pino logging — must remain external (native bindings, transports)
       "nestjs-pino",
       "pino-http",
       "pino",
       "pino-pretty",
-      // Cannot be bundled (native addons, dynamic paths, etc.)
       "*.node",
       "jsonwebtoken",
       "nodemailer",
@@ -142,6 +138,6 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
 }
 
 buildAll().catch((err) => {
-  console.error(err);
+  process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
   process.exit(1);
 });

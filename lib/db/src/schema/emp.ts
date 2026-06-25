@@ -22,7 +22,7 @@ export const employeeProfile = pgTable("employee_profile", {
   img:       text("img"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, t => [index("idx_emp_profile_cnic").on(t.cnic)]);
 
 export const employeeStatus = pgTable(
   "employee_status",

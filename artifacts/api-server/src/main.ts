@@ -3,35 +3,33 @@ import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { Logger } from "nestjs-pino";
 import helmet from "helmet";
+import type { Express } from "express";
 import { AppModule } from "./app.module.js";
-import { AllExceptionsFilter } from "./auth/all-exceptions.filter.js";
+import { ErrFilter } from "./core/err.filter.js";
+import { cmp, hdr, tls } from "./core/http.js";
+import { cors } from "./core/cors.js";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const server = app.getHttpAdapter().getInstance() as Express;
 
   app.useLogger(app.get(Logger));
-  app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalFilters(new ErrFilter());
 
+  server.set("etag", "strong");
+  server.set("trust proxy", 1);
   app.use(helmet());
-
-  const allowedOrigins = (process.env["ALLOWED_ORIGINS"] ?? "*")
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean);
-
-  app.enableCors({
-    origin:         allowedOrigins.includes("*") ? "*" : allowedOrigins,
-    credentials:    true,
-    methods:        ["GET", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  });
+  app.use(tls());
+  app.use(cmp());
+  app.use(hdr());
+  app.enableCors(cors());
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist:            true,
-      transform:            true,
-      forbidNonWhitelisted: false,
-      stopAtFirstError:     false,
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      stopAtFirstError: false,
     }),
   );
 
@@ -43,7 +41,7 @@ async function bootstrap() {
   await app.listen(port, "0.0.0.0");
 }
 
-bootstrap().catch((err) => {
-  console.error("[API] Fatal startup error:", err);
+bootstrap().catch(() => {
+  process.stderr.write("API startup failed\n");
   process.exit(1);
 });

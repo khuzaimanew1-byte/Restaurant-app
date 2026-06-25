@@ -1,20 +1,69 @@
 import jwt from "jsonwebtoken";
+import type { JwtPayload as LibPay, SignOptions } from "jsonwebtoken";
 
-const SECRET = process.env["JWT_SESSION"] ?? "";
+type TokKind = "access" | "refresh" | "reset_verified";
 
-export interface JwtPayload { sub: string; email: string; purpose?: string; }
-
-export function signToken(payload: JwtPayload, expiresIn: string = "7d"): string {
-  if (!SECRET) throw new Error("JWT_SESSION env var not set");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return jwt.sign(payload, SECRET, { expiresIn: expiresIn as any });
+export interface JwtPay {
+  sub: string;
+  email: string;
+  purpose: TokKind;
 }
 
-export function signResetToken(email: string): string {
-  return signToken({ sub: email, email, purpose: "reset_verified" }, "15m");
+function sec(): string {
+  const val = process.env["JWT_SESSION"];
+  if (!val) throw new Error("JWT_SESSION env var not set");
+  return val;
 }
 
-export function verifyToken(token: string): JwtPayload {
-  if (!SECRET) throw new Error("JWT_SESSION env var not set");
-  return jwt.verify(token, SECRET) as JwtPayload;
+function sign(payload: JwtPay, expiresIn: SignOptions["expiresIn"]): string {
+  return jwt.sign(payload, sec(), { expiresIn });
 }
+
+function read(token: string): JwtPay {
+  const raw = jwt.verify(token, sec());
+  if (typeof raw === "string") throw new Error("Invalid token");
+  const pay = raw as LibPay;
+  if (
+    typeof pay.sub !== "string"
+    || typeof pay.email !== "string"
+    || (pay.purpose !== "access" && pay.purpose !== "refresh" && pay.purpose !== "reset_verified")
+  ) {
+    throw new Error("Invalid token");
+  }
+  return {
+    sub: pay.sub,
+    email: pay.email,
+    purpose: pay.purpose,
+  };
+}
+
+function need(token: string, purpose: TokKind): JwtPay {
+  const pay = read(token);
+  if (pay.purpose !== purpose) throw new Error("Invalid token purpose");
+  return pay;
+}
+
+export function accTok(payload: Pick<JwtPay, "sub" | "email">): string {
+  return sign({ ...payload, purpose: "access" }, "15m");
+}
+
+export function refTok(payload: Pick<JwtPay, "sub" | "email">): string {
+  return sign({ ...payload, purpose: "refresh" }, "7d");
+}
+
+export function rstTok(email: string): string {
+  return sign({ sub: email, email, purpose: "reset_verified" }, "15m");
+}
+
+export function verAcc(token: string): JwtPay {
+  return need(token, "access");
+}
+
+export function verRef(token: string): JwtPay {
+  return need(token, "refresh");
+}
+
+export function verRst(token: string): JwtPay {
+  return need(token, "reset_verified");
+}
+

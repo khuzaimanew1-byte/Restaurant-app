@@ -5,16 +5,16 @@ import {
 import type { Response } from "express";
 
 @Catch()
-export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
+export class ErrFilter implements ExceptionFilter {
+  private readonly logger = new Logger(ErrFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
-    const ctx      = host.switchToHttp();
+    const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
-      const res    = exception.getResponse();
+      const res = exception.getResponse();
       const message =
         typeof res === "string"
           ? res
@@ -23,11 +23,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return;
     }
 
-    this.logger.error("Unhandled exception", exception instanceof Error ? exception.stack : String(exception));
+    this.logger.error("Unhandled exception");
 
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message:    "Something went wrong. Please try again.",
+      message: "Something went wrong. Please try again.",
     });
   }
 }

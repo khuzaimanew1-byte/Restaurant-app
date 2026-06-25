@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, timestamp } from "drizzle-orm/pg-core";
+import { index, pgTable, serial, varchar, text, timestamp } from "drizzle-orm/pg-core";
 
 export const adminConfig = pgTable("admin_config", {
   id:           serial("id").primaryKey(),
@@ -7,12 +7,19 @@ export const adminConfig = pgTable("admin_config", {
   createdAt:    timestamp("created_at").defaultNow().notNull(),
 });
 
-export const otpSessions = pgTable("otp_sessions", {
-  id:        serial("id").primaryKey(),
-  email:     varchar("email", { length: 255 }).notNull(),
-  otpHash:   text("otp_hash").notNull(),
-  purpose:   varchar("purpose", { length: 20 }).notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  usedAt:    timestamp("used_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const otpSessions = pgTable(
+  "otp_sessions",
+  {
+    id:        serial("id").primaryKey(),
+    email:     varchar("email", { length: 255 }).notNull(),
+    otpHash:   text("otp_hash").notNull(),
+    purpose:   varchar("purpose", { length: 20 }).notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    usedAt:    timestamp("used_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  t => [
+    index("idx_otp_live").on(t.email, t.purpose, t.expiresAt),
+    index("idx_otp_gc").on(t.expiresAt, t.usedAt),
+  ],
+);
