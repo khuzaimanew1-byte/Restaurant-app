@@ -1,0 +1,7 @@
+.ad-roo {
+  background-color: var(--ambg);
+  background-image:
+    url('https://www.transp.com/patterns/dark-wood.png'),
+    radial-gradient(circle at 50% 0%, var(--ambgg) 0%, var(--ambgd) 100%);
+}
+

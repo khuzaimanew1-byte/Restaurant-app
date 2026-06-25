@@ -1,0 +1,615 @@
+import { useState, useRef, useCallback, useEffect, KeyboardEvent, ClipboardEvent } from "react";
+import { Button } from "../../components/ui/Button/Button";
+import { TextInput, PasswordInput } from "../../components/ui/Input/Input";
+import "./login-flow.css";
+import { AuthBg } from "./AuthBg";
+
+type Screen     = "signin" | "otp";
+type OtpPurpose = "login"  | "reset";
+type EnterDir   = "fwd"    | "back";
+
+const RULES = [
+  { key: "len"    , label: "8+ chars"    , test: (p: string) => p.length >= 8 },
+  { key: "number" , label: "Number"      , test: (p: string) => /[0-9]/.test(p) },
+  { key: "special", label: "Special char", test: (p: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(p) },
+] as const;
+
+function isPwValid(pw: string) { return RULES.every(r => r.test(pw)); }
+
+function parseWaitSeconds(msg: string): number {
+  const minsec = msg.match(/(\d+)m\s+(\d+)s/);
+  if (minsec) return parseInt(minsec[1]!) * 60 + parseInt(minsec[2]!);
+  const sec = msg.match(/(\d+)s/);
+  if (sec) return parseInt(sec[1]!);
+  return 10 * 60;
+}
+
+function expiresAtFromWait(msg: string): number {
+  return Date.now() + parseWaitSeconds(msg) * 1000;
+}
+
+function secsRemaining(expiresAt: number): number {
+  return Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+}
+
+function maskEmail(email: string) {
+  const [local = "", domain = ""] = email.split("@");
+  return `${local.slice(0, 3)}***@${domain}`;
+}
+
+async function apiPost<T>(path: string, body?: Record<string, unknown>): Promise<T> {
+  const res = await fetch(`/api/auth${path}`, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message ?? "Something went wrong");
+  return data as T;
+}
+
+function BackIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path d="M19 12H5M12 5l-7 7 7 7"
+        stroke="currentColor" strokeWidth="2.2"
+        strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MailIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      <rect x="2" y="4" width="20" height="16" rx="3"
+        stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M2 7.5l10 6.5 10-6.5"
+        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="11" width="18" height="12" rx="3"
+        stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M7 11V7a5 5 0 0110 0v4"
+        stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="12" cy="17" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg className="sp-i" width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9"
+        stroke="currentColor" strokeWidth="2.5"
+        strokeLinecap="round" strokeDasharray="28 56" />
+    </svg>
+  );
+}
+
+function CustomCheckbox({ id, checked, onChange }: {
+  id: string; checked: boolean; onChange: (v: boolean) => void;
+}) {
+  return (
+    <>
+      <input type="checkbox" id={id} className="cb-i" checked={checked}
+        onChange={e => onChange(e.target.checked)} />
+      <span className="cb-box" onClick={() => onChange(!checked)} aria-hidden="true">
+        <svg className="cb-c" viewBox="0 0 11 9" fill="none" aria-hidden="true">
+          <path className="cb-p" d="M1 4.5l3 3 6-6"
+            strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    </>
+  );
+}
+
+function PasswordRules({ password }: { password: string }) {
+  return (
+    <div className="pw-r1">
+      {RULES.map(({ key, label, test }) => {
+        const met = test(password);
+        return (
+          <div key={key} className={`pw-r${met ? " pw-rm" : ""}`}>
+            <span className="pw-dot" aria-hidden="true" />
+            <span className="pw-l">{label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function OtpRow({ digits, onChange, shaking, onComplete }: {
+  digits: string[]; onChange: (v: string[]) => void;
+  shaking: boolean; onComplete: (completed: string[]) => void;
+}) {
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const focus = (i: number) => refs.current[i]?.focus();
+
+  const handleChange = (i: number, raw: string) => {
+    const ch = raw.replace(/\D/g, "").slice(-1);
+    const next = [...digits]; next[i] = ch;
+    onChange(next);
+    if (ch && i < 5) focus(i + 1);
+    if (ch && i === 5 && next.every(Boolean)) onComplete(next);
+  };
+
+  const handleKey = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      const next = [...digits];
+      if (next[i]) { next[i] = ""; onChange(next); }
+      else if (i > 0) { next[i - 1] = ""; onChange(next); focus(i - 1); }
+    }
+    if (e.key === "ArrowLeft"  && i > 0) focus(i - 1);
+    if (e.key === "ArrowRight" && i < 5) focus(i + 1);
+  };
+
+  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const raw = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!raw) return;
+    const next = Array(6).fill("") as string[];
+    [...raw].forEach((d, i) => { next[i] = d; });
+    onChange(next);
+    focus(Math.min(raw.length - 1, 5));
+    if (raw.length === 6) onComplete(next);
+  };
+
+  return (
+    <div className={`o-row${shaking ? " o-rows" : ""}`}>
+      {digits.map((digit, i) => (
+        <input key={`otp-${i}`} ref={el => { refs.current[i] = el; }}
+          type="text" inputMode="numeric" maxLength={1}
+          className={`o-box${digit ? " o-boxf" : ""}${shaking ? " o-boxe" : ""}`}
+          value={digit}
+          onChange={e => handleChange(i, e.target.value)}
+          onKeyDown={e => handleKey(i, e)}
+          onPaste={handlePaste}
+          onFocus={e => e.target.select()}
+          autoComplete="one-time-code" />
+      ))}
+    </div>
+  );
+}
+
+function Countdown({ seconds, onResend }: { seconds: number; onResend: () => void }) {
+  if (seconds > 0) {
+    const label = seconds >= 60 ? `${Math.floor(seconds / 60)}m` : `${seconds}s`;
+    return (
+      <p className="countd">
+        Resend in <span className="co-t">{label}</span>
+      </p>
+    );
+  }
+  return (
+    <p className="countd">
+      Didn't receive it?{" "}
+      <button type="button" className="co-l" onClick={onResend}>Resend code</button>
+    </p>
+  );
+}
+
+function SignInScreen({ onOtpNeeded, onLoggedIn, onForgot, enterDir, defaultEmail = "" }: {
+  onOtpNeeded: (email: string, pw: string, expiresAt?: number, err?: string) => void;
+  onLoggedIn:  (token: string) => void;
+  onForgot:    (email: string, expiresAt?: number, err?: string) => void;
+  enterDir:    EnterDir;
+  defaultEmail?: string;
+}) {
+  const [email,      setEmail]      = useState(defaultEmail);
+  const [password,   setPassword]   = useState("");
+  const [agreed,     setAgreed]     = useState(false);
+  const [emailErr,   setEmailErr]   = useState("");
+  const [pwErr,      setPwErr]      = useState("");
+  const [generalErr, setGeneralErr] = useState("");
+  const [loading,      setLoading]      = useState(false);
+  const [triedSubmit,  setTriedSubmit]  = useState(false);
+
+  const emailRef = useRef<HTMLInputElement>(null);
+  const pwRef    = useRef<HTMLInputElement>(null);
+
+  const showRules = triedSubmit && !isPwValid(password);
+  const canSubmit = email.trim().length > 0 && password.length > 0 && agreed && !loading;
+
+  const handleSubmit = useCallback(async () => {
+    if (!canSubmit) return;
+    setEmailErr(""); setPwErr(""); setGeneralErr(""); setLoading(true);
+    try {
+      const { scene } = await apiPost<{ scene: string }>("/check", { email });
+      if (scene === "first-login") {
+        if (!isPwValid(password)) {
+          setTriedSubmit(true);
+          setPwErr("Password must meet all requirements below");
+          return;
+        }
+        const { expiresAt } = await apiPost<{ expiresAt: number }>("/send-otp", { email, purpose: "login" });
+        onOtpNeeded(email, password, expiresAt);
+      } else {
+        const { token } = await apiPost<{ token: string }>("/sign-in", { email, password });
+        onLoggedIn(token);
+      }
+    } catch (e: unknown) {
+      const msg   = e instanceof Error ? e.message : "Something went wrong";
+      const lower = msg.toLowerCase();
+      if (lower.includes("already sent")) {
+        onOtpNeeded(email, password, expiresAtFromWait(msg), msg);
+      } else if (lower.includes("not registered") || lower.includes("not authorized") || lower.includes("not found")) {
+        setEmailErr("Email not registered");
+      } else if (lower.includes("too many") || lower.includes("locked")) {
+        setEmailErr(msg);
+      } else if (lower.includes("incorrect password") || lower.includes("invalid credentials")) {
+        setPwErr("Incorrect password");
+      } else if (lower.includes("setup incomplete") || lower.includes("setup first")) {
+        setGeneralErr("Account setup incomplete — sign in to finish setup.");
+      } else if (lower.includes("gmail") || lower.includes("email sending") || lower.includes("credentials are invalid") || lower.includes("service_unavailable") || lower.includes("unavailable")) {
+        setGeneralErr("Could not send verification email. Please try again.");
+      } else {
+        setGeneralErr(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [canSubmit, email, password, onOtpNeeded, onLoggedIn]);
+
+  const handleForgot = useCallback(async () => {
+    if (!email.trim()) { setEmailErr("Enter your email first"); emailRef.current?.focus(); return; }
+    setEmailErr(""); setLoading(true);
+    try {
+      const { scene } = await apiPost<{ scene: string }>("/check", { email });
+      if (scene === "first-login") {
+        setEmailErr("No password set yet — complete your account setup first");
+        return;
+      }
+      const { expiresAt } = await apiPost<{ expiresAt: number }>("/send-otp", { email, purpose: "reset" });
+      onForgot(email, expiresAt);
+    } catch (e: unknown) {
+      const msg   = e instanceof Error ? e.message : "Something went wrong";
+      const lower = msg.toLowerCase();
+      if (lower.includes("already sent")) {
+        onForgot(email, expiresAtFromWait(msg), msg);
+      } else if (lower.includes("not registered") || lower.includes("not authorized") || lower.includes("not found")) {
+        setEmailErr("Email not registered");
+      } else if (lower.includes("no password") || lower.includes("setup first") || lower.includes("set yet")) {
+        setEmailErr("No password set yet — complete your account setup first");
+      } else {
+        setEmailErr(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [email, onForgot]);
+
+  const dir = enterDir === "fwd" ? "sc-f" : "sc-b";
+
+  return (
+    <div className={`lg-scr ${dir}`}>
+      <h1 className="lg-hea si-s1">Welcome back</h1>
+      <p className="lg-su1 si-s2">Sign in to your account</p>
+
+      <div className="si-s3">
+        <TextInput
+          label="Email address" value={email} type="email"
+          autoComplete="email" inputRef={emailRef}
+          onChange={v => { setEmail(v); setEmailErr(""); setGeneralErr(""); }}
+          error={emailErr}
+          onEnter={() => pwRef.current?.focus()}
+        />
+      </div>
+
+      <div className="si-s4">
+        <PasswordInput
+          label="Password" value={password} inputRef={pwRef}
+          onChange={v => { setPassword(v); setPwErr(""); setGeneralErr(""); }}
+          error={pwErr} onEnter={handleSubmit}
+        />
+        {showRules && <PasswordRules password={password} />}
+      </div>
+
+      <div className="te-r si-s5">
+        <CustomCheckbox id="terms" checked={agreed} onChange={setAgreed} />
+        <label className="te-t" htmlFor="terms">
+          I agree to the{" "}
+          <span className="te-l">Terms of Service</span>
+          {" "}and{" "}
+          <span className="te-l">Privacy Policy</span>
+        </label>
+      </div>
+      {generalErr && <div className="er-t ge-e si-s5b">{generalErr}</div>}
+
+      <div className="si-s6">
+        <Button onClick={handleSubmit} disabled={!canSubmit}>
+          {loading ? <Spinner /> : "Sign In"}
+        </Button>
+      </div>
+
+      <button type="button" className="lg-for si-s7"
+        onClick={handleForgot} disabled={loading}>
+        Forgot password?
+      </button>
+    </div>
+  );
+}
+
+function OtpScreen({ email, purpose, pendingPw, onChangeEmail, onLoggedIn, onResetReady, enterDir, otpExpiresAt, onResent, initialErr }: {
+  email: string; purpose: OtpPurpose; pendingPw: string;
+  onChangeEmail: () => void; onLoggedIn: (token: string) => void;
+  onResetReady: (resetToken: string) => void; enterDir: EnterDir;
+  otpExpiresAt?: number; onResent?: (expiresAt: number) => void; initialErr?: string;
+}) {
+  const [digits,    setDigits]    = useState(Array<string>(6).fill(""));
+  const [shaking,   setShaking]   = useState(false);
+  const [otpErr,    setOtpErr]    = useState(initialErr ?? "");
+  const [loading,   setLoading]   = useState(false);
+  const [countd, setCountdown] = useState(() => otpExpiresAt ? secsRemaining(otpExpiresAt) : 10 * 60);
+
+  useEffect(() => {
+    if (countd <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countd]);
+
+  const triggerShake = () => {
+    setShaking(true);
+    setTimeout(() => setShaking(false), 500);
+  };
+
+  const handleVerify = useCallback(async (completedDigits: string[]) => {
+    const code = completedDigits.join("");
+    if (code.length < 6 || loading) return;
+    setLoading(true); setOtpErr("");
+    try {
+      const body = purpose === "login"
+        ? { email, otp: code, password: pendingPw, purpose }
+        : { email, otp: code, purpose };
+      const res = await apiPost<{ token?: string; resetToken?: string }>("/verify-otp", body);
+      if (purpose === "login") onLoggedIn(res.token!);
+      else                     onResetReady(res.resetToken!);
+    } catch (e: unknown) {
+      const msg   = e instanceof Error ? e.message : "Invalid or expired code";
+      const lower = msg.toLowerCase();
+      triggerShake();
+      setDigits(Array(6).fill(""));
+      if (lower.includes("expired") || lower.includes("request a new")) {
+        setOtpErr("Code expired. Request a new one below.");
+      } else if (lower.includes("incorrect code") || lower.includes("check your email")) {
+        setOtpErr("Incorrect code. Check your email and try again.");
+      } else if (lower.includes("too many") || lower.includes("locked")) {
+        setOtpErr(msg);
+      } else {
+        setOtpErr("Invalid code. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, purpose, pendingPw, email, onLoggedIn, onResetReady]);
+
+  const handleResend = async () => {
+    if (loading) return;
+    setLoading(true);
+    setDigits(Array(6).fill("")); setShaking(false); setOtpErr("");
+    try {
+      const { expiresAt } = await apiPost<{ expiresAt: number }>("/resend-otp", { email, purpose });
+      onResent?.(expiresAt);
+      setCountdown(secsRemaining(expiresAt));
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to resend code";
+      const lo  = msg.toLowerCase();
+      setOtpErr(lo.includes("too many") || lo.includes("locked") ? msg : "Failed to send code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const dir     = enterDir === "fwd" ? "sc-f" : "sc-b";
+  const isLogin = purpose === "login";
+
+  return (
+    <div className={`lg-scr ${dir}`}>
+      <div className="o-ico1 otp-s1">
+        <div className="o-icon">
+          {isLogin ? <MailIcon /> : <LockIcon />}
+        </div>
+      </div>
+
+      <h1 className="lg-hea otp-s2">
+        {isLogin ? "Check your inbox" : "Password reset"}
+      </h1>
+      <p className="lg-sub otp-s3">
+        {isLogin ? "We sent a 6-digit code to" : "Enter the reset code sent to"}
+      </p>
+
+      <div className="o-emai otp-s4">
+        <span className="o-ema1" />
+        {maskEmail(email)}
+        <button type="button" className="o-chan" onClick={onChangeEmail}>
+          Change
+        </button>
+      </div>
+
+      <div className="otp-s5">
+        <OtpRow
+          digits={digits}
+          onChange={v => { setDigits(v); setShaking(false); setOtpErr(""); }}
+          shaking={shaking}
+          onComplete={handleVerify}
+        />
+        {loading && <div className="o-spin"><Spinner /></div>}
+        {otpErr && <div className="er-t otp-err">{otpErr}</div>}
+      </div>
+
+      <div className="otp-s6">
+        <Countdown seconds={countd} onResend={handleResend} />
+        {isLogin && countd > 0 && (
+          <p className="o-spam">Check spam/junk if not received.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function ResetPasswordScreen({ resetToken, onBack, onDone, enterDir }: {
+  resetToken: string; onBack: () => void;
+  onDone: () => void; enterDir: EnterDir;
+}) {
+  const [newPw,   setNewPw]   = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [newErr,  setNewErr]  = useState("");
+  const [confErr, setConfErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [triedReset, setTriedReset] = useState(false);
+
+  const confirmRef = useRef<HTMLInputElement>(null);
+  const canSubmit  = newPw.length > 0 && confirm.length > 0 && !loading;
+
+  const handleReset = useCallback(async () => {
+    if (!canSubmit) return;
+    setNewErr(""); setConfErr(""); setTriedReset(true);
+    if (!isPwValid(newPw)) { setNewErr("Password must meet all requirements below"); return; }
+    if (newPw !== confirm) { setConfErr("Passwords do not match"); return; }
+    setLoading(true);
+    try {
+      await apiPost("/reset-password", {
+        resetToken, password: newPw, confirmPassword: confirm,
+      });
+      onDone();
+    } catch (e: unknown) {
+      setNewErr(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }, [canSubmit, newPw, confirm, resetToken, onDone]);
+
+  const dir = enterDir === "fwd" ? "sc-f" : "sc-b";
+
+  return (
+    <div className="login">
+      <AuthBg />
+      <div className="lg-inn">
+        <div className={`lg-scr ${dir}`}>
+          <button className="lg-bac o-back" onClick={onBack} aria-label="Back">
+            <BackIcon /><span>Back</span>
+          </button>
+
+          <h1 className="lg-hea rp-s2">New password</h1>
+          <p className="lg-sub rp-s3">Create a strong password for your account</p>
+
+          <div className="rp-s4">
+            <PasswordInput
+              label="New password" value={newPw}
+              autoComplete="new-password"
+              onChange={v => { setNewPw(v); setNewErr(""); }}
+              error={newErr}
+              onEnter={() => confirmRef.current?.focus()}
+            />
+            {triedReset && !isPwValid(newPw) && <PasswordRules password={newPw} />}
+          </div>
+
+          <div className="rp-s5">
+            <PasswordInput
+              label="Confirm password" value={confirm} inputRef={confirmRef}
+              autoComplete="new-password"
+              onChange={v => { setConfirm(v); setConfErr(""); }}
+              error={confErr} onEnter={handleReset}
+            />
+          </div>
+
+          <div className="rp-s6">
+            <Button onClick={handleReset} disabled={!canSubmit}>
+              {loading ? <Spinner /> : "Set Password"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export interface LoginFlowProps {
+  onLoggedIn?:       (token: string) => void;
+  onResetVerified?: (resetToken: string) => void;
+}
+
+export function LoginFlow({ onLoggedIn, onResetVerified }: LoginFlowProps) {
+  const [screen,    setScreen]    = useState<Screen>("signin");
+  const [screenKey, setScreenKey] = useState(0);
+  const [enterDir,  setEnterDir]  = useState<EnterDir>("fwd");
+  const [otpPurpose,       setOtpPurpose]       = useState<OtpPurpose>("login");
+  const [email,            setEmail]             = useState("");
+  const [pendingPw,        setPendingPw]         = useState("");
+  const [otpExpiresAt,     setOtpExpiresAt]      = useState<number | undefined>(undefined);
+  const [otpInitErr,       setOtpInitErr]        = useState<string | undefined>(undefined);
+
+  const goTo = useCallback((s: Screen, dir: EnterDir = "fwd") => {
+    setEnterDir(dir);
+    setScreen(s);
+    setScreenKey(k => k + 1);
+  }, []);
+
+  const clearOtpState = () => {
+    setPendingPw(""); setOtpExpiresAt(undefined); setOtpInitErr(undefined);
+  };
+
+  const handleLoggedIn = (token: string) => {
+    clearOtpState();
+    localStorage.setItem("auth_token", token);
+    onLoggedIn?.(token);
+  };
+
+  const handleOtpNeeded = (e: string, pw: string, expiresAt?: number, err?: string) => {
+    setEmail(e); setPendingPw(pw); setOtpPurpose("login");
+    setOtpExpiresAt(expiresAt); setOtpInitErr(err);
+    goTo("otp", "fwd");
+  };
+
+  const handleForgot = (e: string, expiresAt?: number, err?: string) => {
+    setEmail(e); setOtpPurpose("reset");
+    setOtpExpiresAt(expiresAt); setOtpInitErr(err);
+    goTo("otp", "fwd");
+  };
+
+  const handleResent = (expiresAt: number) => setOtpExpiresAt(expiresAt);
+
+  const handleBackToSignin = () => { clearOtpState(); goTo("signin", "back"); };
+
+  const handleResetReady = (resetToken: string) => { clearOtpState(); onResetVerified?.(resetToken); };
+
+  return (
+    <div className="login">
+      <AuthBg />
+      <div className="lg-inn">
+        {screen === "signin" && (
+          <SignInScreen
+            key={screenKey}
+            enterDir={enterDir}
+            defaultEmail={email}
+            onOtpNeeded={handleOtpNeeded}
+            onLoggedIn={handleLoggedIn}
+            onForgot={handleForgot}
+          />
+        )}
+        {screen === "otp" && (
+          <OtpScreen
+            key={screenKey}
+            enterDir={enterDir}
+            email={email}
+            purpose={otpPurpose}
+            pendingPw={pendingPw}
+            onChangeEmail={handleBackToSignin}
+            onLoggedIn={handleLoggedIn}
+            onResetReady={handleResetReady}
+            otpExpiresAt={otpExpiresAt}
+            onResent={handleResent}
+            initialErr={otpInitErr}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
