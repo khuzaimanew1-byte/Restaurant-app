@@ -7,6 +7,7 @@ import { TextInput }  from "./ui/Input";
 import { BulletList } from "./ui/BulletList";
 import { useCreateEmployee } from "../hooks/useCreateEmployee";
 import type { CreateEmployeePayload } from "../services/employee.service";
+import { IcoIn, IcoOut } from "../services/shift-timing";
 import "../styles/add-bg.css";
 import "../styles/add-employee.css";
 
@@ -416,17 +417,9 @@ export function AddEmployeePage({
               {/* Shift Timing — single row */}
               <div className="ae-field ae-s1-sft">
                 <div className="ae-shift-row">
-                  <span className="ae-shift-ico">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-                    </svg>
-                  </span>
+                  <span className="ae-shift-ico">{IcoIn}</span>
                   <input ref={shiftStartRef} className="ae-shift-time-inp" type="time" value={shiftStart} onChange={e => setShiftStart(e.target.value)} />
-                  <span className="ae-shift-ico">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
-                    </svg>
-                  </span>
+                  <span className="ae-shift-ico">{IcoOut}</span>
                   <input ref={shiftEndRef} className="ae-shift-time-inp" type="time" value={shiftEnd} onChange={e => setShiftEnd(e.target.value)} />
                 </div>
               </div>

@@ -2,9 +2,6 @@
    ADMIN DASHBOARD — lazy-loaded with AdminDashboard component
    Imported in: AdminDashboard.tsx
 ═══════════════════════════════════════════════════════════════ */
-/* ══════════════════════════════════════════════════════════════
-   ADMIN DASHBOARD
-══════════════════════════════════════════════════════════════ */
 
 /* Root */
 
@@ -159,7 +156,7 @@
 }
 .adm-header-date {
   font-family: 'Geist', 'Inter', sans-serif;
-  font-size: 22px;
+  font-size: clamp(18px, 2.2vw, 22px);
   font-weight: 500;
   letter-spacing: -.02em;
   color: white;
@@ -239,9 +236,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 200ms ease;
+  transition: color 200ms ease, transform 150ms cubic-bezier(.22,1,.36,1);
 }
-.adm-notif-btn:hover { color: var(--adm-gold); }
+.adm-notif-btn:hover  { color: var(--adm-gold); }
+.adm-notif-btn:active { transform: scale(.88); }
 .adm-notif-dot {
   position: absolute;
   top: 2px; right: 2px;
@@ -306,7 +304,7 @@
 }
 .adm-topbar-brand {
   font-family: 'DM Serif Display', 'Playfair Display', serif;
-  font-size: 20px;
+  font-size: clamp(17px, 4.8vw, 20px);
   color: white;
   letter-spacing: .02em;
   white-space: nowrap;
@@ -419,7 +417,7 @@
   justify-content: space-between;
 }
 .adm-mobile-date {
-  font-size: 17px; font-weight: 500;
+  font-size: clamp(15px, 4.2vw, 17px); font-weight: 500;
   color: white; margin: 0;
 }
 .adm-mobile-chip {
@@ -563,14 +561,13 @@
 .adm-card-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .adm-card-name {
   font-weight: 500;
-  font-size: 14px;
+  font-size: clamp(13px, 3.8vw, 15px);
   color: white;
   margin: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-@media (min-width: 768px) { .adm-card-name { font-size: 16px; } }
-.adm-card-role  { font-size: 12px; color: var(--adm-text-muted); margin: 0; }
-.adm-card-salary { font-size: 12px; color: var(--adm-text-muted); margin: 2px 0 0; }
+.adm-card-role  { font-size: clamp(11px, 3.0vw, 12px); color: var(--adm-text-muted); margin: 0; }
+.adm-card-salary { font-size: clamp(11px, 2.8vw, 12px); color: var(--adm-text-muted); margin: 2px 0 0; }
 
 .adm-times { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .adm-time-in, .adm-time-out {
@@ -602,16 +599,6 @@
 .adm-time--late  { color: var(--clr-late); }
 .adm-time--early { color: var(--clr-early); }
 .adm-time--half  { color: var(--clr-half); }
-.adm-status-chip {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  margin-top: 3px;
-  opacity: .85;
-}
-@media (min-width: 768px) { .adm-status-chip { font-size: 10px; } }
-
 /* Placeholder --:-- when no time recorded */
 .adm-time-placeholder {
   color: rgba(255,255,255,.25);
@@ -715,11 +702,10 @@
 .adm-bar-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 10px;
+  font-size: clamp(9px, 2.4vw, 11px);
   color: var(--adm-text-muted);
   font-family: 'Geist', 'Inter', sans-serif;
 }
-@media (min-width: 768px) { .adm-bar-labels { font-size: 11px; } }
 
 /* Progress bar */
 .adm-progress-track {
@@ -986,8 +972,8 @@
 .adm-modal-icon {
   width: 52px; height: 52px;
   border-radius: 50%;
-  background: rgba(248,113,113,.12);
-  border: 1px solid rgba(248,113,113,.25);
+  background: rgba(var(--adm-red-rgb), .12);
+  border: 1px solid rgba(var(--adm-red-rgb), .25);
   display: flex; align-items: center; justify-content: center;
   color: var(--adm-red);
   margin-bottom: 4px;
@@ -1031,8 +1017,8 @@
   flex: 1;
   height: 44px;
   border-radius: 12px;
-  background: rgba(248,113,113,.18);
-  border: 1px solid rgba(248,113,113,.35);
+  background: rgba(var(--adm-red-rgb), .18);
+  border: 1px solid rgba(var(--adm-red-rgb), .35);
   color: var(--adm-red);
   font-size: 14px; font-weight: 600;
   cursor: pointer;
@@ -1040,25 +1026,10 @@
   transition: background 180ms ease, transform 120ms cubic-bezier(.22,1,.36,1), box-shadow 180ms ease;
 }
 .adm-modal-confirm:hover {
-  background: rgba(248,113,113,.28);
-  box-shadow: 0 4px 16px rgba(248,113,113,.20);
+  background: rgba(var(--adm-red-rgb), .28);
+  box-shadow: 0 4px 16px rgba(var(--adm-red-rgb), .20);
 }
 .adm-modal-confirm:active { transform: scale(.96); }
-
-/* ── Font responsive clamp updates ───────────────────── */
-.adm-card-name  { font-size: clamp(13px, 3.8vw, 15px); }
-.adm-card-role  { font-size: clamp(11px, 3.0vw, 12px); }
-.adm-card-salary { font-size: clamp(11px, 2.8vw, 12px); }
-.adm-header-date { font-size: clamp(18px, 2.2vw, 22px); }
-.adm-mobile-date { font-size: clamp(15px, 4.2vw, 17px); }
-.adm-bar-labels  { font-size: clamp(9px, 2.4vw, 11px); }
-.adm-topbar-brand { font-size: clamp(17px, 4.8vw, 20px); }
-
-/* ── Notif button micro-animation ────────────────────── */
-.adm-notif-btn {
-  transition: color 200ms ease, transform 150ms cubic-bezier(.22,1,.36,1);
-}
-.adm-notif-btn:active { transform: scale(.88); }
 
 /* ── FAB micro-animation ─────────────────────────────── */
 .adm-fab svg {
@@ -1185,93 +1156,4 @@
   margin: 4px 0 0;
 }
 
-/* ── Office timing header (Time & Leave page) ──────────────── */
-.adm-office-timing {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-.adm-office-timing-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .09em;
-  text-transform: uppercase;
-  color: var(--adm-text-muted);
-  flex-shrink: 0;
-}
-.adm-timing-display-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.adm-timing-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--adm-gold);
-  font-variant-numeric: tabular-nums;
-}
-@media (min-width: 768px) { .adm-timing-value { font-size: 15px; } }
-.adm-timing-edit-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--adm-text-muted);
-  padding: 4px;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  transition: color 160ms ease;
-}
-.adm-timing-edit-btn:hover { color: white; }
-
-.adm-timing-edit-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.adm-timing-input {
-  padding: 6px 10px;
-  background: rgba(255,255,255,.07);
-  border: 1px solid rgba(212,175,55,.35);
-  border-radius: 7px;
-  color: white;
-  font-size: 13px;
-  font-family: 'Geist', 'Inter', sans-serif;
-  width: 96px;
-  outline: none;
-  transition: border-color 180ms ease;
-}
-.adm-timing-input:focus { border-color: var(--adm-gold); }
-.adm-timing-dash { color: var(--adm-text-muted); font-size: 13px; }
-.adm-timing-save {
-  padding: 6px 14px;
-  background: var(--adm-gold);
-  border: none;
-  border-radius: 7px;
-  color: var(--adm-bg);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: 'Geist', 'Inter', sans-serif;
-  transition: opacity 150ms ease;
-}
-.adm-timing-save:hover { opacity: .85; }
-.adm-timing-cancel {
-  background: none;
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: 7px;
-  color: var(--adm-text-muted);
-  font-size: 13px;
-  padding: 5px 10px;
-  cursor: pointer;
-  font-family: 'Geist', 'Inter', sans-serif;
-  transition: color 150ms ease;
-}
-.adm-timing-cancel:hover { color: white; }
+/* Office timing styles → styles/office-timing.css (loaded by OfficeTiming.tsx) */

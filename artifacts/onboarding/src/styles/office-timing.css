@@ -1,0 +1,88 @@
+/* Office Timing header — imported by OfficeTiming.tsx */
+.adm-office-timing {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.adm-office-timing-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--adm-text-muted);
+  flex-shrink: 0;
+}
+.adm-timing-display-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.adm-timing-value {
+  font-size: clamp(13px, 3.5vw, 15px);
+  font-weight: 600;
+  color: var(--adm-gold);
+  font-variant-numeric: tabular-nums;
+}
+.adm-timing-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--adm-text-muted);
+  padding: 4px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  transition: color 160ms ease;
+}
+.adm-timing-edit-btn:hover { color: white; }
+.adm-timing-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.adm-timing-input {
+  padding: 6px 10px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(212,175,55,.35);
+  border-radius: 7px;
+  color: white;
+  font-size: 13px;
+  font-family: 'Geist', 'Inter', sans-serif;
+  width: 96px;
+  outline: none;
+  transition: border-color 180ms ease;
+}
+.adm-timing-input:focus { border-color: var(--adm-gold); }
+.adm-timing-dash { color: var(--adm-text-muted); font-size: 13px; }
+.adm-timing-save {
+  padding: 6px 14px;
+  background: var(--adm-gold);
+  border: none;
+  border-radius: 7px;
+  color: var(--adm-bg);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Geist', 'Inter', sans-serif;
+  transition: opacity 150ms ease;
+}
+.adm-timing-save:hover { opacity: .85; }
+.adm-timing-cancel {
+  background: none;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 7px;
+  color: var(--adm-text-muted);
+  font-size: 13px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: 'Geist', 'Inter', sans-serif;
+  transition: color 150ms ease;
+}
+.adm-timing-cancel:hover { color: white; }

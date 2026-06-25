@@ -104,6 +104,7 @@
   --adm-text-dim:    #828282;
   --adm-green:       #4ADE80;
   --adm-red:         #F87171;
+  --adm-red-rgb:     248, 113, 113; /* same as --adm-red; for rgba() composition */
   --adm-orange:      #FBBF24;
   --adm-grey:        #9CA3AF;
 

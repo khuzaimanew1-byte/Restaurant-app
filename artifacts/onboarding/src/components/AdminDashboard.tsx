@@ -4,167 +4,28 @@ import { useDelayedUnmount }        from "../hooks/useDelayedUnmount";
 import { useEmployees }             from "../hooks/useEmployees";
 import { useUpdateEmployeeStatus }  from "../hooks/useUpdateEmployeeStatus";
 import { type EmployeeCard, type UiStatus, uiStatusToDb } from "../services/employee.service";
+import {
+  type OfficeTiming,
+  STATUS_CSS,
+  arrSts, depSts, dispSts, canHalf, sortEmp,
+  to24h, to12h,
+  IcoIn, IcoOut,
+} from "../services/shift-timing";
+import { OfficeTimingHeader }       from "./ui/OfficeTiming";
 import { Navigation, type NavItem } from "./ui/Navigation";
 import { Topbar }                   from "./ui/Topbar";
 import { StatusTag }                from "./ui/StatusTag";
 import "../styles/main-bg.css";
 import "../styles/admin-dashboard.css";
 
-// ── Types ──────────────────────────────────────────────────────────────────
+// ── Local types ─────────────────────────────────────────────────────────────
 
-type DisplayStatus =
-  | "unauthorized-leave" | "leave" | "half-day"
-  | "early-departure" | "late-arrival" | "arrival" | "normal";
-
-/* EmployeeCard from the DB is the canonical employee shape — same fields
-   as the old local Employee interface; no need for a separate definition. */
+/* Employees come exclusively from the DB via useEmployees() → GET /api/employees.
+   Seeds are in artifacts/api-server/src/employees/seeds/index.ts (server-side). */
 type Employee = EmployeeCard;
+interface CtxMenu { empId: number; x: number; y: number; }
 
-interface OfficeTiming { start: string; end: string; }
-interface CtxMenu     { empId: number; x: number; y: number; }
-
-// ── Status maps ────────────────────────────────────────────────────────────
-
-/** Maps display status → CSS class suffix for dot/label/time slots.
- *  Colors live entirely in index.css via --clr-* vars. */
-const STATUS_CSS: Record<DisplayStatus, string | null> = {
-  "unauthorized-leave": "unauth",
-  "leave":              "leave",
-  "half-day":           "half",
-  "early-departure":    "early",
-  "late-arrival":       "late",
-  "arrival":            "present",
-  "normal":             null,
-};
-
-const STATUS_LABEL: Record<DisplayStatus, string> = {
-  "unauthorized-leave": "Unauthorized Leave",
-  "leave":              "On Leave",
-  "half-day":           "Half Day",
-  "early-departure":    "Early Departure",
-  "late-arrival":       "Late Arrival",
-  "arrival":            "On Time",
-  "normal":             "No Check-in",
-};
-
-// Priority when employee has NO checkout yet (odd slots 3,5,9 leave room for with-checkout)
-const SORT_NO_CHECKOUT: Record<DisplayStatus, number> = {
-  "unauthorized-leave": 0,
-  "leave":              1,
-  "late-arrival":       3,
-  "arrival":            5,
-  "normal":             9,
-  "half-day":           99,
-  "early-departure":    99,
-};
-
-// Priority when employee HAS a checkout (even slots 2,4,6,7,10)
-const SORT_WITH_CHECKOUT: Record<DisplayStatus, number> = {
-  "unauthorized-leave": 0,
-  "leave":              1,
-  "half-day":           2,
-  "early-departure":    4,
-  "late-arrival":       6,
-  "arrival":            7,
-  "normal":             10,
-};
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-function parseTimeMins(t: string): number {
-  if (!t) return -1;
-  const m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!m) return -1;
-  let h = parseInt(m[1]);
-  const min = parseInt(m[2]);
-  const p = m[3].toUpperCase();
-  if (p === "PM" && h !== 12) h += 12;
-  if (p === "AM" && h === 12) h = 0;
-  return h * 60 + min;
-}
-
-// "09:15 AM" → "09:15"  (for <input type="time">)
-function to24h(t: string): string {
-  if (!t) return "";
-  const m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!m) return "";
-  let h = parseInt(m[1]);
-  const min = m[2];
-  const p = m[3].toUpperCase();
-  if (p === "PM" && h !== 12) h += 12;
-  if (p === "AM" && h === 12) h = 0;
-  return `${String(h).padStart(2, "0")}:${min}`;
-}
-
-// "09:15" → "09:15 AM"  (from <input type="time">)
-function to12h(t: string): string {
-  if (!t) return "";
-  const parts = t.split(":");
-  if (parts.length < 2) return "";
-  let h = parseInt(parts[0]);
-  const min = parts[1];
-  const period = h >= 12 ? "PM" : "AM";
-  if (h > 12) h -= 12;
-  if (h === 0) h = 12;
-  return `${String(h).padStart(2, "0")}:${min} ${period}`;
-}
-
-// Returns CSS key for check-in time color ("late" = amber / null = default)
-function getArrivalStatus(emp: Employee, timing: OfficeTiming): "late" | null {
-  if (!emp.checkIn) return null;
-  const inM    = parseTimeMins(emp.checkIn);
-  const startM = parseTimeMins(timing.start);
-  if (inM === -1) return null;
-  return inM > startM ? "late" : null;
-}
-
-// Returns CSS key for check-out time color ("early" = purple / "half" = teal / null = default)
-function getDepartureStatus(emp: Employee, timing: OfficeTiming): "early" | null {
-  if (!emp.checkOut) return null;
-  const outM = parseTimeMins(emp.checkOut);
-  const endM = parseTimeMins(timing.end);
-  if (outM === -1) return null;
-  return outM < endM ? "early" : null;
-}
-
-function getDisplayStatus(emp: Employee, timing: OfficeTiming): DisplayStatus {
-  if (emp.leaveStatus === "unauthorized-leave") return "unauthorized-leave";
-  if (emp.leaveStatus === "leave")              return "leave";
-  if (emp.leaveStatus === "half-day")           return "half-day";
-  const startM = parseTimeMins(timing.start);
-  const endM   = parseTimeMins(timing.end);
-  if (emp.checkOut) {
-    const outM = parseTimeMins(emp.checkOut);
-    if (outM !== -1 && outM < endM) return "early-departure";
-    if (emp.checkIn) {
-      const inM = parseTimeMins(emp.checkIn);
-      return (inM !== -1 && inM > startM) ? "late-arrival" : "arrival";
-    }
-    return "normal";
-  }
-  if (emp.checkIn) {
-    const inM = parseTimeMins(emp.checkIn);
-    return (inM !== -1 && inM > startM) ? "late-arrival" : "arrival";
-  }
-  return "normal";
-}
-
-function canAssignHalfDay(emp: Employee, timing: OfficeTiming): boolean {
-  if (!emp.checkIn || !emp.checkOut) return false;
-  const outM = parseTimeMins(emp.checkOut);
-  const endM = parseTimeMins(timing.end);
-  return outM !== -1 && endM !== -1 && outM < endM;
-}
-
-function sortedEmployees(emps: Employee[], timing: OfficeTiming): Employee[] {
-  return [...emps].sort((a, b) => {
-    const sa = getDisplayStatus(a, timing);
-    const sb = getDisplayStatus(b, timing);
-    const pa = (a.checkOut ? SORT_WITH_CHECKOUT : SORT_NO_CHECKOUT)[sa];
-    const pb = (b.checkOut ? SORT_WITH_CHECKOUT : SORT_NO_CHECKOUT)[sb];
-    return pa - pb;
-  });
-}
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 function getTodayStr() {
   const d = new Date();
@@ -189,11 +50,7 @@ const Highlight = memo(function Highlight({ text, query = "" }: { text: string; 
   );
 });
 
-/* Seed data removed — employees are now loaded exclusively from the DB
-   via useEmployees() → GET /api/employees. See data/employee-seeds.ts
-   for the seed records inserted into Neon on first server boot.      */
-
-// ── Sub-components ─────────────────────────────────────────────────────────
+// ── Sub-components ──────────────────────────────────────────────────────────
 
 const AvatarImg = memo(function AvatarImg({ emp }: { emp: Employee }) {
   const [failed, setFailed] = useState(false);
@@ -221,17 +78,6 @@ const ProgressBar = memo(function ProgressBar({ value, variant }: { value: numbe
   );
 });
 
-const CHECKIN_SVG = (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-  </svg>
-);
-const CHECKOUT_SVG = (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 11 12 16 7"/><line x1="11" y1="12" x2="21" y2="12"/>
-  </svg>
-);
-
 const EmployeeCard = memo(function EmployeeCard({
   emp, idx, timing, isEditing, query, onCtxMenu, onLongPress, onEditSave,
 }: {
@@ -241,7 +87,7 @@ const EmployeeCard = memo(function EmployeeCard({
   onLongPress: (id: number, x: number, y: number) => void;
   onEditSave: (id: number, ci: string, co: string) => void;
 }) {
-  const status    = getDisplayStatus(emp, timing);
+  const status    = dispSts(emp, timing);
   const statusCss = STATUS_CSS[status];
   const isLeave   = status === "leave" || status === "unauthorized-leave";
   const isHalf    = status === "half-day";
@@ -265,8 +111,8 @@ const EmployeeCard = memo(function EmployeeCard({
   }
 
   /* Independent time slot CSS keys — no inline hex, colors live in CSS vars */
-  const arrStatus = getArrivalStatus(emp, timing);
-  const depStatus = isHalf ? "half" : (emp.leaveStatus ? null : getDepartureStatus(emp, timing));
+  const arrStatus = arrSts(emp, timing);
+  const depStatus = isHalf ? "half" : (emp.leaveStatus ? null : depSts(emp, timing));
 
   let dotCss: string | null;
   if (emp.leaveStatus) {
@@ -278,9 +124,8 @@ const EmployeeCard = memo(function EmployeeCard({
   }
 
   const shouldPulse = !emp.leaveStatus && !!emp.checkIn && !emp.checkOut;
-
-  const displayIn  = emp.checkIn  || "--:--";
-  const displayOut = emp.checkOut || "--:--";
+  const displayIn   = emp.checkIn  || "--:--";
+  const displayOut  = emp.checkOut || "--:--";
 
   const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const posRef    = useRef({ x: 0, y: 0 });
@@ -327,7 +172,7 @@ const EmployeeCard = memo(function EmployeeCard({
             <div className="adm-inline-edit">
               <div className="adm-inline-time-row">
                 <div className="adm-inline-field">
-                  <span className="adm-inline-icon">{CHECKIN_SVG}</span>
+                  <span className="adm-inline-icon">{IcoIn}</span>
                   <input
                     className="adm-inline-input"
                     type="time" value={ci24}
@@ -336,7 +181,7 @@ const EmployeeCard = memo(function EmployeeCard({
                   />
                 </div>
                 <div className="adm-inline-field">
-                  <span className="adm-inline-icon">{CHECKOUT_SVG}</span>
+                  <span className="adm-inline-icon">{IcoOut}</span>
                   <input
                     className={`adm-inline-input${!ci24 ? " adm-inline-input-disabled" : ""}`}
                     type="time" value={co24} disabled={!ci24}
@@ -351,11 +196,11 @@ const EmployeeCard = memo(function EmployeeCard({
           ) : (
             <div className="adm-times">
               <span className={`adm-time-in${arrStatus ? ` adm-time--${arrStatus}` : ""}`}>
-                {CHECKIN_SVG}
+                {IcoIn}
                 <span className={emp.checkIn ? "" : "adm-time-placeholder"}>{displayIn}</span>
               </span>
               <span className={`adm-time-out${depStatus ? ` adm-time--${depStatus}` : ""}`}>
-                {CHECKOUT_SVG}
+                {IcoOut}
                 <span className={emp.checkOut ? "" : "adm-time-placeholder"}>{displayOut}</span>
               </span>
             </div>
@@ -404,11 +249,10 @@ function ContextMenu({
   onClose: () => void;
 }) {
   const emp    = employees.find(e => e.id === ctx.empId)!;
-  const halfOk = canAssignHalfDay(emp, timing) || emp.leaveStatus === "half-day";
+  const halfOk = canHalf(emp, timing) || emp.leaveStatus === "half-day";
   const menuRef = useRef<HTMLDivElement>(null);
 
-  /* ── Keyboard navigation ──────────────────────────────────
-     Items: 0=Edit  1=Leave  2=Unauthorized Leave  3=Half Day */
+  /* Items: 0=Edit  1=Leave  2=Unauthorized Leave  3=Half Day */
   const itemDisabled = [false, false, false, !halfOk] as const;
   const enabledIdxs  = itemDisabled.map((d, i) => (d ? -1 : i)).filter(i => i >= 0);
   const [kbdIdx, setKbdIdx] = useState(-1);
@@ -421,7 +265,6 @@ function ContextMenu({
     setKbdIdx(next);
   }
 
-  /* mousedown (bubble) fires after target handlers, avoids race with contextmenu */
   useEffect(() => {
     function onMouseDown(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
@@ -547,43 +390,6 @@ function ContextMenu({
   );
 }
 
-function OfficeTimingHeader({ timing, onUpdate }: {
-  timing: OfficeTiming;
-  onUpdate: (t: OfficeTiming) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [start,   setStart]   = useState(timing.start);
-  const [end,     setEnd]     = useState(timing.end);
-
-  function save() { onUpdate({ start, end }); setEditing(false); }
-  function cancel() { setStart(timing.start); setEnd(timing.end); setEditing(false); }
-
-  return (
-    <div className="adm-office-timing">
-      <span className="adm-office-timing-label">Office Timing</span>
-      {editing ? (
-        <div className="adm-timing-edit-row">
-          <input className="adm-timing-input" value={start} onChange={e => setStart(e.target.value)} />
-          <span className="adm-timing-dash">–</span>
-          <input className="adm-timing-input" value={end}   onChange={e => setEnd(e.target.value)}   />
-          <button className="adm-timing-save"   onClick={save}>Save</button>
-          <button className="adm-timing-cancel" onClick={cancel}>✕</button>
-        </div>
-      ) : (
-        <div className="adm-timing-display-row">
-          <span className="adm-timing-value">{timing.start} – {timing.end}</span>
-          <button className="adm-timing-edit-btn" onClick={() => setEditing(true)} aria-label="Edit timing">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
     <div className="adm-modal-overlay" onClick={onCancel}>
@@ -605,25 +411,23 @@ function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel:
   );
 }
 
-// ── Main Dashboard ─────────────────────────────────────────────────────────
+// ── Main Dashboard ──────────────────────────────────────────────────────────
 
 export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => void; onAddEmployee: () => void }) {
-  /* ── DB data via React Query ─────────────────────────────────────────────
-     employees is the authoritative list from Neon — never hardcoded locally.
+  /* DB data via React Query — authoritative; never hardcoded locally.
      updateMutation sends PATCH /api/employees/:id/status with optimistic UI. */
   const { data: employees = [], isLoading, isError } = useEmployees();
   const updateMutation = useUpdateEmployeeStatus();
 
-  const [activeNav,        setActiveNav]      = useState<NavItem>("dashboard");
-  const [officeTiming,     setOfficeTiming]   = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
-  const [rawQuery,         setRawQuery]       = useState("");
-  const [mobileSearchOpen, setMobileSearch]  = useState(false);
-  const [logoutModalOpen,  setLogoutModal]   = useState(false);
-  const [ctxMenu,          setCtxMenu]       = useState<CtxMenu | null>(null);
-  const [editingId,        setEditingId]     = useState<number | null>(null);
+  const [activeNav,        setActiveNav]    = useState<NavItem>("dashboard");
+  const [officeTiming,     setOfficeTiming] = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
+  const [rawQuery,         setRawQuery]     = useState("");
+  const [mobileSearchOpen, setMobileSearch] = useState(false);
+  const [logoutModalOpen,  setLogoutModal]  = useState(false);
+  const [ctxMenu,          setCtxMenu]      = useState<CtxMenu | null>(null);
+  const [editingId,        setEditingId]    = useState<number | null>(null);
 
-  /* ── useDelayedUnmount ─────────────────────────────────────────────────────
-     LogoutModal: 60 s default cache. ContextMenu: 220 ms for CSS exit animation. */
+  /* LogoutModal: 60 s default cache. ContextMenu: 220 ms for CSS exit animation. */
   const shouldRenderLogout = useDelayedUnmount(logoutModalOpen);
   const shouldRenderCtx    = useDelayedUnmount(!!ctxMenu, 220);
 
@@ -634,14 +438,11 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
 
   const debouncedQuery = useDebounce(rawQuery, 280);
 
-  /* Search refs passed to Topbar — state (rawQuery) stays here, drives filtering */
   const searchRef       = useRef<HTMLInputElement>(null);
   const mobileSearchRef = useRef<HTMLInputElement>(null);
 
-  /* Dismiss editing state whenever an update mutation fires */
   useEffect(() => {
     if (updateMutation.isPending) return;
-    /* nothing extra needed — editingId is cleared in handleEditSave */
   }, [updateMutation.isPending]);
 
   const today        = getTodayStr();
@@ -649,7 +450,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
   const halfDayCount = useMemo(() => employees.filter(e => e.leaveStatus === "half-day").length, [employees]);
   const totalCount   = employees.length;
 
-  const sorted = useMemo(() => sortedEmployees(employees, officeTiming), [employees, officeTiming]);
+  const sorted = useMemo(() => sortEmp(employees, officeTiming), [employees, officeTiming]);
 
   const filtered = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase();
@@ -709,20 +510,17 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
   const sharedCardProps = {
     timing: officeTiming,
     query: debouncedQuery,
-    onCtxMenu: (id: number, x: number, y: number) => setCtxMenu({ empId: id, x, y }),
+    onCtxMenu:  (id: number, x: number, y: number) => setCtxMenu({ empId: id, x, y }),
     onLongPress: (id: number, x: number, y: number) => setCtxMenu({ empId: id, x, y }),
   };
 
   return (
     <div className="adm-root">
 
-      {/* ── Desktop Sidebar + Mobile Bottom Nav ── */}
       <Navigation activeNav={activeNav} onNavChange={setActiveNav} />
 
-      {/* ── Main content ── */}
       <main className="adm-main">
 
-        {/* Desktop header + Mobile topbar — Topbar owns dropdown state */}
         <Topbar
           today={today}
           rawQuery={rawQuery}
@@ -735,7 +533,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
           onLogoutRequest={() => setLogoutModal(true)}
         />
 
-        {/* Desktop stats bar — below header: pills left, Total right */}
+        {/* Desktop stats bar */}
         <div className="adm-desktop-stats">
           <span className="stat-pill adm-desktop-chip adm-desktop-chip-present">Present: {presentCount}</span>
           {halfDayCount > 0 && (
@@ -744,7 +542,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
           <span className="adm-desktop-stats-total">Total: {totalCount}</span>
         </div>
 
-        {/* Mobile stats row: date + Total on top, Present left / Half Day right */}
+        {/* Mobile stats row */}
         <div className="adm-mobile-stats">
           <div className="adm-mobile-dateline">
             <h2 className="adm-mobile-date">{today}</h2>
@@ -758,19 +556,16 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
           </div>
         </div>
 
-        {/* ── Content area ── */}
         <div key={activeNav} className="adm-content adm-content-enter">
 
           {activeNav === "leave" && (
             <OfficeTimingHeader timing={officeTiming} onUpdate={setOfficeTiming} />
           )}
 
-          {/* Loading state — first fetch from DB */}
           {isLoading && (
             <div className="adm-empty">Loading employees…</div>
           )}
 
-          {/* Error state — DB unreachable or auth failure */}
           {isError && !isLoading && (
             <div className="adm-empty">
               Could not load employees. Check your connection and try again.
@@ -793,7 +588,6 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
           )}
         </div>
 
-        {/* FAB */}
         <button className="adm-fab" aria-label="Add" onClick={onAddEmployee}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -815,7 +609,7 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
         />
       )}
 
-      {/* Logout modal — kept mounted 60 s after close (Rule 3) */}
+      {/* Logout modal — kept mounted 60 s after close (useDelayedUnmount default) */}
       {shouldRenderLogout && (
         <LogoutModal onConfirm={onLogout} onCancel={() => setLogoutModal(false)} />
       )}
