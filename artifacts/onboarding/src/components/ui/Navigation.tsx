@@ -9,21 +9,15 @@ export type NavItem =
   | "settings"
   | "notifications";
 
-// ── Constants ──────────────────────────────────────────────────────────────
+// ── SSOT nav item list — both sidebar and bottom nav derive from here ───────
+// mobileOnly: true → hidden in sidebar (notification bell already in topbar)
 
-const NAV_ITEMS: { id: NavItem; label: string }[] = [
-  { id: "dashboard",  label: "Dashboard"    },
-  { id: "leave",      label: "Time & Leave" },
-  { id: "analytics",  label: "Analytics"    },
-  { id: "settings",   label: "Settings"     },
-];
-
-const BOTTOM_NAV_ITEMS: { id: NavItem; label: string }[] = [
-  { id: "dashboard",     label: "Dashboard" },
-  { id: "leave",         label: "Time"      },
-  { id: "notifications", label: "Alerts"    },
-  { id: "analytics",     label: "Analytics" },
-  { id: "settings",      label: "Settings"  },
+const NAV_ITEMS: { id: NavItem; label: string; mobileOnly?: true }[] = [
+  { id: "dashboard",     label: "Dashboard"    },
+  { id: "leave",         label: "Time & Leave" },
+  { id: "analytics",     label: "Analytics"    },
+  { id: "settings",      label: "Settings"     },
+  { id: "notifications", label: "Alerts",  mobileOnly: true },
 ];
 
 // ── Icons ───────────────────────────────────────────────────────────────────
@@ -68,7 +62,6 @@ function NavIcon({ id }: { id: NavItem }) {
 }
 
 // ── Restaurant logo icon ────────────────────────────────────────────────────
-/* Color from .adm-restaurant-logo CSS class → var(--adm-gold) */
 
 export const RestaurantLogo = memo(function RestaurantLogo({ size = 28 }: { size?: number }) {
   return (
@@ -91,6 +84,8 @@ export const Navigation = memo(function Navigation({
   activeNav: NavItem;
   onNavChange: (id: NavItem) => void;
 }) {
+  const sidebarItems = NAV_ITEMS.filter(i => !i.mobileOnly);
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -100,7 +95,7 @@ export const Navigation = memo(function Navigation({
           <h1 className="adm-sidebar-brand">MyRestaurant</h1>
         </div>
         <div className="adm-sidebar-nav">
-          {NAV_ITEMS.map(item => (
+          {sidebarItems.map(item => (
             <button
               key={item.id}
               className={`nav-item adm-nav-item${activeNav === item.id ? " adm-nav-active" : ""}`}
@@ -116,7 +111,7 @@ export const Navigation = memo(function Navigation({
 
       {/* Mobile Bottom Navigation */}
       <nav className="adm-bottom-nav" aria-label="Main navigation">
-        {BOTTOM_NAV_ITEMS.map(item => (
+        {NAV_ITEMS.map(item => (
           <button
             key={item.id}
             className={`nav-item adm-bnav-item${activeNav === item.id ? " adm-bnav-active" : ""}`}
