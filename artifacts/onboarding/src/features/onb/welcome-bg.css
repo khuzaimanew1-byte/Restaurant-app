@@ -1,8 +1,0 @@
-.ob::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--bg-m);
-  pointer-events: none;
-}
-

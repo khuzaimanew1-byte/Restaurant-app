@@ -10,7 +10,7 @@
   background: var(--bg);
   display: flex; align-items: center; justify-content: flex-start;
   flex-direction: column;
-  font-family: 'Inter', -apple-system, 'Helvetica Neue', sans-serif;
+  font-family: var(--font-main);
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
@@ -220,7 +220,7 @@
 .cb-input:checked + .cb-box:active { transform: scale(0.94); }
 .cb-check { width: 12px; height: 10px; display: block; overflow: visible; }
 .cb-path {
-  stroke: #fff; stroke-dasharray: 15; stroke-dashoffset: 15;
+  stroke: var(--accent-fg); stroke-dasharray: 15; stroke-dashoffset: 15;
   transition: stroke-dashoffset 260ms cubic-bezier(0.16,1,0.3,1) 60ms;
 }
 .cb-input:checked + .cb-box .cb-path { stroke-dashoffset: 0; }

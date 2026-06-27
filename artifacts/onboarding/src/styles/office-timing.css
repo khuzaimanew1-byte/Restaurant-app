@@ -54,7 +54,7 @@
   border-radius: 7px;
   color: white;
   font-size: 13px;
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
   width: 96px;
   outline: none;
   transition: border-color 180ms ease;
@@ -70,7 +70,7 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
   transition: opacity 150ms ease;
 }
 .adm-timing-save:hover { opacity: .85; }
@@ -82,7 +82,7 @@
   font-size: 13px;
   padding: 5px 10px;
   cursor: pointer;
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
   transition: color 150ms ease;
 }
 .adm-timing-cancel:hover { color: white; }

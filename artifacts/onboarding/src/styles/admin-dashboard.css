@@ -9,7 +9,7 @@
 .adm-root {
   display: flex;
   height: 100dvh;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-main);
   color: var(--adm-text);
   position: relative;
 }
@@ -38,7 +38,7 @@
   border-bottom: 1px solid rgba(255,255,255,.04);
 }
 .adm-sidebar-brand {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: .02em;
@@ -155,7 +155,7 @@
   font-weight: 400;
 }
 .adm-header-date {
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
   font-size: clamp(18px, 2.2vw, 22px);
   font-weight: 500;
   letter-spacing: -.02em;
@@ -207,7 +207,7 @@
   font-size: 14px;
   color: white;
   outline: none;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-main);
   transition: border-color 200ms ease, background 200ms ease;
   box-shadow: inset 0 2px 4px rgba(0,0,0,.20);
 }
@@ -259,26 +259,26 @@
 .adm-profile-avatar {
   width: 44px; height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2B3038, #434B56);
-  border: 1.5px solid rgba(212,175,55,.30);
-  box-shadow: 0 0 14px rgba(212,175,55,.12);
+  background: linear-gradient(135deg, var(--bg-surface), var(--bg-card));
+  border: 1.5px solid var(--accent-bd);
+  box-shadow: 0 0 14px var(--accent-lt);
   display: flex; align-items: center; justify-content: center;
   font-weight: 700;
   font-size: 15px;
   color: var(--adm-gold);
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
   cursor: pointer;
   transition: transform 150ms cubic-bezier(.22,1,.36,1), box-shadow 200ms ease, border-color 200ms ease;
 }
 .adm-profile-avatar:hover {
   transform: scale(1.06);
-  border-color: rgba(212,175,55,.65);
-  box-shadow: 0 0 20px rgba(212,175,55,.28);
+  border-color: var(--accent-bd);
+  box-shadow: 0 0 20px var(--accent-glow);
 }
 .adm-profile-avatar:active { transform: scale(.94); }
 .adm-profile-avatar-open {
-  border-color: rgba(212,175,55,.75);
-  box-shadow: 0 0 24px rgba(212,175,55,.40);
+  border-color: var(--accent-bd);
+  box-shadow: 0 0 24px var(--accent-glow);
 }
 
 /* ── Mobile top bar — page-specific overrides only; base chrome from .topbar (index.css) ── */
@@ -303,7 +303,7 @@
   transform: translateX(-16px);
 }
 .adm-topbar-brand {
-  font-family: 'DM Serif Display', 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: clamp(17px, 4.8vw, 20px);
   color: white;
   letter-spacing: .02em;
@@ -337,7 +337,7 @@
   font-size: 14px;
   color: white;
   outline: none;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-main);
   backdrop-filter: blur(8px);
   transition: border-color 200ms ease;
   min-width: 0;
@@ -378,24 +378,24 @@
   transition: transform 150ms cubic-bezier(.22,1,.36,1), border-color 200ms ease, box-shadow 200ms ease;
 }
 .adm-topbar-profile:hover {
-  border-color: rgba(212,175,55,.65);
-  box-shadow: 0 0 14px rgba(212,175,55,.25);
+  border-color: var(--accent-bd);
+  box-shadow: 0 0 14px var(--accent-glow);
 }
 .adm-topbar-profile:active { transform: scale(.90); }
 .adm-topbar-profile-open {
-  border-color: rgba(212,175,55,.80);
-  box-shadow: 0 0 18px rgba(212,175,55,.35);
+  border-color: var(--accent-bd);
+  box-shadow: 0 0 18px var(--accent-glow);
 }
 .adm-topbar-profile-avatar {
   width: 100%; height: 100%;
-  background: linear-gradient(135deg, #2B3038, #434B56);
+  background: linear-gradient(135deg, var(--bg-surface), var(--bg-card));
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 14px;
   color: var(--adm-gold);
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
 }
 
 /* ── Mobile stats row ────────────────────────────────── */
@@ -531,7 +531,7 @@
   color: white;
   border: 1px solid rgba(255,255,255,.20);
   flex-shrink: 0;
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
 }
 @media (min-width: 768px) { .adm-avatar-fallback { width: 60px; height: 60px; font-size: 17px; } }
 
@@ -704,7 +704,7 @@
   justify-content: space-between;
   font-size: clamp(9px, 2.4vw, 11px);
   color: var(--adm-text-muted);
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
 }
 
 /* Progress bar */
@@ -841,15 +841,12 @@
   top: calc(100% + 12px);
   right: 0;
   min-width: 200px;
-  background: rgba(36,39,50,.97);
+  background: var(--glass);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(212,175,55,.25);
+  border: 1px solid var(--glass-bd);
   border-radius: 14px;
-  box-shadow:
-    0 16px 48px rgba(0,0,0,.55),
-    0 4px 16px rgba(0,0,0,.30),
-    inset 0 1px 0 rgba(255,255,255,.06);
+  box-shadow: var(--glass-sh);
   overflow: hidden;
   animation: adm-dropdown-in 200ms cubic-bezier(.16,1,.3,1) both;
   z-index: 200;
@@ -858,7 +855,6 @@
   animation: adm-dropdown-out 200ms cubic-bezier(.4,0,1,1) both;
   pointer-events: none;
 }
-/* Mobile: dropdown opens below, aligned right */
 .adm-topbar-avatar-wrap .adm-avatar-dropdown {
   top: calc(100% + 10px);
   right: 0;
@@ -883,12 +879,12 @@
 .adm-dropdown-avatar {
   width: 36px; height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2B3038, #434B56);
-  border: 1.5px solid rgba(212,175,55,.35);
+  background: linear-gradient(135deg, var(--bg-surface), var(--bg-card));
+  border: 1.5px solid var(--accent-bd);
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: 13px;
   color: var(--adm-gold);
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
   flex-shrink: 0;
 }
 .adm-dropdown-info {
@@ -919,7 +915,7 @@
   cursor: pointer;
   font-size: 13px; font-weight: 500;
   color: var(--adm-red);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-main);
   text-align: left;
   transition: background 180ms ease, color 180ms ease, transform 120ms cubic-bezier(.22,1,.36,1);
 }
@@ -946,10 +942,10 @@
 }
 
 .adm-modal {
-  background: rgba(36,39,50,.98);
+  background: var(--glass);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(212,175,55,.22);
+  border: 1px solid var(--glass-bd);
   border-radius: 20px;
   padding: 28px 24px 22px;
   max-width: 320px;
@@ -958,10 +954,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  box-shadow:
-    0 24px 64px rgba(0,0,0,.65),
-    0 6px 20px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.07);
+  box-shadow: var(--glass-sh);
   animation: adm-modal-in 280ms cubic-bezier(.16,1,.3,1) both;
 }
 @keyframes adm-modal-in {
@@ -972,8 +965,8 @@
 .adm-modal-icon {
   width: 52px; height: 52px;
   border-radius: 50%;
-  background: rgba(var(--adm-red-rgb), .12);
-  border: 1px solid rgba(var(--adm-red-rgb), .25);
+  background: var(--err-glow);
+  border: 1px solid var(--err-sub);
   display: flex; align-items: center; justify-content: center;
   color: var(--adm-red);
   margin-bottom: 4px;
@@ -1007,7 +1000,7 @@
   color: var(--adm-text);
   font-size: 14px; font-weight: 500;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-main);
   transition: background 180ms ease, transform 120ms cubic-bezier(.22,1,.36,1);
 }
 .adm-modal-cancel:hover { background: rgba(255,255,255,.11); }
@@ -1017,17 +1010,17 @@
   flex: 1;
   height: 44px;
   border-radius: 12px;
-  background: rgba(var(--adm-red-rgb), .18);
-  border: 1px solid rgba(var(--adm-red-rgb), .35);
-  color: var(--adm-red);
+  background: var(--err-glow);
+  border: 1px solid var(--err-sub);
+  color: var(--err);
   font-size: 14px; font-weight: 600;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-main);
   transition: background 180ms ease, transform 120ms cubic-bezier(.22,1,.36,1), box-shadow 180ms ease;
 }
 .adm-modal-confirm:hover {
-  background: rgba(var(--adm-red-rgb), .28);
-  box-shadow: 0 4px 16px rgba(var(--adm-red-rgb), .20);
+  background: var(--err);
+  box-shadow: 0 4px 16px var(--err-glow);
 }
 .adm-modal-confirm:active { transform: scale(.96); }
 
@@ -1041,7 +1034,7 @@
 .adm-ctx-menu {
   position: fixed;
   z-index: 9000;
-  background: var(--adm-bg);
+  background: var(--bg);
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 10px;
   padding: 5px;
@@ -1075,7 +1068,7 @@
   font-size: 13px;
   font-weight: 500;
   color: rgba(255,255,255,.82);
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
   text-align: left;
   transition: background 140ms ease, color 140ms ease;
   outline: none;
@@ -1135,7 +1128,7 @@
   border-radius: 8px;
   color: white;
   font-size: 14px;
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
   outline: none;
   transition: border-color 180ms ease;
 }

@@ -122,6 +122,11 @@
   --av-p1: #3B5BDB; --av-p2: #E64980; --av-p3: #7048E8; --av-p4: #2B8A3E;
   --av-p5: #C92A2A; --av-p6: #1098AD; --av-p7: #F08C00; --av-p8: #0B7285;
 
+  /* ── fonts (SSOT — never hardcode font-family anywhere) ── */
+  --font-main:   'Inter', -apple-system, 'Helvetica Neue', sans-serif;
+  --font-display: 'Playfair Display', serif;
+  --font-mono:    'Geist', 'Inter', sans-serif;
+
   /* ── shared topbar chrome (SSOT) — every page topbar uses these; never hardcode per-page ── */
   --topbar-bg:     rgba(39,42,53,.60);
   --topbar-bd:     rgba(255,255,255,.10);
@@ -315,7 +320,7 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   border: none;
   background: none;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-main);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -334,5 +339,5 @@ html, body, #root       { width: 100%; height: 100%; overflow: hidden; }
   background: rgba(255,255,255,.10);
   backdrop-filter: blur(8px);
   font-size: 13px;
-  font-family: 'Geist', 'Inter', sans-serif;
+  font-family: var(--font-mono);
 }

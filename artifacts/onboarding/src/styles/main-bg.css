@@ -7,5 +7,5 @@
   background-color: var(--adm-bg);
   background-image:
     url('https://www.transparenttextures.com/patterns/dark-wood.png'),
-    radial-gradient(circle at 50% 0%, #2A2D3A 0%, #1E2028 100%);
+    radial-gradient(circle at 50% 0%, var(--bg-surface) 0%, var(--bg) 100%);
 }

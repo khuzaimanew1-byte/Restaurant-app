@@ -5,9 +5,6 @@
 // ── Status type — SSOT for all frontend status handling ───────────────────
 export type UiStatus = "leave" | "unauthorized-leave" | "half-day" | "late" | null;
 
-/** @deprecated Use UiStatus — kept as alias so existing references compile */
-export type UiLeaveStatus = UiStatus;
-
 /** DB token → UI display token (SSOT — import this everywhere, never inline) */
 export function dbStatusToUi(s: "leave" | "unauth" | "half" | "late" | null): UiStatus {
   if (s === "unauth") return "unauthorized-leave";
