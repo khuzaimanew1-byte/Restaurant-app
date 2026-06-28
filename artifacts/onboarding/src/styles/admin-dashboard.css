@@ -505,35 +505,12 @@
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.adm-card-absent .adm-avatar-img { filter: grayscale(1); }
+.adm-card-absent .av { filter: grayscale(1); }
 
 .adm-card-left { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1; }
 
-/* Avatar */
+/* Avatar wrapper — positions the status dot */
 .adm-avatar-wrap { position: relative; flex-shrink: 0; }
-.adm-avatar-img {
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid rgba(255,255,255,.20);
-  display: block;
-}
-@media (min-width: 768px) { .adm-avatar-img { width: 60px; height: 60px; } }
-
-.adm-avatar-fallback {
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: white;
-  border: 1px solid rgba(255,255,255,.20);
-  flex-shrink: 0;
-  font-family: var(--font-mono);
-}
-@media (min-width: 768px) { .adm-avatar-fallback { width: 60px; height: 60px; font-size: 17px; } }
 
 /* Status dot */
 .adm-dot {

@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App";
 import "./index.css";
+import "./styles/typography.css";
 
 /* Single QueryClient for the entire app lifetime.
    30 s staleTime avoids redundant refetches on rapid navigation.     */

@@ -1,6 +1,8 @@
 import { memo, useEffect, useRef } from "react";
 import type { EmployeeProfile } from "../../../services/employee.service";
 import { parseMins } from "../../../services/shift-timing";
+import { Avatar } from "../Avatar";
+import { Pill }   from "../Pill";
 import "./employee-modal-bg.css";
 import "./employee-modal.css";
 
@@ -25,14 +27,14 @@ function fmtExp(exp: { y?: number; m?: number } | null): string {
   return parts.join(" ");
 }
 
-function shiftName(inTime: string | null | undefined): string {
-  if (!inTime) return "";
+function shiftLabel(inTime: string | null | undefined): string {
+  if (!inTime) return "—";
   const m = parseMins(inTime);
-  if (m < 0) return "";
-  if (m < 12 * 60) return "Morning Shift";
-  if (m < 17 * 60) return "Afternoon Shift";
-  if (m < 21 * 60) return "Evening Shift";
-  return "Night Shift";
+  if (m < 0)         return "—";
+  if (m < 12 * 60)   return "MORNING SHIFT";
+  if (m < 17 * 60)   return "AFTERNOON SHIFT";
+  if (m < 21 * 60)   return "EVENING SHIFT";
+  return "NIGHT SHIFT";
 }
 
 function fmtSal(sal: number | null): string {
@@ -49,7 +51,7 @@ function fmtCnic(cnic: string): string {
   return cnic;
 }
 
-// ── Inline SVG atoms ───────────────────────────────────────────────────────
+// ── Inline SVG contact icons ───────────────────────────────────────────────
 
 const IcoGender = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -79,36 +81,18 @@ const IcoEmail = () => (
 );
 const IcoAddr = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/>
+    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+    <circle cx="12" cy="9" r="2.5"/>
   </svg>
 );
-
-// ── Sub-components ─────────────────────────────────────────────────────────
-
-const AvatarBlock = memo(function AvatarBlock({ p }: { p: EmployeeProfile }) {
-  return (
-    <div className="em-avatar" style={{ backgroundColor: p.color }}>
-      {p.img
-        ? <img src={p.img} alt={p.name} className="em-avatar-img" loading="lazy" />
-        : <span className="em-avatar-initials">{p.initials}</span>
-      }
-    </div>
-  );
-});
-
-const Pill = memo(function Pill({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <span className={`stat-pill em-pill${className ? ` ${className}` : ""}`}>{children}</span>;
-});
 
 // ── Main component ─────────────────────────────────────────────────────────
 
 export const EmployeeModal = memo(function EmployeeModal({
-  profile,
-  isOpen,
-  onClose,
+  profile, isOpen, onClose,
 }: {
   profile: EmployeeProfile | null;
-  isOpen: boolean;
+  isOpen:  boolean;
   onClose: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -129,38 +113,41 @@ export const EmployeeModal = memo(function EmployeeModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  /* Keep previous profile visible during exit animation */
+  /* Retain profile during exit animation */
   const profileRef = useRef<EmployeeProfile | null>(null);
   if (profile) profileRef.current = profile;
   const p = profileRef.current;
   if (!p) return null;
 
-  const age       = calcAge(p.dob);
-  const expStr    = fmtExp(p.exp);
-  const salStr    = fmtSal(p.sal);
-  const sName     = shiftName(p.shift?.in);
-  const expYrs    = p.exp?.y ? `${p.exp.y} YRS EXP` : "";
-  const eid       = empIdLabel(p.id);
+  /* ── Computed values ──────────────────────────────────────── */
+  const age    = calcAge(p.dob);
+  const expStr = fmtExp(p.exp);
+  const salStr = fmtSal(p.sal);
+  const eid    = empIdLabel(p.id);
 
+  /* Tag pills — always 4, fallback "—" for missing data */
   const shiftRange = (() => {
-    const i = p.shift?.in;
-    const o = p.shift?.out;
+    const i = p.shift?.in, o = p.shift?.out;
     if (i && o) return `${i} – ${o}`;
     if (i)      return i;
-    return "";
+    return "—";
   })();
+  const shiftLbl = shiftLabel(p.shift?.in);
+  const expYrs   = p.exp?.y
+    ? `${p.exp.y} YRS EXP`
+    : p.exp?.m ? `${p.exp.m} MO EXP` : "—";
+
+  const isDash = (v: string) => v === "—";
 
   return (
     <div
       className="em-overlay"
-      data-open={isOpen ? "" : undefined}
       data-closing={!isOpen ? "" : undefined}
       onClick={onClose}
     >
       <div
         ref={panelRef}
         className="em-panel"
-        data-open={isOpen ? "" : undefined}
         data-closing={!isOpen ? "" : undefined}
         onClick={e => e.stopPropagation()}
         role="dialog"
@@ -182,13 +169,16 @@ export const EmployeeModal = memo(function EmployeeModal({
 
         {/* ── Header ─────────────────────────────────────────── */}
         <div className="em-hdr">
-          <AvatarBlock p={p} />
 
+          {/* Avatar — modal variant: dark bg, gold Playfair initials */}
+          <Avatar initials={p.initials} color={p.color} img={p.img} name={p.name} variant="modal" />
+
+          {/* Name + sub + role row */}
           <div className="em-hdr-info">
             <h2 className="em-name">{p.name.toUpperCase()}</h2>
 
             {(age !== null || p.dob) && (
-              <p className="em-sub">
+              <p className="em-sub ty-cap">
                 {age !== null && <span>{age} YRS</span>}
                 {age !== null && p.dob && <span className="em-sub-dot">·</span>}
                 {p.dob && <span>{p.dob.toUpperCase()}</span>}
@@ -196,25 +186,26 @@ export const EmployeeModal = memo(function EmployeeModal({
             )}
 
             <div className="em-role-row">
-              <Pill className="em-pill-role">{p.role.toUpperCase()}</Pill>
+              <Pill className="em-pill em-pill-role">{p.role.toUpperCase()}</Pill>
               {expStr && <span className="em-exp-txt">{expStr}</span>}
-              {p.hire && <span className="em-hire-txt">· Hired: {p.hire}</span>}
+              {p.hire && <span className="em-hire-txt ty-cap">· Hired: {p.hire}</span>}
             </div>
           </div>
 
+          {/* Salary pill — top-right */}
           {salStr && (
             <div className="em-sal-wrap">
-              <Pill className="em-pill-sal">{salStr}</Pill>
+              <Pill className="em-pill em-pill-sal">{salStr}</Pill>
             </div>
           )}
         </div>
 
-        {/* ── Tag pills row ───────────────────────────────────── */}
+        {/* ── Tag pills — always 4 ────────────────────────────── */}
         <div className="em-tags">
-          <Pill className="em-pill-tag">{eid}</Pill>
-          {shiftRange && <Pill className="em-pill-tag">{shiftRange}</Pill>}
-          {sName      && <Pill className="em-pill-tag">{sName.toUpperCase()}</Pill>}
-          {expYrs     && <Pill className="em-pill-tag">{expYrs}</Pill>}
+          <Pill className="em-pill em-pill-tag">{eid}</Pill>
+          <Pill className={`em-pill em-pill-tag${isDash(shiftRange) ? " em-pill-tag--dash" : ""}`}>{shiftRange}</Pill>
+          <Pill className={`em-pill em-pill-tag${isDash(shiftLbl) ? " em-pill-tag--dash" : ""}`}>{shiftLbl}</Pill>
+          <Pill className={`em-pill em-pill-tag${isDash(expYrs) ? " em-pill-tag--dash" : ""}`}>{expYrs}</Pill>
         </div>
 
         <div className="em-divider" />
@@ -223,11 +214,11 @@ export const EmployeeModal = memo(function EmployeeModal({
         {(p.task.length > 0 || p.cap.length > 0) && (
           <div className="em-cols">
             {p.task.length > 0 && (
-              <div className="em-col">
-                <h4 className="em-col-hdr">Assigned Tasks</h4>
+              <div>
+                <h4 className="ty-lbl em-col-hdr-wrap">ASSIGNED TASKS</h4>
                 <ul className="em-bullet-list">
                   {p.task.map(t => (
-                    <li key={t} className="em-bullet-item">
+                    <li key={t} className="em-bullet-item ty-body">
                       <span className="em-bullet-dot" aria-hidden />
                       {t}
                     </li>
@@ -236,11 +227,11 @@ export const EmployeeModal = memo(function EmployeeModal({
               </div>
             )}
             {p.cap.length > 0 && (
-              <div className="em-col">
-                <h4 className="em-col-hdr">Work Capabilities</h4>
+              <div>
+                <h4 className="ty-lbl em-col-hdr-wrap">WORK CAPABILITIES</h4>
                 <ul className="em-bullet-list">
                   {p.cap.map(c => (
-                    <li key={c} className="em-bullet-item">
+                    <li key={c} className="em-bullet-item ty-body">
                       <span className="em-bullet-dot" aria-hidden />
                       {c}
                     </li>
@@ -254,37 +245,21 @@ export const EmployeeModal = memo(function EmployeeModal({
         {/* ── Speciality ──────────────────────────────────────── */}
         {p.spec.length > 0 && (
           <div className="em-spec-section">
-            <h4 className="em-col-hdr">Speciality</h4>
+            <h4 className="ty-lbl em-col-hdr-wrap">SPECIALITY</h4>
             <p className="em-spec-list">{p.spec.join(" · ")}</p>
           </div>
         )}
 
         <div className="em-divider" />
 
-        {/* ── Contact footer ──────────────────────────────────── */}
+        {/* ── Contact — 3-column grid ─────────────────────────── */}
         <div className="em-contact">
-          <div className="em-contact-row">
-            {p.gen && (
-              <span className="em-contact-item"><IcoGender />{p.gen}</span>
-            )}
-            {p.cnic && (
-              <span className="em-contact-item"><IcoCnic />{fmtCnic(p.cnic)}</span>
-            )}
-            {p.lang.length > 0 && (
-              <span className="em-contact-item"><IcoLang />{p.lang.join(" · ")}</span>
-            )}
-          </div>
-          {(p.ph || p.email) && (
-            <div className="em-contact-row">
-              {p.ph    && <span className="em-contact-item"><IcoPhone />{p.ph}</span>}
-              {p.email && <span className="em-contact-item"><IcoEmail />{p.email}</span>}
-            </div>
-          )}
-          {p.addr && (
-            <div className="em-contact-row">
-              <span className="em-contact-item"><IcoAddr />{p.addr}</span>
-            </div>
-          )}
+          {p.gen   && <span className="em-ci"><IcoGender />{p.gen}</span>}
+          {p.cnic  && <span className="em-ci"><IcoCnic />{fmtCnic(p.cnic)}</span>}
+          {p.lang.length > 0 && <span className="em-ci"><IcoLang />{p.lang.join(" · ")}</span>}
+          {p.ph    && <span className="em-ci"><IcoPhone />{p.ph}</span>}
+          {p.email && <span className="em-ci"><IcoEmail />{p.email}</span>}
+          {p.addr  && <span className="em-ci em-ci--full"><IcoAddr />{p.addr}</span>}
         </div>
       </div>
     </div>

@@ -1,0 +1,59 @@
+/* ═══════════════════════════════════════════════════════════
+   SHARED AVATAR — card + modal variants (SSOT)
+   Imported by: ui/Avatar.tsx
+   Two variants: "card" (circle, employee color) and
+                 "modal" (square, dark bg, gold initials)
+══════════════════════════════════════════════════════════ */
+
+/* ── Base ────────────────────────────────────────────────── */
+.av {
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.av-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Card variant — circle, employee color bg ────────────── */
+.av--card {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.20);
+}
+@media (min-width: 768px) { .av--card { width: 60px; height: 60px; } }
+
+.av-initials--card {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255,255,255,.92);
+  user-select: none;
+}
+@media (min-width: 768px) { .av-initials--card { font-size: 17px; } }
+
+/* ── Modal variant — rounded square, dark warm bg, gold ──── */
+.av--modal {
+  width: 80px; height: 80px;
+  border-radius: 10px;
+  background: rgba(20,16,8,.95);
+  border: 1.5px solid rgba(212,175,55,.55);
+  box-shadow: 0 0 22px rgba(212,175,55,.18), inset 0 0 0 1px rgba(212,175,55,.06);
+}
+@media (max-width: 480px) { .av--modal { width: 64px; height: 64px; } }
+
+.av-initials--modal {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--adm-gold);
+  letter-spacing: .04em;
+  text-shadow: 0 0 24px rgba(212,175,55,.45);
+  user-select: none;
+}
+@media (max-width: 480px) { .av-initials--modal { font-size: 22px; } }

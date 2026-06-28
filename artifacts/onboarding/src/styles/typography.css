@@ -1,0 +1,44 @@
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL TYPOGRAPHY — reusable text styles (SSOT)
+   Used in: EmployeeModal, AdminDashboard, AddEmployeePage
+   Imported globally in main.tsx
+══════════════════════════════════════════════════════════ */
+
+/* ── Gold uppercase section label ────────────────────────── */
+/* Used for: modal column headers (ASSIGNED TASKS, etc.),
+   office timing labels, any named section in admin UI.    */
+.ty-lbl {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  color: var(--adm-gold);
+  margin: 0;
+}
+
+/* ── Muted uppercase form/field label ─────────────────────── */
+/* Used for: inline edit field labels, form section titles.  */
+.ty-lbl-muted {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--adm-text-muted);
+}
+
+/* ── Standard body text ──────────────────────────────────── */
+.ty-body {
+  font-size: 13px;
+  color: var(--adm-text);
+  line-height: 1.4;
+}
+
+/* ── Small muted caption / mono subtext ──────────────────── */
+.ty-cap {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--adm-text-muted);
+  letter-spacing: .02em;
+}

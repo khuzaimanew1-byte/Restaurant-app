@@ -16,6 +16,7 @@ import { Navigation, type NavItem } from "./ui/Navigation";
 import { Topbar }                   from "./ui/Topbar";
 import { StatusTag }                from "./ui/StatusTag";
 import { EmployeeModal }            from "./ui/EmployeeModal/EmployeeModal";
+import { Avatar }                   from "./ui/Avatar";
 import { getDemoProfile }           from "../data/demo-employees";
 import "../styles/main-bg.css";
 import "../styles/admin-dashboard.css";
@@ -54,20 +55,6 @@ const Highlight = memo(function Highlight({ text, query = "" }: { text: string; 
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-const AvatarImg = memo(function AvatarImg({ emp }: { emp: Employee }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) {
-    return (
-      <div className="adm-avatar-fallback" style={{ backgroundColor: emp.color }}>
-        {emp.initials}
-      </div>
-    );
-  }
-  return (
-    <img src={emp.avatar} alt={emp.name} className="adm-avatar-img"
-      loading="lazy" onError={() => setFailed(true)} />
-  );
-});
 
 /** variant="att" → --clr-att (warm white) | variant="perf" → --adm-gold (amber) */
 const ProgressBar = memo(function ProgressBar({ value, variant }: { value: number; variant: "att" | "perf" }) {
@@ -162,7 +149,7 @@ const EmployeeCard = memo(function EmployeeCard({
     >
       <div className="adm-card-left">
         <div className="adm-avatar-wrap">
-          <AvatarImg emp={emp} />
+          <Avatar initials={emp.initials} color={emp.color} img={emp.avatar} name={emp.name} />
           <span className={`adm-dot${shouldPulse ? " adm-dot-pulse" : ""} adm-dot--${dotCss ?? "none"}`} />
         </div>
 

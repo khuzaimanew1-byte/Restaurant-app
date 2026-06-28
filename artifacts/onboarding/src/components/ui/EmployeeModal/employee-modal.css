@@ -1,7 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
-   EMPLOYEE MODAL — Content styles
-   Imported by: EmployeeModal.tsx
-   Background/overlay lives in employee-modal-bg.css.
+   EMPLOYEE MODAL — Layout & content styles
+   Background/overlay → employee-modal-bg.css
+   Avatar styles     → styles/avatar.css (via ui/Avatar.tsx)
+   Typography utils  → styles/typography.css (.ty-*)
+   Pill base         → index.css (.stat-pill)
 ══════════════════════════════════════════════════════════ */
 
 /* ── Panel shell ─────────────────────────────────────────── */
@@ -11,41 +13,35 @@
   max-width: 680px;
   max-height: 90dvh;
   border-radius: 14px;
-  border: 1px solid rgba(212, 175, 55, 0.28);
+  border: 1px solid rgba(212,175,55,.38);
   box-shadow:
-    0 0 40px rgba(212, 175, 55, 0.12),
-    0 24px 64px rgba(0, 0, 0, 0.70),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    0 0 0 1px rgba(212,175,55,.08),
+    0 32px 72px rgba(0,0,0,.78),
+    inset 0 1px 0 rgba(255,255,255,.05);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 28px 28px 24px;
   scrollbar-width: none;
 }
 .em-panel::-webkit-scrollbar { display: none; }
-@media (max-width: 480px) { .em-panel { padding: 22px 18px 20px; border-radius: 12px; } }
+@media (max-width: 480px) { .em-panel { padding: 20px 16px 18px; border-radius: 12px; } }
 
 /* ── Decorative corner lines ─────────────────────────────── */
 .em-corner {
   position: absolute;
-  width: 22px;
-  height: 22px;
+  width: 20px; height: 20px;
   pointer-events: none;
-  opacity: .75;
+  opacity: .80;
 }
-.em-corner-tl { top: 9px; left: 9px;
-  border-top: 1.5px solid var(--adm-gold); border-left: 1.5px solid var(--adm-gold); }
-.em-corner-tr { top: 9px; right: 9px;
-  border-top: 1.5px solid var(--adm-gold); border-right: 1.5px solid var(--adm-gold); }
-.em-corner-bl { bottom: 9px; left: 9px;
-  border-bottom: 1.5px solid var(--adm-gold); border-left: 1.5px solid var(--adm-gold); }
-.em-corner-br { bottom: 9px; right: 9px;
-  border-bottom: 1.5px solid var(--adm-gold); border-right: 1.5px solid var(--adm-gold); }
+.em-corner-tl { top: 8px;  left: 8px;  border-top:    1.5px solid var(--adm-gold); border-left:  1.5px solid var(--adm-gold); }
+.em-corner-tr { top: 8px;  right: 8px; border-top:    1.5px solid var(--adm-gold); border-right: 1.5px solid var(--adm-gold); }
+.em-corner-bl { bottom: 8px; left: 8px;  border-bottom: 1.5px solid var(--adm-gold); border-left:  1.5px solid var(--adm-gold); }
+.em-corner-br { bottom: 8px; right: 8px; border-bottom: 1.5px solid var(--adm-gold); border-right: 1.5px solid var(--adm-gold); }
 
 /* ── Close button ────────────────────────────────────────── */
 .em-close {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 12px; right: 12px;
   color: var(--adm-text-muted);
   z-index: 2;
 }
@@ -54,40 +50,10 @@
 .em-hdr {
   display: flex;
   align-items: flex-start;
-  gap: 18px;
-  padding-right: 32px; /* room for close btn */
+  gap: 16px;
 }
 
-/* Avatar square */
-.em-avatar {
-  flex-shrink: 0;
-  width: 72px;
-  height: 72px;
-  border-radius: 10px;
-  border: 1.5px solid rgba(212, 175, 55, 0.40);
-  box-shadow: 0 0 18px rgba(212, 175, 55, 0.15);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-@media (max-width: 480px) { .em-avatar { width: 58px; height: 58px; } }
-
-.em-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.em-avatar-initials {
-  font-family: var(--font-mono);
-  font-size: 22px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.90);
-  letter-spacing: .02em;
-}
-
-/* Name + meta */
+/* Header info (name + sub + role row) */
 .em-hdr-info {
   flex: 1;
   min-width: 0;
@@ -97,181 +63,169 @@
 }
 .em-name {
   font-family: var(--font-display);
-  font-size: clamp(18px, 4.5vw, 26px);
+  font-size: clamp(17px, 4.2vw, 26px);
   font-weight: 700;
-  letter-spacing: .04em;
+  letter-spacing: .05em;
   color: var(--adm-gold-text);
   margin: 0;
   line-height: 1.1;
 }
+
+/* Salary pill aligned to header top-right */
+.em-sal-wrap {
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding-right: 28px; /* clear close button */
+}
+
+/* Age · DOB sub-line — uses .ty-cap from typography.css */
 .em-sub {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  color: var(--adm-text-muted);
-  font-family: var(--font-mono);
-  letter-spacing: .02em;
 }
-.em-sub-dot { color: rgba(255, 255, 255, 0.25); }
+.em-sub-dot { color: rgba(255,255,255,.22); }
 
-/* Role row */
+/* Role + experience row */
 .em-role-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 .em-exp-txt {
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-mono);
   color: var(--adm-text);
-  font-weight: 500;
-}
-.em-hire-txt {
-  font-size: 12px;
-  font-family: var(--font-mono);
-  color: var(--adm-text-muted);
-}
-
-/* Salary pill — top-right of header */
-.em-sal-wrap {
-  flex-shrink: 0;
-  align-self: flex-start;
-}
-
-/* ── Pills ───────────────────────────────────────────────── */
-
-/* Base modifier on top of .stat-pill (index.css SSOT) */
-.em-pill {
-  font-size: 11px;
-  letter-spacing: .05em;
   font-weight: 600;
+  letter-spacing: .01em;
+}
+.em-hire-txt { /* extends .ty-cap */ }
+
+/* ── Pills — all built on .stat-pill SSOT + .em-pill base ── */
+.em-pill {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .06em;
   white-space: nowrap;
 }
 
-/* Role pill — amber */
+/* Role — amber border + tint */
 .em-pill-role {
   color: var(--adm-gold-text);
-  background: rgba(212, 175, 55, 0.14);
-  border-color: rgba(212, 175, 55, 0.35);
-  font-size: 10px;
+  background: rgba(212,175,55,.14);
+  border-color: rgba(212,175,55,.40);
   padding: 3px 10px;
 }
 
-/* Salary pill — prominent amber border */
+/* Salary — prominent amber */
 .em-pill-sal {
   color: var(--adm-gold-text);
-  background: rgba(212, 175, 55, 0.10);
-  border-color: rgba(212, 175, 55, 0.45);
+  background: rgba(212,175,55,.10);
+  border-color: rgba(212,175,55,.50);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .03em;
-  padding: 5px 12px;
+  padding: 5px 14px;
 }
 
-/* Tag pills — muted */
+/* Tag — muted, for EMP-ID / shift / exp */
 .em-pill-tag {
   color: var(--adm-text-muted);
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.12);
   font-size: 10px;
   padding: 3px 10px;
 }
+.em-pill-tag--dash { opacity: .40; }
 
-/* ── Tags row ────────────────────────────────────────────── */
+/* ── Tag pills row ───────────────────────────────────────── */
 .em-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
-/* ── Divider ─────────────────────────────────────────────── */
+/* ── Gold divider ────────────────────────────────────────── */
 .em-divider {
   height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%, rgba(212,175,55,.22) 20%, rgba(212,175,55,.22) 80%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,.24) 18%, rgba(212,175,55,.24) 82%, transparent 100%);
   margin: 18px 0;
 }
 
-/* ── Two-column content ──────────────────────────────────── */
+/* ── Two-column content (tasks + caps) ───────────────────── */
 .em-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-top: 4px;
+  gap: 20px 28px;
 }
 @media (max-width: 420px) { .em-cols { grid-template-columns: 1fr; gap: 14px; } }
 
-.em-col-hdr {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .10em;
-  color: var(--adm-gold);
-  text-transform: uppercase;
-  margin: 0 0 10px;
-  font-family: var(--font-mono);
-}
+/* Section header → uses .ty-lbl from typography.css */
+.em-col-hdr-wrap { margin-bottom: 10px; }
 
 /* Bullet list */
-.em-bullet-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
+.em-bullet-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .em-bullet-item {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--adm-text);
-  line-height: 1.4;
+  gap: 9px;
+  /* text style → .ty-body from typography.css */
 }
 .em-bullet-dot {
   flex-shrink: 0;
-  width: 5px;
-  height: 5px;
+  width: 5px; height: 5px;
   border-radius: 50%;
   background: var(--adm-gold);
-  opacity: .80;
+  opacity: .75;
   position: relative;
   top: 1px;
 }
 
 /* ── Speciality ──────────────────────────────────────────── */
 .em-spec-section { margin-top: 18px; }
+/* .ty-lbl used for header, .ty-body for list text */
 .em-spec-list {
+  font-family: var(--font-mono);
   font-size: 13px;
   color: var(--adm-text);
-  font-family: var(--font-mono);
   letter-spacing: .01em;
   line-height: 1.6;
+  margin-top: 6px;
 }
 
-/* ── Contact footer ──────────────────────────────────────── */
+/* ── Contact grid ────────────────────────────────────────── */
+/* 3-col grid: [gender | cnic | lang] / [phone | email | —] / [addr: full] */
 .em-contact {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px 8px;
+  align-items: center;
 }
-.em-contact-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+@media (max-width: 420px) {
+  .em-contact { grid-template-columns: 1fr 1fr; }
 }
-.em-contact-item {
+.em-ci {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 13px;
-  color: var(--adm-text-muted);
   font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--adm-text-muted);
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.em-contact-item svg {
+.em-ci svg {
   flex-shrink: 0;
   color: var(--adm-gold);
-  opacity: .75;
+  opacity: .72;
+}
+/* Address spans all 3 columns */
+.em-ci--full {
+  grid-column: 1 / -1;
+  white-space: normal;
 }
