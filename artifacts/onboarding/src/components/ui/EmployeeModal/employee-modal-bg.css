@@ -24,15 +24,12 @@
 @keyframes em-ovr-in  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes em-ovr-out { from { opacity: 1; } to { opacity: 0; } }
 
-/* ── Panel surface ───────────────────────────────────────── */
-/* Dark warm wood — amber ember top-right, near-black base   */
+/* ── Panel surface — matches main page bg exactly ────────── */
 .em-panel {
-  background-color: #1b1810;
+  background-color: var(--adm-bg);
   background-image:
     url('https://www.transparenttextures.com/patterns/dark-wood.png'),
-    radial-gradient(ellipse 130% 70% at 90% -8%, rgba(196,130,10,.16) 0%, transparent 52%),
-    radial-gradient(ellipse  60% 45% at 10% 110%, rgba(196,130,10,.07) 0%, transparent 55%),
-    radial-gradient(ellipse 100% 80% at 50%  50%, rgba(12,10,6,.60)   0%, transparent 100%);
+    var(--bg-mesh);
   animation: em-panel-in 320ms cubic-bezier(.16,1,.3,1) both;
 }
 .em-panel[data-closing] {
