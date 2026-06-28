@@ -1,0 +1,48 @@
+/* ═══════════════════════════════════════════════════════════
+   EMPLOYEE MODAL — Overlay & Panel background
+   Imported by: EmployeeModal.tsx
+   Split from employee-modal.css to keep the component clean.
+══════════════════════════════════════════════════════════ */
+
+/* ── Overlay ─────────────────────────────────────────────── */
+.em-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: em-ovr-in 260ms ease both;
+}
+.em-overlay[data-closing] {
+  animation: em-ovr-out 200ms cubic-bezier(.4, 0, 1, 1) both;
+  pointer-events: none;
+}
+@keyframes em-ovr-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes em-ovr-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* ── Panel surface ───────────────────────────────────────── */
+.em-panel {
+  background-color: #1c1e26;
+  background-image:
+    url('https://www.transparenttextures.com/patterns/dark-wood.png'),
+    radial-gradient(ellipse 110% 60% at 85% -5%, rgba(196,130,10,.10) 0%, transparent 55%),
+    radial-gradient(ellipse  70% 50% at 15% 105%, rgba(196,130,10,.06) 0%, transparent 55%),
+    radial-gradient(ellipse 100% 80% at 50%  50%, rgba(15,17,22,.50)  0%, transparent 100%);
+  animation: em-panel-in 320ms cubic-bezier(.16,1,.3,1) both;
+}
+.em-panel[data-closing] {
+  animation: em-panel-out 200ms cubic-bezier(.4, 0, 1, 1) both;
+}
+@keyframes em-panel-in {
+  from { opacity: 0; transform: scale(.93) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0);    }
+}
+@keyframes em-panel-out {
+  from { opacity: 1; transform: scale(1)    translateY(0);    }
+  to   { opacity: 0; transform: scale(.93)  translateY(12px); }
+}

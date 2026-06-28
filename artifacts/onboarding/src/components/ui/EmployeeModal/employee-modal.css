@@ -1,0 +1,277 @@
+/* ═══════════════════════════════════════════════════════════
+   EMPLOYEE MODAL — Content styles
+   Imported by: EmployeeModal.tsx
+   Background/overlay lives in employee-modal-bg.css.
+══════════════════════════════════════════════════════════ */
+
+/* ── Panel shell ─────────────────────────────────────────── */
+.em-panel {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+  max-height: 90dvh;
+  border-radius: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  box-shadow:
+    0 0 40px rgba(212, 175, 55, 0.12),
+    0 24px 64px rgba(0, 0, 0, 0.70),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 28px 28px 24px;
+  scrollbar-width: none;
+}
+.em-panel::-webkit-scrollbar { display: none; }
+@media (max-width: 480px) { .em-panel { padding: 22px 18px 20px; border-radius: 12px; } }
+
+/* ── Decorative corner lines ─────────────────────────────── */
+.em-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  opacity: .75;
+}
+.em-corner-tl { top: 9px; left: 9px;
+  border-top: 1.5px solid var(--adm-gold); border-left: 1.5px solid var(--adm-gold); }
+.em-corner-tr { top: 9px; right: 9px;
+  border-top: 1.5px solid var(--adm-gold); border-right: 1.5px solid var(--adm-gold); }
+.em-corner-bl { bottom: 9px; left: 9px;
+  border-bottom: 1.5px solid var(--adm-gold); border-left: 1.5px solid var(--adm-gold); }
+.em-corner-br { bottom: 9px; right: 9px;
+  border-bottom: 1.5px solid var(--adm-gold); border-right: 1.5px solid var(--adm-gold); }
+
+/* ── Close button ────────────────────────────────────────── */
+.em-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: var(--adm-text-muted);
+  z-index: 2;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.em-hdr {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding-right: 32px; /* room for close btn */
+}
+
+/* Avatar square */
+.em-avatar {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(212, 175, 55, 0.40);
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.15);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 480px) { .em-avatar { width: 58px; height: 58px; } }
+
+.em-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.em-avatar-initials {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.90);
+  letter-spacing: .02em;
+}
+
+/* Name + meta */
+.em-hdr-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.em-name {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 4.5vw, 26px);
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--adm-gold-text);
+  margin: 0;
+  line-height: 1.1;
+}
+.em-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--adm-text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: .02em;
+}
+.em-sub-dot { color: rgba(255, 255, 255, 0.25); }
+
+/* Role row */
+.em-role-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+.em-exp-txt {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--adm-text);
+  font-weight: 500;
+}
+.em-hire-txt {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--adm-text-muted);
+}
+
+/* Salary pill — top-right of header */
+.em-sal-wrap {
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+/* ── Pills ───────────────────────────────────────────────── */
+
+/* Base modifier on top of .stat-pill (index.css SSOT) */
+.em-pill {
+  font-size: 11px;
+  letter-spacing: .05em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Role pill — amber */
+.em-pill-role {
+  color: var(--adm-gold-text);
+  background: rgba(212, 175, 55, 0.14);
+  border-color: rgba(212, 175, 55, 0.35);
+  font-size: 10px;
+  padding: 3px 10px;
+}
+
+/* Salary pill — prominent amber border */
+.em-pill-sal {
+  color: var(--adm-gold-text);
+  background: rgba(212, 175, 55, 0.10);
+  border-color: rgba(212, 175, 55, 0.45);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  padding: 5px 12px;
+}
+
+/* Tag pills — muted */
+.em-pill-tag {
+  color: var(--adm-text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.13);
+  font-size: 10px;
+  padding: 3px 10px;
+}
+
+/* ── Tags row ────────────────────────────────────────────── */
+.em-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 16px;
+}
+
+/* ── Divider ─────────────────────────────────────────────── */
+.em-divider {
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(212,175,55,.22) 20%, rgba(212,175,55,.22) 80%, transparent 100%);
+  margin: 18px 0;
+}
+
+/* ── Two-column content ──────────────────────────────────── */
+.em-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 4px;
+}
+@media (max-width: 420px) { .em-cols { grid-template-columns: 1fr; gap: 14px; } }
+
+.em-col-hdr {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .10em;
+  color: var(--adm-gold);
+  text-transform: uppercase;
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+}
+
+/* Bullet list */
+.em-bullet-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.em-bullet-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--adm-text);
+  line-height: 1.4;
+}
+.em-bullet-dot {
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--adm-gold);
+  opacity: .80;
+  position: relative;
+  top: 1px;
+}
+
+/* ── Speciality ──────────────────────────────────────────── */
+.em-spec-section { margin-top: 18px; }
+.em-spec-list {
+  font-size: 13px;
+  color: var(--adm-text);
+  font-family: var(--font-mono);
+  letter-spacing: .01em;
+  line-height: 1.6;
+}
+
+/* ── Contact footer ──────────────────────────────────────── */
+.em-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.em-contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.em-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--adm-text-muted);
+  font-family: var(--font-mono);
+}
+.em-contact-item svg {
+  flex-shrink: 0;
+  color: var(--adm-gold);
+  opacity: .75;
+}

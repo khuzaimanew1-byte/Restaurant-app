@@ -3,7 +3,7 @@ import { useDebounce }              from "../hooks/useDebounce";
 import { useDelayedUnmount }        from "../hooks/useDelayedUnmount";
 import { useEmployees }             from "../hooks/useEmployees";
 import { useUpdateEmployeeStatus }  from "../hooks/useUpdateEmployeeStatus";
-import { type EmployeeCard, type UiStatus, uiStatusToDb } from "../services/employee.service";
+import { type EmployeeCard, type EmployeeProfile, type UiStatus, uiStatusToDb } from "../services/employee.service";
 import {
   type OfficeTiming,
   STATUS_CSS,
@@ -15,6 +15,8 @@ import { OfficeTimingHeader }       from "./ui/OfficeTiming";
 import { Navigation, type NavItem } from "./ui/Navigation";
 import { Topbar }                   from "./ui/Topbar";
 import { StatusTag }                from "./ui/StatusTag";
+import { EmployeeModal }            from "./ui/EmployeeModal/EmployeeModal";
+import { getDemoProfile }           from "../data/demo-employees";
 import "../styles/main-bg.css";
 import "../styles/admin-dashboard.css";
 
@@ -79,13 +81,14 @@ const ProgressBar = memo(function ProgressBar({ value, variant }: { value: numbe
 });
 
 const EmployeeCard = memo(function EmployeeCard({
-  emp, idx, timing, isEditing, query, onCtxMenu, onLongPress, onEditSave,
+  emp, idx, timing, isEditing, query, onCtxMenu, onLongPress, onEditSave, onDetails,
 }: {
   emp: Employee; idx: number; timing: OfficeTiming;
   isEditing: boolean; query: string;
   onCtxMenu: (id: number, x: number, y: number) => void;
   onLongPress: (id: number, x: number, y: number) => void;
   onEditSave: (id: number, ci: string, co: string) => void;
+  onDetails: (id: number) => void;
 }) {
   const status    = dispSts(emp, timing);
   const statusCss = STATUS_CSS[status];
@@ -211,8 +214,8 @@ const EmployeeCard = memo(function EmployeeCard({
       <div className="adm-card-right">
         <button
           className={`adm-info-btn${isEditing ? " adm-info-btn-confirm" : ""}`}
-          aria-label={isEditing ? "Confirm" : "Info"}
-          onClick={isEditing ? handleInlineSave : undefined}
+          aria-label={isEditing ? "Confirm" : "Details"}
+          onClick={isEditing ? handleInlineSave : () => onDetails(emp.id)}
         >
           {isEditing ? (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -426,15 +429,24 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
   const [logoutModalOpen,  setLogoutModal]  = useState(false);
   const [ctxMenu,          setCtxMenu]      = useState<CtxMenu | null>(null);
   const [editingId,        setEditingId]    = useState<number | null>(null);
+  const [profileModalId,   setProfileModalId] = useState<number | null>(null);
 
   /* LogoutModal: 60 s default cache. ContextMenu: 220 ms for CSS exit animation. */
-  const shouldRenderLogout = useDelayedUnmount(logoutModalOpen);
-  const shouldRenderCtx    = useDelayedUnmount(!!ctxMenu, 220);
+  const shouldRenderLogout  = useDelayedUnmount(logoutModalOpen);
+  const shouldRenderCtx     = useDelayedUnmount(!!ctxMenu, 220);
+  const shouldRenderProfile = useDelayedUnmount(profileModalId !== null, 220);
 
   /* ctxMenuData — ref so position is available during 220 ms exit window */
   const ctxMenuDataRef = useRef<CtxMenu | null>(null);
   if (ctxMenu) ctxMenuDataRef.current = ctxMenu;
   const ctxMenuData = ctxMenuDataRef.current;
+
+  /* profileData — ref retains last profile during exit animation */
+  const profileDataRef = useRef<ReturnType<typeof getDemoProfile>>(null);
+  if (profileModalId !== null) profileDataRef.current = getDemoProfile(profileModalId);
+  const profileData = profileDataRef.current;
+
+  const handleDetails = useCallback((id: number) => { setProfileModalId(id); }, []);
 
   const debouncedQuery = useDebounce(rawQuery, 280);
 
@@ -510,8 +522,9 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
   const sharedCardProps = {
     timing: officeTiming,
     query: debouncedQuery,
-    onCtxMenu:  (id: number, x: number, y: number) => setCtxMenu({ empId: id, x, y }),
+    onCtxMenu:   (id: number, x: number, y: number) => setCtxMenu({ empId: id, x, y }),
     onLongPress: (id: number, x: number, y: number) => setCtxMenu({ empId: id, x, y }),
+    onDetails:   handleDetails,
   };
 
   return (
@@ -612,6 +625,15 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
       {/* Logout modal — kept mounted 60 s after close (useDelayedUnmount default) */}
       {shouldRenderLogout && (
         <LogoutModal onConfirm={onLogout} onCancel={() => setLogoutModal(false)} />
+      )}
+
+      {/* Employee profile modal — 220 ms exit animation */}
+      {shouldRenderProfile && (
+        <EmployeeModal
+          profile={profileData}
+          isOpen={profileModalId !== null}
+          onClose={() => setProfileModalId(null)}
+        />
       )}
 
     </div>

@@ -114,6 +114,17 @@ App.tsx
 | `Button` | `.cta-btn` | Primary action, full-width by default |
 | `TextInput` | `.inp-wrap/.inp/.inp-label/.inp-line` | Floating-label (default) or compact (icon-led) |
 | `PasswordInput` | Same as TextInput + eye toggle | |
+| `EmployeeModal` | `.em-overlay / .em-panel / .em-*` | Full employee profile modal; props: `profile: EmployeeProfile \| null`, `isOpen: boolean`, `onClose: () => void`. Uses `.stat-pill` as base for all pills. CSS split: `employee-modal-bg.css` (overlay + panel background) + `employee-modal.css` (content). Opens via the ℹ️ Details button on every `EmployeeCard`. |
+
+### Demo Data (`data/demo-employees.ts`)
+
+`getDemoProfile(id: number): EmployeeProfile | null` — look up by employee ID.  
+6 entries mirroring `artifacts/api-server/src/emp/seeds.ts` exactly, plus extra fields (`dob`, `ph`, `addr`, `hire`, `exp`, `email`) required by the modal.  
+Switching to a real API endpoint requires only replacing the `getDemoProfile` call — the modal's interface is transparent to the data source.
+
+### `EmployeeProfile` type (`services/employee.service.ts`)
+
+Mirrors `employee_profile` + `employee_status` DB table columns exactly, plus derived fields `initials` and `color`. SSOT for everything the modal renders.
 
 ### Global CSS SSOT (`index.css` `:root`)
 

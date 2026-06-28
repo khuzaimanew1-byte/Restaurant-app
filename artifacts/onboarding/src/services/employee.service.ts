@@ -35,6 +35,37 @@ export interface EmployeeCard {
 }
 
 // ── Payload types ─────────────────────────────────────────────────────────
+/** Full employee record — mirrors employee_profile + employee_status DB tables exactly.
+    Demo data and API both return this shape; the modal never needs to know which. */
+export interface EmployeeProfile {
+  /* employee_profile columns */
+  id:       number;
+  name:     string;
+  role:     string;
+  cnic:     string;
+  lang:     string[];
+  hire:     string | null;
+  exp:      { y?: number; m?: number } | null;
+  task:     string[];
+  cap:      string[];
+  spec:     string[];
+  gen:      string | null;
+  email:    string | null;
+  dob:      string | null;
+  ph:       string | null;
+  addr:     string | null;
+  sal:      number | null;
+  img:      string | null;
+  /* employee_status columns */
+  att:      number;
+  perf:     number;
+  sts:      "leave" | "unauth" | "half" | "late" | null;
+  shift:    { in: string | null; out: string | null } | null;
+  /* derived (server-computed) */
+  initials: string;
+  color:    string;
+}
+
 export interface CreateEmployeePayload {
   name:   string;
   role:   string;

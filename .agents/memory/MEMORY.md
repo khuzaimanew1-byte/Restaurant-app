@@ -7,3 +7,4 @@
 - [Vite split-React crash fix](vite-split-react-crash.md) — "Invalid hook call" crash caused by Replit WebSocket drop + dep re-optimisation; fixed in viteHmrReconnect plugin in vite.config.ts.
 - [Frontend status SSOT](frontend-status-ssot.md) — `dbStatusToUi` / `uiStatusToDb` live in `employee.service.ts`; never inline these mappings in components or hooks.
 - [Shift-timing SSOT refactor](shift-timing-ssot.md) — all shift logic + SVG icons extracted to services/shift-timing.tsx; OfficeTiming header to ui/OfficeTiming.tsx + styles/office-timing.css.
+- [EmployeeModal pattern](employee-modal-pattern.md) — ui/EmployeeModal reusable modal; demo data via getDemoProfile(id); EmployeeProfile type is SSOT; all pills use .stat-pill base.
