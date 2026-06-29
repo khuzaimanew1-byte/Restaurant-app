@@ -186,17 +186,16 @@
 .em-bullet-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .em-bullet-item {
   display: flex;
-  align-items: baseline;
-  gap: 9px;
+  align-items: center;
+  gap: 10px;
 }
 .em-bullet-dot {
   flex-shrink: 0;
   width: 15px; height: 15px;
-  border-radius: 50%;
-  background: var(--adm-gold);
-  opacity: .75;
-  position: relative;
-  top: 1px;
+  border-radius: 4px;
+  background: rgba(197,160,89,.12);
+  border: 1.5px solid rgba(197,160,89,.55);
+  box-shadow: 0 0 6px rgba(197,160,89,.18);
 }
 
 /* ── Speciality ──────────────────────────────────────────── */
