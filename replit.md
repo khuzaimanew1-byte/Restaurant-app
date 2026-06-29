@@ -1,7 +1,17 @@
 # Project Rules — ENFORCED ON EVERY ACTION
 
 > These rules apply to every file, line, and decision. No exceptions. No rule may be violated — not even once.
-> Before writing any code: search the codebase for existing implementations. Reuse. Never duplicate.
+> Before writing any code: search the entire codebase for existing or similar implementations. Similar = duplicate. Reuse, extend, or centralize. Never duplicate logic, styles, patterns, utilities, validations, or configurations.
+
+---
+
+## ABSOLUTE: UI & OUTPUT NEVER CHANGES
+
+```
+✅ Internal logic, backend, efficiency   → optimize freely
+❌ Visual output, layout, behavior, animations, results → must not change even 1%
+```
+Applying these rules must never alter what the user sees or experiences — not even slightly. Zero visual change. Zero output change.
 
 ---
 
@@ -11,47 +21,57 @@
 ✅ var(--clr-acc)        ❌ #C47A3A
 ✅ var(--font-main)      ❌ font-family: 'Inter'
 ```
-- Global colors → `colors.css` only. Local-only color (1 file only) → top of that file only.
+- Global colors → `colors.css` only. Local-only color (1 file) → top of that file only.
 - Font-family, colors: never hardcoded anywhere, ever.
-- CSS var names, JS vars, functions, DB fields → max 5–6 chars, recognizable short forms.
+- All custom names (CSS vars, JS vars, functions, DB fields) → max 5–6 chars, recognizable short forms:
   - `empId`, `attSt`, `fmtDt()`, `emp_id`, `--clr-acc`, `.t-ttl`
 
 ---
 
-## COMPONENTS & FILES
+## COMPONENTS & FILE OWNERSHIP
 
-- Component used 2+ places → `ui/` folder, one self-contained file (JSX + CSS + logic together — nothing left outside).
-- Organize by feature: `features/auth/`, `features/emp/`. Related code, styles, types, assets stay together.
-- Avoid both: oversized files AND unnecessary splitting/nesting/single-file folders.
-- File obviously too long to scroll → split. No fixed limit — use judgment.
-- One file = one responsibility.
-- Folders and files → logical, short names.
+- Component used 2+ places → `ui/` folder, one self-contained file. JSX + CSS + logic together — nothing left outside.
+- Component's related logic existing in another page/file → move it into the component file. Exception: global styles, another UI file.
+- Small separated code → do NOT combine if it's a UI component or its background style. Keep it separate and self-contained.
+- Organize by feature: `features/auth/`, `features/emp/`. Related UI, logic, styles, types, assets stay together.
+- Avoid both: oversized files AND unnecessary splitting, nesting, or single-file folders.
+- File obviously too long → split. No fixed limit — judge by scrollability.
+- Folders and files → logical, short names. One file = one responsibility.
 
 ---
 
 ## CSS & STYLES
 
 - CSS classes first. Inline `style` only for truly dynamic values (computed px, positions).
-- Style block **5+ lines** repeated **2+ places** → extract to its own `.css` file, import where needed.
+- Style block **5+ lines**, repeated **2+ places** → extract to its own `.css` file, import where needed.
 - Single property repeated **5+ times** across project → utility class in `index.css`.
-- `index.css` = truly global only:
-  - Used on **zyadatar (most) pages** ✅
-  - Under **7 lines** ✅
-  - 7+ lines → own `.css` file
-  - Styles of **same type used together** → keep in same page file, don't split to index.css
+- `index.css` rules:
+  - Only truly global styles used on **most pages** ✅
+  - Must be **under 7 lines** ✅
+  - 7+ lines → own `.css` file ✅
+  - Same-type styles used together → keep in same page file, not index.css ✅
+  - Max **5% unused styles** per page load ✅
 - No duplicate, no override, no dead CSS — anywhere in the project.
-- Max **5% unused styles** per page load.
 
 ---
 
 ## COMMENTS
 
 ```
-❌ // This function calculates the total attendance for an employee
+❌ // This calculates total attendance for employee
 ✅ /* calc att */
 ```
-- Almost no comments. Only truly non-obvious logic gets one.
-- Max **3 words** per comment. Self-explanatory code is always preferred.
+- Almost no comments. Only truly non-obvious logic.
+- Max **3 words** per comment.
+
+---
+
+## DEAD CODE — REMOVE IMMEDIATELY
+
+- Unused: imports, variables, functions, CSS classes, keyframes → delete
+- Overridden styles (same property twice) → merge, delete duplicate
+- `console.log` → **forbidden**, remove before commit
+- `console.error` → only genuine runtime errors, never sensitive data
 
 ---
 
@@ -62,18 +82,8 @@
 ❌ Same 2 CSS lines anywhere   ✅ Utility class or shared file
 ❌ Same component rebuilt       ✅ Import from ui/
 ```
-- Before creating anything: search entire codebase. Similar = duplicate.
-- No duplicate logic, styles, types, utilities, validations, configs — anywhere.
 - No 2 identical lines anywhere in the project.
-
----
-
-## DEAD CODE — REMOVE IMMEDIATELY
-
-- Unused imports, variables, functions, CSS classes, keyframes → delete
-- Overridden styles (same property declared twice) → merge, delete duplicate
-- `console.log` → **forbidden**, remove before commit
-- `console.error` → only genuine runtime errors, never sensitive data
+- No duplicate logic, styles, types, utilities, validations, configs.
 
 ---
 
@@ -91,35 +101,21 @@
 
 ## ANIMATIONS
 
-- Smooth transitions everywhere. Easing/duration in `index.css` as CSS vars — never hardcoded in JS.
+- Smooth transitions everywhere. Easing/duration → `index.css` CSS vars only, never hardcoded in JS.
 - Navigation animations reflect direction:
-  - Forward/deep → slide from right
-  - Back → slide from left
-  - Bottom nav → slide from bottom
-- Components animate on enter/exit. User must feel navigation happened.
+  - Forward/deep → slide from right | Back → slide from left | Bottom nav → slide from bottom
+- Components animate on enter/exit. User must clearly feel navigation happened.
 
 ---
 
 ## CODE QUALITY
 
-- No unnecessary conditions. If default logic works → use it, don't re-implement.
-- No verbose "working" code. Shortest correct implementation wins.
+- No unnecessary conditions. Default logic works → use it, don't re-implement.
+- Shortest correct implementation wins. Verbose "working" code → forbidden.
 - `key` in lists → unique ID only, never array index.
 - `useEffect` → clean deps array, no unnecessary dependencies.
-- Heavy compute → `useMemo` mandatory.
-- Search/input fields → debounce **300ms**.
+- Heavy compute → `useMemo` mandatory. Search/input → debounce **300ms**.
 - `React.memo` on pure components. `useMemo`/`useCallback` on expensive ops.
-
----
-
-## UI FREEZE ON UPDATES
-
-When updating existing code:
-```
-✅ Internal logic, backend, efficiency   → optimize freely
-❌ Visual output, layout, behavior, animations → must not change even 1%
-```
-User-visible result stays identical. Only efficiency improves.
 
 ---
 
@@ -132,23 +128,22 @@ User-visible result stays identical. Only efficiency improves.
 | Shared components | `ui/` |
 | DB structure | Database schema (authoritative) |
 | API contracts | OpenAPI spec (authoritative) |
-| Frontend types / hooks / Zod schemas | Generated from OpenAPI spec — never manual duplicates |
+| Frontend types / hooks / Zod | Generated from OpenAPI — never manual duplicates |
 
 ---
 
 ## BLUEPRINT
 
-- Project has one `BLUEPRINT.md` at root.
+- One `BLUEPRINT.md` at project root.
 - Every new feature, component, API, DB table, config → add to blueprint immediately.
-- If it's not in blueprint → it doesn't officially exist.
+- Not in blueprint → doesn't officially exist.
 
 ---
 
-## LOAD BUDGET — MAX 5% UNUSED
+## LOAD BUDGET — MAX 5% UNUSED PER PAGE
 
-- Per page: max 5% unused JS, CSS, or assets may load.
 - Route-based code splitting. Each page = its own chunk. Bundle max **150kb gzipped**.
-- Lazy load everything not needed on first screen. `React.lazy()` + `<Suspense>`.
+- `React.lazy()` + `<Suspense>` for everything not needed on first screen.
 - `<link rel="preload">` for fonts and hero images.
 - 3rd party scripts → `defer`/`async` only.
 - Library imports → partial only:
@@ -168,26 +163,28 @@ User-visible result stays identical. Only efficiency improves.
 - Only used font weights load
 - Heavy compute → Web Workers (never block main thread)
 - `IntersectionObserver` → render/animate only when in viewport
-- `will-change` → animated elements only; forbidden everywhere else (memory waste)
+- `will-change` → animated elements only; forbidden everywhere else
 - Service Worker → asset caching + offline support
 
 **Backend**
 - Lists → paginated, default page size 20
 - Response → needed fields only. `SELECT *` forbidden.
-- N+1 queries forbidden. Foreign keys → indexed.
+- N+1 queries forbidden. Bulk operations supported. Foreign keys → indexed.
 - Frequent query fields → composite index.
 - Static/config data → cached. `Cache-Control` headers set.
 - DB connection pooling mandatory. DB timeout set.
 - Long tasks → background queue (never block API response).
 - `gzip`/`brotli` compression on all responses.
-- Passwords, tokens, cards → never logged anywhere, not even in `console.error`.
+- Passwords, tokens, cards → never logged anywhere.
 
 **Network**
-- Multiple API calls → batch where possible
+- Batch multiple API calls where possible
 - `ETag`/`Last-Modified` on cacheable responses
 - HTTP/2 enabled
 - `<link rel="dns-prefetch">` for third-party domains
 - Critical CSS inlined in `<head>`
+- Images WebP, max 200kb. SVG under 2kb → inline.
+- Only used font weights load.
 
 ---
 
@@ -209,7 +206,7 @@ User-visible result stays identical. Only efficiency improves.
 | 100+ | 25 | 3s + backpressure |
 
 **Chunking**
-- Payload 50kb+ → 50kb chunks, send parallel.
+- Payload 50kb+ → 50kb chunks, parallel send.
 - Retry failed chunk only — not whole request.
 
 **Deduplication**
@@ -225,8 +222,7 @@ User-visible result stays identical. Only efficiency improves.
 | P3 | Low | Idle only; flood → silently drop |
 
 **Circuit Breaker**
-- 5 errors → OPEN (10s)
-- 1 probe → success: CLOSED / fail: OPEN (20s)
+- 5 errors → OPEN (10s). 1 probe → success: CLOSED / fail: OPEN (20s).
 - Retry: `1s → 2s → 4s → 8s`. Max 3 retries. Timeout 30s.
 
 **Compression & Isolation**
@@ -244,7 +240,7 @@ User-visible result stays identical. Only efficiency improves.
 - HTTPS only. Redirect HTTP.
 - JWT: short expiry + refresh token pattern.
 - CORS: `*` forbidden in production.
-- Never log sensitive data (passwords, tokens, card numbers) — anywhere.
+- Never log sensitive data (passwords, tokens, cards) — anywhere.
 
 ---
 
