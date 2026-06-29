@@ -191,7 +191,7 @@
 }
 .em-bullet-dot {
   flex-shrink: 0;
-  width: 5px; height: 5px;
+  width: 15px; height: 15px;
   border-radius: 50%;
   background: var(--adm-gold);
   opacity: .75;
