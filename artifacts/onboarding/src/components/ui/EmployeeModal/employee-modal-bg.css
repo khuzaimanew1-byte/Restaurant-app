@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════
    EMPLOYEE MODAL — Overlay & Panel background  (SSOT)
-   Design: Mugen geometric frame — near-black grid panel,
-           architectural gold corner ornaments, double border.
+   Design: App glass style — adm-surface base, amber tint,
+           top amber mesh glow. Matches admin dashboard panels.
    Imported by EmployeeModal.tsx only.
 ══════════════════════════════════════════════════════════ */
 
@@ -10,9 +10,9 @@
   position: fixed;
   inset: 0;
   z-index: 1200;
-  background: rgba(0, 0, 0, 0.80);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -26,22 +26,17 @@
 @keyframes em-ovr-in  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes em-ovr-out { from { opacity: 1; } to { opacity: 0; } }
 
-/* ── Panel surface — Mugen grid + radial glow ────────────── */
+/* ── Panel surface — app glass style ─────────────────────── */
 .em-panel {
-  background-color: #111113;
+  background-color: rgba(30, 32, 38, 0.97);
   background-image:
-    radial-gradient(ellipse 80% 40% at 50% 0%,  rgba(197,160,89,.07) 0%, transparent 65%),
-    radial-gradient(ellipse 55% 38% at 50% 52%, rgba(138,80,220,.09) 0%, rgba(80,30,140,.05) 40%, transparent 72%),
-    radial-gradient(ellipse 30% 18% at 50% 52%, rgba(170,110,255,.06) 0%, transparent 60%),
-    repeating-linear-gradient(0deg,   transparent, transparent 14px, rgba(255,255,255,.035) 14px, rgba(255,255,255,.035) 15px),
-    repeating-linear-gradient(90deg,  transparent, transparent 14px, rgba(255,255,255,.018) 14px, rgba(255,255,255,.018) 15px);
-  border: 1px solid rgba(197,160,89,.72);
-  /* Inner frame — outline with negative offset (not clipped by overflow) */
-  outline: 1px solid rgba(197,160,89,.22);
-  outline-offset: -6px;
+    linear-gradient(145deg, rgba(212,175,55,.07) 0%, transparent 48%),
+    radial-gradient(ellipse 75% 42% at 50% 0%, rgba(212,175,55,.08) 0%, transparent 62%);
+  border: 1px solid rgba(212,175,55,.28);
   box-shadow:
-    0 36px 90px rgba(0, 0, 0, .94),
-    0 10px 28px rgba(0, 0, 0, .72);
+    0 24px 64px rgba(0,0,0,.72),
+    0 6px 20px rgba(0,0,0,.50),
+    inset 0 1px 0 rgba(255,255,255,.06);
   animation: em-panel-in 320ms cubic-bezier(.16,1,.3,1) both;
 }
 .em-panel[data-closing] {
@@ -56,28 +51,23 @@
   to   { opacity: 0; transform: scale(.93) translateY(14px); }
 }
 
-/* ── Corner ornaments — Mugen geometric L-shape ──────────── */
-/* All 4 corners share the same SVG; non-TL corners use CSS  */
-/* transform to flip/rotate as needed.                        */
-
+/* ── Corner ornaments — subtle amber L-shape ─────────────── */
 .em-corner {
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   border: none;
-  opacity: 1;
   background-repeat: no-repeat;
-  background-size: 64px 64px;
+  background-size: 48px 48px;
+  pointer-events: none;
 }
 
-/* Mugen corner: outer L fill + mid L stroke + inner L stroke + diagonal */
 .em-corner-tl,
 .em-corner-tr,
 .em-corner-bl,
 .em-corner-br {
-  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path fill='%23c5a059' opacity='.82' d='M0 0L64 0L64 4L4 4L4 64L0 64Z'/><path fill='none' stroke='%23c5a059' stroke-width='1' opacity='.52' d='M8 8L44 8L44 12L12 12L12 44L8 44Z'/><path fill='none' stroke='%23c5a059' stroke-width='1' opacity='.32' d='M16 16L32 16L32 20L20 20L20 32L16 32Z'/><line stroke='%23c5a059' stroke-width='1' opacity='.28' x1='12' y1='12' x2='32' y2='32'/></svg>");
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><path fill='%23D4AF37' opacity='.50' d='M0 0L48 0L48 3L3 3L3 48L0 48Z'/><path fill='none' stroke='%23D4AF37' stroke-width='1' opacity='.22' d='M7 7L30 7L30 10L10 10L10 30L7 30Z'/></svg>");
 }
 
-/* Position at panel corners */
 .em-corner-tl { top: -1px;    left: -1px;  }
 .em-corner-tr { top: -1px;    right: -1px; transform: scaleX(-1);    }
 .em-corner-bl { bottom: -1px; left: -1px;  transform: scaleY(-1);    }
