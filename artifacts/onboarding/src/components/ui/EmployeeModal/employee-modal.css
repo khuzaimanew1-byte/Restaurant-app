@@ -78,13 +78,13 @@
   gap: 5px;
 }
 .em-name {
-  font-family: var(--font-display);
-  font-size: clamp(17px, 4.2vw, 26px);
-  font-weight: 700;
-  letter-spacing: .05em;
-  color: var(--adm-gold-text);
+  font-family: var(--font-main);
+  font-size: clamp(16px, 4vw, 22px);
+  font-weight: 500;
+  letter-spacing: .01em;
+  color: white;
   margin: 0;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 /* Salary pill aligned to header top-right */

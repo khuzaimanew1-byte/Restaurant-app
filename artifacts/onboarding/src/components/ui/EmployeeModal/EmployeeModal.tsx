@@ -215,7 +215,7 @@ export const EmployeeModal = memo(function EmployeeModal({
           <Avatar initials={p.initials} color={p.color} img={p.img} name={p.name} variant="modal" />
 
           <div className="em-hdr-info">
-            <h2 className="em-name">{p.name.toUpperCase()}</h2>
+            <h2 className="em-name">{p.name}</h2>
 
             {(age !== null || p.dob) ? (
               <p className="em-sub ty-cap">
