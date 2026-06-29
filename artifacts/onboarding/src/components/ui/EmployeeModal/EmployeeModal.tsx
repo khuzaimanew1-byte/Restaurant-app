@@ -287,7 +287,11 @@ export const EmployeeModal = memo(function EmployeeModal({
         {hasSpec && (
           <div className="em-spec-section">
             <h4 className="ty-lbl em-col-hdr-wrap">SPECIALITY</h4>
-            <p className="em-spec-list">{p.spec.join(" · ")}</p>
+            <p className="em-spec-list">
+            {p.spec.map((s, i) => (
+              <span key={s}>{i > 0 && <span className="em-spec-dot">·</span>}{s}</span>
+            ))}
+          </p>
           </div>
         )}
 
