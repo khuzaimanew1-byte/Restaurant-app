@@ -72,6 +72,8 @@ function navigate(path: string) {
 export default function App() {
   const [view, setView]       = useState<View>(getInitialView);
   const [viewDir, setViewDir] = useState<"fwd" | "back">("fwd");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editEmployee, setEditEmployee] = useState<any | undefined>(undefined);
   const [slide, setSlide]     = useState(() => {
     const m = window.location.pathname.match(/^\/onboarding\/(\d+)$/);
     return m ? Math.max(0, Math.min(parseInt(m[1]!), 2)) : 0;
@@ -120,7 +122,8 @@ export default function App() {
       <Suspense fallback={<div className="adm-lazy-fallback" />}>
         <AdminDashboard
           onLogout={handleLogout}
-          onAddEmployee={() => goTo("add-employee", "fwd")}
+          onAddEmployee={() => { setEditEmployee(undefined); goTo("add-employee", "fwd"); }}
+          onEditEmployee={emp => { setEditEmployee(emp); goTo("add-employee", "fwd"); }}
         />
       </Suspense>
     </div>
@@ -132,7 +135,8 @@ export default function App() {
     <Suspense fallback={<div className="adm-lazy-fallback" />}>
       <AddEmployeePage
         isOpen={true}
-        onClose={() => goTo("admin-dashboard", "back")}
+        editEmployee={editEmployee}
+        onClose={() => { setEditEmployee(undefined); goTo("admin-dashboard", "back"); }}
       />
     </Suspense>
   );

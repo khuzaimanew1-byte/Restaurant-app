@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MUGEN - Infinity Castle Frame</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&amp;family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#303030",
+                        "secondary-container": "#5d4037",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#c8c6c5",
+                        "surface-variant": "#353535",
+                        "secondary": "#e7bdb1",
+                        "secondary-fixed": "#ffdbd0",
+                        "surface-dim": "#131313",
+                        "on-tertiary-container": "#4c3f00",
+                        "on-primary-fixed-variant": "#474646",
+                        "on-tertiary-fixed": "#221b00",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#1b1c1c",
+                        "on-tertiary": "#3a3000",
+                        "tertiary-fixed": "#ffe16d",
+                        "on-surface-variant": "#c4c7c7",
+                        "background": "#131313",
+                        "surface-container-high": "#2a2a2a",
+                        "outline-variant": "#444748",
+                        "surface-container-highest": "#353535",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container": "#1f2020",
+                        "inverse-surface": "#e4e2e1",
+                        "on-secondary-container": "#d4aca0",
+                        "tertiary-container": "#c9a900",
+                        "tertiary-fixed-dim": "#e9c400",
+                        "secondary-fixed-dim": "#e7bdb1",
+                        "on-background": "#e4e2e1",
+                        "error-container": "#93000a",
+                        "surface": "#131313",
+                        "on-tertiary-fixed-variant": "#544600",
+                        "primary-container": "#121212",
+                        "on-primary": "#313030",
+                        "on-secondary": "#442a22",
+                        "on-surface": "#e4e2e1",
+                        "on-primary-fixed": "#1c1b1b",
+                        "on-secondary-fixed-variant": "#5d4037",
+                        "primary": "#c8c6c5",
+                        "primary-fixed-dim": "#c8c6c5",
+                        "on-secondary-fixed": "#2c160e",
+                        "tertiary": "#e9c400",
+                        "on-error": "#690005",
+                        "inverse-primary": "#5f5e5e",
+                        "on-primary-container": "#7e7d7d",
+                        "surface-bright": "#393939",
+                        "primary-fixed": "#e5e2e1",
+                        "outline": "#8e9192",
+                        "sharp-gold": "#FFD700",
+                        "ebony": "#121212",
+                        "cedar": "#2A1F1D"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "kumiko-grid": "12px",
+                        "gutter": "24px",
+                        "unit": "4px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Libre Caslon Text"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Libre Caslon Text"],
+                        "headline-xl": ["Libre Caslon Text"],
+                        "headline-md": ["Libre Caslon Text"],
+                        "label-sm": ["Geist"]
+                    },
+                    "backgroundImage": {
+                        'kumiko-pattern': `linear-gradient(to right, rgba(255,215,0,0.03) 1px, transparent 1px),
+                                          linear-gradient(to bottom, rgba(255,215,0,0.03) 1px, transparent 1px),
+                                          linear-gradient(45deg, rgba(255,215,0,0.02) 1px, transparent 1px),
+                                          linear-gradient(-45deg, rgba(255,215,0,0.02) 1px, transparent 1px)`
+                    },
+                    "backgroundSize": {
+                        'kumiko': '40px 40px, 40px 40px, 28px 28px, 28px 28px'
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #121212; /* Deep ebony */
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .kumiko-bg {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(to right, rgba(255, 215, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 215, 0, 0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .frame-container {
+            position: relative;
+            width: 80vw;
+            max-width: 1200px;
+            height: 70vh;
+            max-height: 800px;
+            background-color: #1a1a1a; /* Slightly lighter than bg to pop */
+            z-index: 10;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+        }
+
+        .inner-frame {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(255, 215, 0, 0.8); /* Sharp Gold Outer */
+            box-sizing: border-box;
+            background: linear-gradient(135deg, rgba(42,31,29,0.9) 0%, rgba(18,18,18,0.95) 100%); /* Cedar to Ebony gradient */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .inner-frame::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            border: 1px solid rgba(255, 215, 0, 0.4); /* Inner thinner gold line */
+            pointer-events: none;
+        }
+
+        /* Architectural SVG Corners */
+        .corner-ornament {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            fill: none;
+            stroke: #FFD700;
+            stroke-width: 1.5;
+            z-index: 20;
+        }
+
+        .top-left { top: -2px; left: -2px; }
+        .top-right { top: -2px; right: -2px; transform: scaleX(-1); }
+        .bottom-left { bottom: -2px; left: -2px; transform: scaleY(-1); }
+        .bottom-right { bottom: -2px; right: -2px; transform: scale(-1, -1); }
+
+    </style>
+</head>
+<body class="text-on-surface font-body-md antialiased" style="background-color: #0e0e0e; margin: 0; padding: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden;">
+<!-- Subtle Background Pattern -->
+<!-- Main Stage Container -->
+<main class="frame-container" style="background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 80%), repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(255, 255, 255, 0.08) 4px, rgba(255, 255, 255, 0.08) 5px), #131313; background-blend-mode: overlay, overlay, normal;">
+<!-- The Frame -->
+<div class="inner-frame relative" style="background: transparent; border-color: #c5a059;">
+<!-- SVG Corners - Geometric Architectural Joinery -->
+<!-- Top Left -->
+<svg class="corner-ornament top-left" viewbox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+<path d="M 0 0 L 60 0 L 60 4 L 4 4 L 4 60 L 0 60 Z" fill="#c5a059" opacity="0.8" stroke="none"></path>
+<path d="M 8 8 L 40 8 L 40 12 L 12 12 L 12 40 L 8 40 Z" fill="none" stroke="#c5a059" stroke-width="1"></path>
+<path d="M 16 16 L 28 16 L 28 20 L 20 20 L 20 28 L 16 28 Z" fill="none" stroke="#c5a059" stroke-width="1"></path>
+<line opacity="0.5" stroke="#c5a059" stroke-width="1" x1="12" x2="28" y1="12" y2="28"></line>
+</svg>
+<!-- Top Right -->
+<svg class="corner-ornament top-right" viewbox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+<path d="M 0 0 L 60 0 L 60 4 L 4 4 L 4 60 L 0 60 Z" fill="#c5a059" opacity="0.8" stroke="none"></path>
+<path d="M 8 8 L 40 8 L 40 12 L 12 12 L 12 40 L 8 40 Z" fill="none" stroke="#c5a059" stroke-width="1"></path>
+<path d="M 16 16 L 28 16 L 28 20 L 20 20 L 20 28 L 16 28 Z" fill="none" stroke="#c5a059" stroke-width="1"></path>
+<line opacity="0.5" stroke="#c5a059" stroke-width="1" x1="12" x2="28" y1="12" y2="28"></line>
+</svg>
+<!-- Bottom Left -->
+<svg class="corner-ornament bottom-left" viewbox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+<path d="M 0 0 L 60 0 L 60 4 L 4 4 L 4 60 L 0 60 Z" fill="#c5a059" opacity="0.8" stroke="none"></path>
+<path d="M 8 8 L 40 8 L 40 12 L 12 12 L 12 40 L 8 40 Z" fill="none" stroke="#c5a059" stroke-width="1"></path>
+<path d="M 16 16 L 28 16 L 28 20 L 20 20 L 20 28 L 16 28 Z" fill="none" stroke="#c5a059" stroke-width="1"></path>
+<line opacity="0.5" stroke="#c5a059" stroke-width="1" x1="12" x2="28" y1="12" y2="28"></line>
+</svg>
+<!-- Bottom Right -->
+<svg class="corner-ornament bottom-right" viewbox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+<path d="M 0 0 L 60 0 L 60 4 L 4 4 L 4 60 L 0 60 Z" fill="#c5a059" opacity="0.8" stroke="none"></path>
+<path d="M 8 8 L 40 8 L 40 12 L 12 12 L 12 40 L 8 40 Z" fill="none" stroke="#c5a059" stroke-width="1"></path>
+<path d="M 16 16 L 28 16 L 28 20 L 20 20 L 20 28 L 16 28 Z" fill="none" stroke="#c5a059" stroke-width="1"></path>
+<line opacity="0.5" stroke="#c5a059" stroke-width="1" x1="12" x2="28" y1="12" y2="28"></line>
+</svg>
+<!-- Content Area (Empty for future injection) -->
+<div class="flex-1 w-full h-full relative z-10 p-8 flex flex-col justify-center items-center">
+<!-- Content goes here -->
+</div>
+</div>
+</main>
+</body></html>

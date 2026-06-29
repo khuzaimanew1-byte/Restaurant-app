@@ -2,10 +2,11 @@ import { useState, useRef, useCallback, useEffect, useMemo, memo } from "react";
 import { useDebounce }              from "../hooks/useDebounce";
 import { useDelayedUnmount }        from "../hooks/useDelayedUnmount";
 import { useEmployees }             from "../hooks/useEmployees";
+import { useEmployee }              from "../hooks/useEmployee";
 import { useUpdateEmployeeStatus }  from "../hooks/useUpdateEmployeeStatus";
+import { useOfficeTiming }          from "../hooks/useOfficeTiming";
 import { type EmployeeCard, type EmployeeProfile, type UiStatus, uiStatusToDb } from "../services/employee.service";
 import {
-  type OfficeTiming,
   STATUS_CSS,
   arrSts, depSts, dispSts, canHalf, sortEmp,
   to24h, to12h,
@@ -17,7 +18,6 @@ import { Topbar }                   from "./ui/Topbar";
 import { StatusTag }                from "./ui/StatusTag";
 import { EmployeeModal }            from "./ui/EmployeeModal/EmployeeModal";
 import { Avatar }                   from "./ui/Avatar";
-import { getDemoProfile }           from "../data/demo-employees";
 import "../styles/main-bg.css";
 import "../styles/admin-dashboard.css";
 
@@ -403,14 +403,18 @@ function LogoutModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel:
 
 // ── Main Dashboard ──────────────────────────────────────────────────────────
 
-export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => void; onAddEmployee: () => void }) {
+export function AdminDashboard({ onLogout, onAddEmployee, onEditEmployee }: {
+  onLogout: () => void;
+  onAddEmployee: () => void;
+  onEditEmployee: (emp: EmployeeProfile) => void;
+}) {
   /* DB data via React Query — authoritative; never hardcoded locally.
      updateMutation sends PATCH /api/employees/:id/status with optimistic UI. */
   const { data: employees = [], isLoading, isError } = useEmployees();
   const updateMutation = useUpdateEmployeeStatus();
 
   const [activeNav,        setActiveNav]    = useState<NavItem>("dashboard");
-  const [officeTiming,     setOfficeTiming] = useState<OfficeTiming>({ start: "08:00 AM", end: "06:00 PM" });
+  const { timing: officeTiming, updateTiming: setOfficeTiming } = useOfficeTiming();
   const [rawQuery,         setRawQuery]     = useState("");
   const [mobileSearchOpen, setMobileSearch] = useState(false);
   const [logoutModalOpen,  setLogoutModal]  = useState(false);
@@ -429,8 +433,9 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
   const ctxMenuData = ctxMenuDataRef.current;
 
   /* profileData — ref retains last profile during exit animation */
-  const profileDataRef = useRef<ReturnType<typeof getDemoProfile>>(null);
-  if (profileModalId !== null) profileDataRef.current = getDemoProfile(profileModalId);
+  const { data: empProf, isLoading: profLoading } = useEmployee(profileModalId);
+  const profileDataRef = useRef<EmployeeProfile | null>(null);
+  if (empProf) profileDataRef.current = empProf;
   const profileData = profileDataRef.current;
 
   const handleDetails = useCallback((id: number) => { setProfileModalId(id); }, []);
@@ -618,8 +623,10 @@ export function AdminDashboard({ onLogout, onAddEmployee }: { onLogout: () => vo
       {shouldRenderProfile && (
         <EmployeeModal
           profile={profileData}
+          isLoading={profLoading && profileModalId !== null}
           isOpen={profileModalId !== null}
           onClose={() => setProfileModalId(null)}
+          onEditEmployee={p => { setProfileModalId(null); onEditEmployee(p); }}
         />
       )}
 

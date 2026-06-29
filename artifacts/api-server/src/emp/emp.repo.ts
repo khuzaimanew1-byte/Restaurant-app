@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { eq, sql } from "drizzle-orm";
 import { db, employeeProfile, employeeStatus } from "@workspace/db";
-import type { NewEmpDto } from "./dto/emp.dto.js";
-import type { EmpRow, Shift } from "./emp.vm.js";
+import type { NewEmpDto, UpdProfDto } from "./dto/emp.dto.js";
+import type { EmpRow, EmpProfRow, Shift } from "./emp.vm.js";
 
 export interface StPatch {
   sts?: string | null;
@@ -12,92 +12,106 @@ export interface StPatch {
 }
 
 const cols = {
-  id: employeeProfile.id,
-  name: employeeProfile.name,
-  role: employeeProfile.role,
-  sal: employeeProfile.sal,
-  img: employeeProfile.img,
-  att: employeeStatus.att,
-  perf: employeeStatus.perf,
-  sts: employeeStatus.sts,
-  shift: employeeStatus.shift,
+  id: employeeProfile.id, name: employeeProfile.name,
+  role: employeeProfile.role, sal: employeeProfile.sal, img: employeeProfile.img,
+  att: employeeStatus.att, perf: employeeStatus.perf,
+  sts: employeeStatus.sts, shift: employeeStatus.shift,
+};
+
+const fullCols = {
+  id: employeeProfile.id, name: employeeProfile.name, role: employeeProfile.role,
+  cnic: employeeProfile.cnic, lang: employeeProfile.lang, hire: employeeProfile.hire,
+  exp: employeeProfile.exp, task: employeeProfile.task, cap: employeeProfile.cap,
+  spec: employeeProfile.spec, gen: employeeProfile.gen, email: employeeProfile.email,
+  dob: employeeProfile.dob, ph: employeeProfile.ph, addr: employeeProfile.addr,
+  sal: employeeProfile.sal, img: employeeProfile.img,
+  att: employeeStatus.att, perf: employeeStatus.perf,
+  sts: employeeStatus.sts, shift: employeeStatus.shift,
 };
 
 @Injectable()
 export class EmpRepo {
   async page(page: number, size: number): Promise<EmpRow[]> {
     return db
-      .select(cols)
-      .from(employeeProfile)
+      .select(cols).from(employeeProfile)
       .leftJoin(employeeStatus, eq(employeeStatus.eid, employeeProfile.id))
-      .orderBy(employeeProfile.id)
-      .limit(size)
-      .offset((page - 1) * size);
+      .orderBy(employeeProfile.id).limit(size).offset((page - 1) * size);
   }
 
   async byId(id: number): Promise<EmpRow | undefined> {
     const [row] = await db
-      .select(cols)
-      .from(employeeProfile)
+      .select(cols).from(employeeProfile)
       .leftJoin(employeeStatus, eq(employeeStatus.eid, employeeProfile.id))
-      .where(eq(employeeProfile.id, id))
-      .limit(1);
+      .where(eq(employeeProfile.id, id)).limit(1);
     return row;
+  }
+
+  async fullById(id: number): Promise<EmpProfRow | undefined> {
+    const [row] = await db
+      .select(fullCols).from(employeeProfile)
+      .leftJoin(employeeStatus, eq(employeeStatus.eid, employeeProfile.id))
+      .where(eq(employeeProfile.id, id)).limit(1);
+    return row as EmpProfRow | undefined;
   }
 
   async insProf(dto: NewEmpDto): Promise<{ id: number }> {
     const [row] = await db.insert(employeeProfile).values({
-      name: dto.name,
-      role: dto.role,
-      cnic: dto.cnic,
-      sal: dto.sal ?? null,
-      gen: dto.gen ?? null,
-      email: dto.email ?? null,
-      dob: dto.dob ?? null,
-      ph: dto.ph ?? null,
-      hire: dto.hire ?? null,
-      addr: dto.addr ?? null,
-      img: dto.img ?? null,
-      lang: dto.lang ?? [],
-      task: dto.task ?? [],
-      cap: dto.cap ?? [],
-      spec: dto.spec ?? [],
-      exp: dto.exp ?? null,
+      name: dto.name, role: dto.role, cnic: dto.cnic,
+      sal: dto.sal ?? null, gen: dto.gen ?? null, email: dto.email ?? null,
+      dob: dto.dob ?? null, ph: dto.ph ?? null, hire: dto.hire ?? null,
+      addr: dto.addr ?? null, img: dto.img ?? null,
+      lang: dto.lang ?? [], task: dto.task ?? [],
+      cap: dto.cap ?? [], spec: dto.spec ?? [], exp: dto.exp ?? null,
     }).returning({ id: employeeProfile.id });
     return row!;
   }
 
+  async updProf(id: number, dto: UpdProfDto): Promise<boolean> {
+    const set: Partial<typeof employeeProfile.$inferInsert> = {};
+    if (dto.name  !== undefined) set.name  = dto.name;
+    if (dto.role  !== undefined) set.role  = dto.role;
+    if (dto.cnic  !== undefined) set.cnic  = dto.cnic;
+    if (dto.sal   !== undefined) set.sal   = dto.sal;
+    if (dto.gen   !== undefined) set.gen   = dto.gen;
+    if (dto.email !== undefined) set.email = dto.email;
+    if (dto.dob   !== undefined) set.dob   = dto.dob;
+    if (dto.ph    !== undefined) set.ph    = dto.ph;
+    if (dto.hire  !== undefined) set.hire  = dto.hire;
+    if (dto.addr  !== undefined) set.addr  = dto.addr;
+    if (dto.img   !== undefined) set.img   = dto.img;
+    if (dto.lang  !== undefined) set.lang  = dto.lang;
+    if (dto.task  !== undefined) set.task  = dto.task;
+    if (dto.cap   !== undefined) set.cap   = dto.cap;
+    if (dto.spec  !== undefined) set.spec  = dto.spec;
+    if (dto.exp   !== undefined) set.exp   = dto.exp;
+    if (!Object.keys(set).length) return true;
+    set.updatedAt = new Date();
+    const rows = await db.update(employeeProfile).set(set)
+      .where(eq(employeeProfile.id, id)).returning({ id: employeeProfile.id });
+    return rows.length > 0;
+  }
+
   async insSt(eid: number, data: StPatch = {}): Promise<void> {
     await db.insert(employeeStatus).values({
-      eid,
-      att: data.att ?? 100,
-      perf: data.perf ?? 100,
-      sts: data.sts ?? null,
-      shift: data.shift ?? null,
+      eid, att: data.att ?? 100, perf: data.perf ?? 100,
+      sts: data.sts ?? null, shift: data.shift ?? null,
     });
   }
 
   async updSt(eid: number, patch: StPatch): Promise<boolean> {
     const set: Partial<typeof employeeStatus.$inferInsert> = {};
-    if ("sts" in patch) set.sts = patch.sts ?? null;
-    if ("shift" in patch) set.shift = patch.shift ?? null;
-    if ("att" in patch) set.att = patch.att;
-    if ("perf" in patch) set.perf = patch.perf;
+    if ("sts"   in patch) set.sts   = patch.sts   ?? null;
+    if ("shift" in patch) set.shift = patch.shift  ?? null;
+    if ("att"   in patch) set.att   = patch.att;
+    if ("perf"  in patch) set.perf  = patch.perf;
     if (!Object.keys(set).length) return true;
-
-    const rows = await db
-      .update(employeeStatus)
-      .set(set)
-      .where(eq(employeeStatus.eid, eid))
-      .returning({ id: employeeStatus.id });
+    const rows = await db.update(employeeStatus).set(set)
+      .where(eq(employeeStatus.eid, eid)).returning({ id: employeeStatus.id });
     return rows.length > 0;
   }
 
   async cnt(): Promise<number> {
-    const [row] = await db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(employeeProfile);
+    const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(employeeProfile);
     return row?.n ?? 0;
   }
 }
-

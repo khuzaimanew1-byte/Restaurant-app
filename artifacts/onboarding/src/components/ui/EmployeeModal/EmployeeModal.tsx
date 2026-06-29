@@ -2,7 +2,6 @@ import { memo, useEffect, useRef } from "react";
 import type { EmployeeProfile } from "../../../services/employee.service";
 import { parseMins } from "../../../services/shift-timing";
 import { Avatar } from "../Avatar";
-import { Pill }   from "../Pill";
 import "./employee-modal-bg.css";
 import "./employee-modal.css";
 
@@ -51,7 +50,7 @@ function fmtCnic(cnic: string): string {
   return cnic;
 }
 
-// ── Inline SVG contact icons ───────────────────────────────────────────────
+// ── Inline SVG icons ───────────────────────────────────────────────────────
 
 const IcoGender = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -86,17 +85,24 @@ const IcoAddr = () => (
   </svg>
 );
 
+const IcoEdit = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 export const EmployeeModal = memo(function EmployeeModal({
-  profile, isOpen, onClose,
+  profile, isOpen, onClose, onEditEmployee, isLoading = false,
 }: {
-  profile: EmployeeProfile | null;
-  isOpen:  boolean;
-  onClose: () => void;
+  profile:          EmployeeProfile | null;
+  isOpen:           boolean;
+  onClose:          () => void;
+  onEditEmployee?:  (p: EmployeeProfile) => void;
+  isLoading?:       boolean;
 }) {
-  const panelRef = useRef<HTMLDivElement>(null);
-
   /* Lock background scroll */
   useEffect(() => {
     if (!isOpen) return;
@@ -117,7 +123,32 @@ export const EmployeeModal = memo(function EmployeeModal({
   const profileRef = useRef<EmployeeProfile | null>(null);
   if (profile) profileRef.current = profile;
   const p = profileRef.current;
-  if (!p) return null;
+
+  /* Loading skeleton — shown while fetching, before first data arrives */
+  if (!p) {
+    if (!isOpen) return null;
+    return (
+      <div className="em-overlay" data-closing={!isOpen ? "" : undefined} onClick={onClose}>
+        <div
+          className="em-panel em-panel-loading"
+          data-closing={!isOpen ? "" : undefined}
+          onClick={e => e.stopPropagation()}
+          role="dialog" aria-modal="true" aria-label="Loading profile"
+        >
+          <span className="em-corner em-corner-tl" aria-hidden />
+          <span className="em-corner em-corner-tr" aria-hidden />
+          <span className="em-corner em-corner-bl" aria-hidden />
+          <span className="em-corner em-corner-br" aria-hidden />
+          <button className="em-close pg-icon-btn" onClick={onClose} aria-label="Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          {isLoading && <div className="em-skel" />}
+        </div>
+      </div>
+    );
+  }
 
   /* ── Computed values ──────────────────────────────────────── */
   const age    = calcAge(p.dob);
@@ -139,6 +170,11 @@ export const EmployeeModal = memo(function EmployeeModal({
 
   const isDash = (v: string) => v === "—";
 
+  const hasContact = !!(p.gen || p.cnic || p.lang.length || p.ph || p.email || p.addr);
+  const hasTasks   = p.task.length > 0;
+  const hasCaps    = p.cap.length > 0;
+  const hasSpec    = p.spec.length > 0;
+
   return (
     <div
       className="em-overlay"
@@ -146,7 +182,7 @@ export const EmployeeModal = memo(function EmployeeModal({
       onClick={onClose}
     >
       <div
-        ref={panelRef}
+        ref={undefined}
         className="em-panel"
         data-closing={!isOpen ? "" : undefined}
         onClick={e => e.stopPropagation()}
@@ -160,6 +196,13 @@ export const EmployeeModal = memo(function EmployeeModal({
         <span className="em-corner em-corner-bl" aria-hidden />
         <span className="em-corner em-corner-br" aria-hidden />
 
+        {/* Edit */}
+        {onEditEmployee && (
+          <button className="em-edit pg-icon-btn" onClick={() => onEditEmployee(p)} aria-label="Edit employee">
+            <IcoEdit />
+          </button>
+        )}
+
         {/* Close */}
         <button className="em-close pg-icon-btn" onClick={onClose} aria-label="Close">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -169,51 +212,49 @@ export const EmployeeModal = memo(function EmployeeModal({
 
         {/* ── Header ─────────────────────────────────────────── */}
         <div className="em-hdr">
-
-          {/* Avatar — modal variant: dark bg, gold Playfair initials */}
           <Avatar initials={p.initials} color={p.color} img={p.img} name={p.name} variant="modal" />
 
-          {/* Name + sub + role row */}
           <div className="em-hdr-info">
             <h2 className="em-name">{p.name.toUpperCase()}</h2>
 
-            {(age !== null || p.dob) && (
+            {(age !== null || p.dob) ? (
               <p className="em-sub ty-cap">
                 {age !== null && <span>{age} YRS</span>}
                 {age !== null && p.dob && <span className="em-sub-dot">·</span>}
                 {p.dob && <span>{p.dob.toUpperCase()}</span>}
               </p>
+            ) : (
+              <p className="em-sub ty-cap em-empty-val">Age · Date of birth not set</p>
             )}
 
             <div className="em-role-row">
-              <Pill className="em-pill em-pill-role">{p.role.toUpperCase()}</Pill>
+              <span className="stat-pill em-pill em-pill-role">{p.role.toUpperCase()}</span>
               {expStr && <span className="em-exp-txt">{expStr}</span>}
               {p.hire && <span className="em-hire-txt ty-cap">· Hired: {p.hire}</span>}
             </div>
           </div>
 
-          {/* Salary pill — top-right */}
           {salStr && (
             <div className="em-sal-wrap">
-              <Pill className="em-pill em-pill-sal">{salStr}</Pill>
+              <span className="stat-pill em-pill em-pill-sal">{salStr}</span>
             </div>
           )}
         </div>
 
-        {/* ── Tag pills — always 4 ────────────────────────────── */}
+        {/* ── Tag pills ────────────────────────────────────────── */}
         <div className="em-tags">
-          <Pill className="em-pill em-pill-tag">{eid}</Pill>
-          <Pill className={`em-pill em-pill-tag${isDash(shiftRange) ? " em-pill-tag--dash" : ""}`}>{shiftRange}</Pill>
-          <Pill className={`em-pill em-pill-tag${isDash(shiftLbl) ? " em-pill-tag--dash" : ""}`}>{shiftLbl}</Pill>
-          <Pill className={`em-pill em-pill-tag${isDash(expYrs) ? " em-pill-tag--dash" : ""}`}>{expYrs}</Pill>
+          <span className="stat-pill em-pill em-pill-tag">{eid}</span>
+          <span className={`stat-pill em-pill em-pill-tag${isDash(shiftRange) ? " em-pill-tag--dash" : ""}`}>{shiftRange}</span>
+          <span className={`stat-pill em-pill em-pill-tag${isDash(shiftLbl)   ? " em-pill-tag--dash" : ""}`}>{shiftLbl}</span>
+          <span className={`stat-pill em-pill em-pill-tag${isDash(expYrs)     ? " em-pill-tag--dash" : ""}`}>{expYrs}</span>
         </div>
 
         <div className="em-divider" />
 
-        {/* ── Tasks + Capabilities ────────────────────────────── */}
-        {(p.task.length > 0 || p.cap.length > 0) && (
+        {/* ── Tasks + Capabilities ─────────────────────────────── */}
+        {(hasTasks || hasCaps) && (
           <div className="em-cols">
-            {p.task.length > 0 && (
+            {hasTasks && (
               <div>
                 <h4 className="ty-lbl em-col-hdr-wrap">ASSIGNED TASKS</h4>
                 <ul className="em-bullet-list">
@@ -226,7 +267,7 @@ export const EmployeeModal = memo(function EmployeeModal({
                 </ul>
               </div>
             )}
-            {p.cap.length > 0 && (
+            {hasCaps && (
               <div>
                 <h4 className="ty-lbl em-col-hdr-wrap">WORK CAPABILITIES</h4>
                 <ul className="em-bullet-list">
@@ -242,25 +283,28 @@ export const EmployeeModal = memo(function EmployeeModal({
           </div>
         )}
 
-        {/* ── Speciality ──────────────────────────────────────── */}
-        {p.spec.length > 0 && (
+        {/* ── Speciality ───────────────────────────────────────── */}
+        {hasSpec && (
           <div className="em-spec-section">
             <h4 className="ty-lbl em-col-hdr-wrap">SPECIALITY</h4>
             <p className="em-spec-list">{p.spec.join(" · ")}</p>
           </div>
         )}
 
-        <div className="em-divider" />
-
-        {/* ── Contact — 3-column grid ─────────────────────────── */}
-        <div className="em-contact">
-          {p.gen   && <span className="em-ci"><IcoGender />{p.gen}</span>}
-          {p.cnic  && <span className="em-ci"><IcoCnic />{fmtCnic(p.cnic)}</span>}
-          {p.lang.length > 0 && <span className="em-ci"><IcoLang />{p.lang.join(" · ")}</span>}
-          {p.ph    && <span className="em-ci"><IcoPhone />{p.ph}</span>}
-          {p.email && <span className="em-ci"><IcoEmail />{p.email}</span>}
-          {p.addr  && <span className="em-ci em-ci--full"><IcoAddr />{p.addr}</span>}
-        </div>
+        {/* ── Contact — 3-column grid ──────────────────────────── */}
+        {hasContact && (
+          <>
+            <div className="em-divider" />
+            <div className="em-contact">
+              {p.gen   && <span className="em-ci"><IcoGender />{p.gen}</span>}
+              {p.cnic  && <span className="em-ci"><IcoCnic />{fmtCnic(p.cnic)}</span>}
+              {p.lang.length > 0 && <span className="em-ci"><IcoLang />{p.lang.join(" · ")}</span>}
+              {p.ph    && <span className="em-ci"><IcoPhone />{p.ph}</span>}
+              {p.email && <span className="em-ci"><IcoEmail />{p.email}</span>}
+              {p.addr  && <span className="em-ci em-ci--full"><IcoAddr />{p.addr}</span>}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -5,15 +5,16 @@ import {
 import { Button }     from "./ui/Button";
 import { TextInput }  from "./ui/Input";
 import { BulletList } from "./ui/BulletList";
-import { useCreateEmployee } from "../hooks/useCreateEmployee";
-import type { CreateEmployeePayload } from "../services/employee.service";
-import { IcoIn, IcoOut } from "../services/shift-timing";
+import { useCreateEmployee }         from "../hooks/useCreateEmployee";
+import { useUpdateEmployee }         from "../hooks/useUpdateEmployee";
+import { useUpdateEmployeeStatus }   from "../hooks/useUpdateEmployeeStatus";
+import { useOfficeTiming }           from "../hooks/useOfficeTiming";
+import type { CreateEmployeePayload, UpdateProfilePayload, EmployeeProfile } from "../services/employee.service";
+import { IcoIn, IcoOut, to12h, to24h } from "../services/shift-timing";
 import "../styles/add-bg.css";
 import "../styles/add-employee.css";
 
-/* ── Draft persistence ────────────────────────────────────────────────────
-   All text fields survive a page refresh. AvatarUrl excluded (data-URL too
-   large for localStorage). Draft cleared only after successful DB write.   */
+/* ── Draft persistence (create mode only) ─────────────────────────────────*/
 const DRAFT_KEY = "emp_draft_v1";
 
 interface Draft {
@@ -30,7 +31,14 @@ function readDraft(): Partial<Draft> {
   } catch { return {}; }
 }
 
-/* ── Avatar palette — hex SSOT in index.css :root --av-p1…--av-p8 ─────── */
+function fmtCnicInit(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const d = raw.replace(/\D/g, "");
+  if (d.length === 13) return `${d.slice(0, 5)}-${d.slice(5, 12)}-${d[12]}`;
+  return raw;
+}
+
+/* ── Avatar palette ──────────────────────────────────────────────────────*/
 const AVATAR_PALETTE = [
   "var(--av-p1)","var(--av-p2)","var(--av-p3)","var(--av-p4)",
   "var(--av-p5)","var(--av-p6)","var(--av-p7)","var(--av-p8)",
@@ -38,7 +46,7 @@ const AVATAR_PALETTE = [
 
 const GENDERS = ["Male", "Female", "Other"];
 
-/* ── Inline SVG icons ─────────────────────────────────────────────────── */
+/* ── SVG icons ───────────────────────────────────────────────────────────*/
 const PersonSVG   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>;
 const CardSVG     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>;
 const PhoneSVG    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>;
@@ -57,59 +65,81 @@ const ChevSVG = ({ open }: { open: boolean }) => (
   </svg>
 );
 
+// Suppress unused import warning — palette used in JSX comments context
+void AVATAR_PALETTE;
+
 // ── Main component ─────────────────────────────────────────────────────────
 export function AddEmployeePage({
   onClose,
   isOpen = true,
+  editEmployee,
 }: {
-  onClose: () => void;
-  isOpen?: boolean;
+  onClose:        () => void;
+  isOpen?:        boolean;
+  editEmployee?:  EmployeeProfile;
 }) {
+  const isEdit = !!editEmployee;
+  const { timing } = useOfficeTiming();
+
   const createMutation = useCreateEmployee();
+  const updateMutation = useUpdateEmployee();
+  const statusMutation = useUpdateEmployeeStatus();
 
-  // Restore draft on first render only
-  const d = readDraft();
+  /* Draft only in create mode */
+  const d = isEdit ? {} : readDraft();
 
-  // Core fields — initialised from draft
-  const [name,        setName]        = useState(d.name        ?? "");
-  const [role,        setRole]        = useState(d.role        ?? "");
-  const [salary,      setSalary]      = useState(d.salary      ?? "");
-  const [gender,      setGender]      = useState(d.gender      ?? "Male");
+  /* ── Field state — initialized from editEmployee OR draft ───────────── */
+  const [name,        setName]        = useState(editEmployee?.name  ?? d.name        ?? "");
+  const [role,        setRole]        = useState(editEmployee?.role  ?? d.role        ?? "");
+  const [salary,      setSalary]      = useState(
+    editEmployee?.sal != null ? editEmployee.sal.toLocaleString("en-PK") : (d.salary ?? "")
+  );
+  const [gender,      setGender]      = useState(editEmployee?.gen   ?? d.gender      ?? "Male");
   const [genderOpen,  setGenderOpen]  = useState(false);
-  const [cnic,        setCnic]        = useState(d.cnic        ?? "");
-  const [phone,       setPhone]       = useState(d.phone       ?? "");
-  const [email,       setEmail]       = useState(d.email       ?? "");
-  const [dob,         setDob]         = useState(d.dob         ?? "");
-  const [joiningDate, setJoiningDate] = useState(d.joiningDate ?? "");
-  const [address,     setAddress]     = useState(d.address     ?? "");
-  const [expYr,       setExpYr]       = useState(d.expYr       ?? "");
-  const [expMo,       setExpMo]       = useState(d.expMo       ?? "");
-  const [langs,       setLangs]       = useState<string[]>(d.langs  ?? []);
+  const [cnic,        setCnic]        = useState(fmtCnicInit(editEmployee?.cnic) || (d.cnic ?? ""));
+  const [phone,       setPhone]       = useState(editEmployee?.ph    ?? d.phone       ?? "");
+  const [email,       setEmail]       = useState(editEmployee?.email ?? d.email       ?? "");
+  const [dob,         setDob]         = useState(editEmployee?.dob   ?? d.dob         ?? "");
+  const [joiningDate, setJoiningDate] = useState(editEmployee?.hire  ?? d.joiningDate ?? "");
+  const [address,     setAddress]     = useState(editEmployee?.addr  ?? d.address     ?? "");
+  const [expYr,       setExpYr]       = useState(
+    editEmployee?.exp?.y != null ? String(editEmployee.exp.y) : (d.expYr ?? "")
+  );
+  const [expMo,       setExpMo]       = useState(
+    editEmployee?.exp?.m != null ? String(editEmployee.exp.m) : (d.expMo ?? "")
+  );
+  const [langs,       setLangs]       = useState<string[]>(editEmployee?.lang ?? d.langs  ?? []);
   const [langInput,   setLangInput]   = useState("");
-  const [tasks,       setTasks]       = useState<string[]>(d.tasks  ?? []);
+  const [tasks,       setTasks]       = useState<string[]>(editEmployee?.task ?? d.tasks  ?? []);
   const [taskInp,     setTaskInp]     = useState("");
-  const [caps,        setCaps]        = useState<string[]>(d.caps   ?? []);
+  const [caps,        setCaps]        = useState<string[]>(editEmployee?.cap  ?? d.caps   ?? []);
   const [capInp,      setCapInp]      = useState("");
-  const [specs,       setSpecs]       = useState<string[]>(d.specs  ?? []);
+  const [specs,       setSpecs]       = useState<string[]>(editEmployee?.spec ?? d.specs  ?? []);
   const [specInp,     setSpecInp]     = useState("");
 
-  // Avatar — not persisted to draft (data-URL too large for localStorage)
-  const [avatarUrl, setAvatarUrl] = useState("");
+  /* Avatar — in edit mode init from existing img */
+  const [avatarUrl, setAvatarUrl] = useState(editEmployee?.img ?? "");
   const [dragOver,  setDragOver]  = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Date + exp refs — for programmatic showPicker() via icon click
+  /* Date + exp refs for showPicker() */
   const dobRef        = useRef<HTMLInputElement>(null);
   const joiningRef    = useRef<HTMLInputElement>(null);
   const shiftStartRef = useRef<HTMLInputElement>(null);
   const shiftEndRef   = useRef<HTMLInputElement>(null);
   const expYrRef      = useRef<HTMLInputElement>(null);
 
-  // Shift timing (not stored in DB currently — future field)
-  const [shiftStart, setShiftStart] = useState("");
-  const [shiftEnd,   setShiftEnd]   = useState("");
+  /* Shift timing — defaults from office timing in create mode */
+  const [shiftStart, setShiftStart] = useState(
+    editEmployee?.shift?.in  ? to24h(editEmployee.shift.in)  :
+    (!isEdit && timing.start) ? to24h(timing.start) : ""
+  );
+  const [shiftEnd, setShiftEnd] = useState(
+    editEmployee?.shift?.out ? to24h(editEmployee.shift.out) :
+    (!isEdit && timing.end)   ? to24h(timing.end)   : ""
+  );
 
-  // Salary pill auto-resize
+  /* Salary pill auto-resize */
   const salInpRef   = useRef<HTMLInputElement>(null);
   const salSizerRef = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
@@ -119,46 +149,40 @@ export function AddEmployeePage({
     salInpRef.current.style.width = `${w}px`;
   }, [salary]);
 
-  // Persist draft on every field change (excludes avatar, shift timing)
-  // Using a ref-based approach to avoid stale closures without deps array bloat
+  /* Draft save (create mode only) */
   const draftRef = useRef<Draft>({ name, role, salary, gender, cnic, phone, email, dob, joiningDate, address, expYr, expMo, langs, tasks, caps, specs });
   draftRef.current = { name, role, salary, gender, cnic, phone, email, dob, joiningDate, address, expYr, expMo, langs, tasks, caps, specs };
-  // Debounced save — avoids writing on every keystroke
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleDraftSave = useCallback(() => {
+    if (isEdit) return;
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draftRef.current)); } catch { /* quota exceeded */ }
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draftRef.current)); } catch { /* quota */ }
     }, 400);
-  }, []);
+  }, [isEdit]);
 
-  // Validation errors
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Toast — form-level only (field errors shown inline)
-  // Two-phase: mount element first, then add ae-toast-show on next frame to trigger CSS transition
+  /* Errors + toast */
+  const [errors,    setErrors]    = useState<Record<string, string>>({});
   const [toast,     setToast]     = useState("");
   const [toastShow, setToastShow] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = useCallback((msg: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    setToast(msg);
-    setToastShow(false);
+    setToast(msg); setToastShow(false);
     requestAnimationFrame(() => setToastShow(true));
     toastTimerRef.current = setTimeout(() => {
       setToastShow(false);
-      setTimeout(() => setToast(""), 380); // wait for CSS exit transition (350ms + buffer)
+      setTimeout(() => setToast(""), 380);
     }, 3200);
   }, []);
 
-  // Image processing — resize to ≤160px height, WebP 82% (rule 7d)
+  /* Image processing — resize to ≤160px height, WebP 82% */
   const applyImageFile = useCallback((file: File) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       const scale = Math.min(1, 160 / img.height);
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
       const canvas = document.createElement("canvas");
       canvas.width = w; canvas.height = h;
       canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
@@ -189,7 +213,6 @@ export function AddEmployeePage({
     scheduleDraftSave();
   }, [scheduleDraftSave]);
 
-  // CNIC formatter — XXXXX-XXXXXXX-X (5-7-1)
   const handleCnic = useCallback((raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 13);
     let out = digits;
@@ -198,33 +221,28 @@ export function AddEmployeePage({
     } else if (digits.length > 5) {
       out = digits.slice(0, 5) + "-" + digits.slice(5);
     }
-    setCnic(out);
-    scheduleDraftSave();
+    setCnic(out); scheduleDraftSave();
   }, [scheduleDraftSave]);
 
-  // Phone formatter — first 4 digits then dash (0300-1234567)
   const handlePhone = useCallback((raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 11);
     const out = digits.length > 4 ? digits.slice(0, 4) + "-" + digits.slice(4) : digits;
-    setPhone(out);
-    scheduleDraftSave();
+    setPhone(out); scheduleDraftSave();
   }, [scheduleDraftSave]);
 
-  // Cancel — discard draft and go back to dashboard
   const handleCancel = useCallback(() => {
-    localStorage.removeItem(DRAFT_KEY);
+    if (!isEdit) localStorage.removeItem(DRAFT_KEY);
     onClose();
-  }, [onClose]);
+  }, [isEdit, onClose]);
 
-  // Salary — digits only, comma-separated thousands; stored as formatted string
   const handleSalaryInput = useCallback((raw: string) => {
     const digits = raw.replace(/\D/g, "");
     setSalary(digits ? Number(digits).toLocaleString("en-PK") : "");
     scheduleDraftSave();
   }, [scheduleDraftSave]);
 
-  // ── Submit ────────────────────────────────────────────────────────────────
-  function handleCreate() {
+  /* ── Submit ──────────────────────────────────────────────────────────── */
+  function handleSubmit() {
     const errs: Record<string, string> = {};
     if (!name.trim()) errs.name = "Full Name is required";
     if (!role.trim()) errs.role = "Position / Role is required";
@@ -233,17 +251,57 @@ export function AddEmployeePage({
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setErrors({});
 
-    /* Build exp — omit zero values; max: 99y / 12m */
     const expObj: { y?: number; m?: number } = {};
     const yr = parseInt(expYr || "0", 10);
     const mo = parseInt(expMo || "0", 10);
     if (yr > 0) expObj.y = Math.min(99, yr);
     if (mo > 0) expObj.m = Math.min(12, mo);
 
-    const payload: CreateEmployeePayload = {
+    const shiftInVal  = shiftStart ? to12h(shiftStart) : null;
+    const shiftOutVal = shiftEnd   ? to12h(shiftEnd)   : null;
+
+    if (isEdit) {
+      const payload: UpdateProfilePayload = {
+        name:  name.trim(),
+        role:  role.trim(),
+        cnic:  cnic.replace(/\D/g, ""),
+        sal:   salary ? parseInt(salary.replace(/,/g, ""), 10) : undefined,
+        gen:   gender                || undefined,
+        email: email.trim()          || undefined,
+        dob:   dob                   || undefined,
+        ph:    phone.trim()          || undefined,
+        hire:  joiningDate           || undefined,
+        addr:  address.trim()        || undefined,
+        img:   avatarUrl             || undefined,
+        lang:  langs.length  ? langs  : undefined,
+        task:  tasks.length  ? tasks  : undefined,
+        cap:   caps.length   ? caps   : undefined,
+        spec:  specs.length  ? specs  : undefined,
+        exp:   Object.keys(expObj).length ? expObj : undefined,
+      };
+      updateMutation.mutate({ eid: editEmployee!.id, payload }, {
+        onSuccess: () => {
+          statusMutation.mutate({
+            eid: editEmployee!.id,
+            payload: {
+              shift: (shiftInVal || shiftOutVal)
+                ? { in: shiftInVal, out: shiftOutVal }
+                : null,
+            },
+          }, {
+            onSuccess: () => onClose(),
+            onError: (err) => showToast(err.message || "Shift update failed."),
+          });
+        },
+        onError: (err) => showToast(err.message || "Failed to save changes. Please try again."),
+      });
+      return;
+    }
+
+    const createPayload: CreateEmployeePayload = {
       name:  name.trim(),
       role:  role.trim(),
-      cnic:  cnic.replace(/\D/g, ""),             // raw 13 digits — no dashes
+      cnic:  cnic.replace(/\D/g, ""),
       sal:   salary ? parseInt(salary.replace(/,/g, ""), 10) : undefined,
       gen:   gender                || undefined,
       email: email.trim()          || undefined,
@@ -257,21 +315,20 @@ export function AddEmployeePage({
       cap:   caps.length   ? caps   : undefined,
       spec:  specs.length  ? specs  : undefined,
       exp:   Object.keys(expObj).length ? expObj : undefined,
+      shiftIn:  shiftInVal  || undefined,
+      shiftOut: shiftOutVal || undefined,
     };
 
-    createMutation.mutate(payload, {
+    createMutation.mutate(createPayload, {
       onSuccess: () => {
-        /* Clear draft only after confirmed DB write */
         localStorage.removeItem(DRAFT_KEY);
         onClose();
       },
-      onError: (err) => {
-        showToast(err.message || "Failed to create employee. Please try again.");
-      },
+      onError: (err) => showToast(err.message || "Failed to create employee. Please try again."),
     });
   }
 
-  const isPending = createMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending || statusMutation.isPending;
 
   return (
     <div className="ae-root">
@@ -283,7 +340,7 @@ export function AddEmployeePage({
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
         </button>
-        <h2 className="t-ttl">Add Employee</h2>
+        <h2 className="t-ttl">{isEdit ? "Edit Employee" : "Add Employee"}</h2>
         <div className="t-sp" />
       </header>
 
@@ -390,7 +447,7 @@ export function AddEmployeePage({
                 </div>
               </div>
 
-              {/* Experience — EXP prefix inside row, yr/mo independently clickable, max 99y/12m */}
+              {/* Experience */}
               <div className="ae-field ae-s1-exp">
                 <div className="ae-shift-row">
                   <span className="ae-exp-prefix">EXP</span>
@@ -414,7 +471,7 @@ export function AddEmployeePage({
                 </div>
               </div>
 
-              {/* Shift Timing — single row */}
+              {/* Shift Timing */}
               <div className="ae-field ae-s1-sft">
                 <div className="ae-shift-row">
                   <span className="ae-shift-ico">{IcoIn}</span>
@@ -518,15 +575,17 @@ export function AddEmployeePage({
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </button>
-            <Button onClick={handleCreate} disabled={isPending}>
-              {isPending ? "Creating…" : "Create Employee"}
+            <Button onClick={handleSubmit} disabled={isPending}>
+              {isPending
+                ? (isEdit ? "Saving…" : "Creating…")
+                : (isEdit ? "Save Changes" : "Create Employee")}
             </Button>
           </div>
 
         </div>
       </div>
 
-      {/* ── Toast — animates in via ae-toast-show class (CSS transition in add-employee.css) */}
+      {/* ── Toast */}
       {toast && (
         <div className={`ae-toast${toastShow ? " ae-toast-show" : ""}`} role="alert">
           {toast}

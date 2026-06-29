@@ -9,36 +9,33 @@ export type UiStatus = "leave" | "unauthorized-leave" | "half-day" | "late" | nu
 export function dbStatusToUi(s: "leave" | "unauth" | "half" | "late" | null): UiStatus {
   if (s === "unauth") return "unauthorized-leave";
   if (s === "half")   return "half-day";
-  return s; // "leave" | "late" | null pass through
+  return s;
 }
 
 /** UI display token → DB token (SSOT — import this everywhere, never inline) */
 export function uiStatusToDb(s: UiStatus): "leave" | "unauth" | "half" | "late" | null {
   if (s === "unauthorized-leave") return "unauth";
   if (s === "half-day")           return "half";
-  return s as "leave" | "late" | null; // "leave", "late", null pass through
+  return s as "leave" | "late" | null;
 }
 
 export interface EmployeeCard {
   id:          number;
   name:        string;
   role:        string;
-  salary:      string;       // "PKR X,XXX" or ""
-  checkIn:     string;       // "" when null — derived from shift.in
-  checkOut:    string;       // "" when null — derived from shift.out
+  salary:      string;
+  checkIn:     string;
+  checkOut:    string;
   leaveStatus: UiStatus;
   att:         number;
   perf:        number;
   avatar:      string;
-  initials:    string;       // derived server-side from name
-  color:       string;       // CSS var derived server-side
+  initials:    string;
+  color:       string;
 }
 
-// ── Payload types ─────────────────────────────────────────────────────────
-/** Full employee record — mirrors employee_profile + employee_status DB tables exactly.
-    Demo data and API both return this shape; the modal never needs to know which. */
+/** Full employee record — mirrors employee_profile + employee_status DB tables exactly. */
 export interface EmployeeProfile {
-  /* employee_profile columns */
   id:       number;
   name:     string;
   role:     string;
@@ -56,20 +53,39 @@ export interface EmployeeProfile {
   addr:     string | null;
   sal:      number | null;
   img:      string | null;
-  /* employee_status columns */
   att:      number;
   perf:     number;
   sts:      "leave" | "unauth" | "half" | "late" | null;
   shift:    { in: string | null; out: string | null } | null;
-  /* derived (server-computed) */
   initials: string;
   color:    string;
 }
 
 export interface CreateEmployeePayload {
-  name:   string;
-  role:   string;
-  cnic:   string;
+  name:      string;
+  role:      string;
+  cnic:      string;
+  sal?:      number;
+  gen?:      string;
+  email?:    string;
+  dob?:      string;
+  ph?:       string;
+  hire?:     string;
+  addr?:     string;
+  img?:      string;
+  lang?:     string[];
+  task?:     string[];
+  cap?:      string[];
+  spec?:     string[];
+  exp?:      { y?: number; m?: number };
+  shiftIn?:  string;
+  shiftOut?: string;
+}
+
+export interface UpdateProfilePayload {
+  name?:  string;
+  role?:  string;
+  cnic?:  string;
   sal?:   number;
   gen?:   string;
   email?: string;
@@ -85,8 +101,7 @@ export interface CreateEmployeePayload {
   exp?:   { y?: number; m?: number };
 }
 
-/** sts uses DB-level tokens — unauth / half / leave / late / null
-    shift contains in/out times; null clears both.                  */
+/** sts uses DB-level tokens — unauth / half / leave / late / null */
 export interface UpdateStatusPayload {
   sts?:   "leave" | "unauth" | "half" | "late" | null;
   shift?: { in?: string | null; out?: string | null } | null;
@@ -99,10 +114,7 @@ const AUTH_KEY = "auth_token";
 
 function authHeader(): HeadersInit {
   const token = localStorage.getItem(AUTH_KEY) ?? "";
-  return {
-    "Content-Type": "application/json",
-    Authorization:  `Bearer ${token}`,
-  };
+  return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
 async function parseResponse<T>(res: Response): Promise<T> {
@@ -124,23 +136,32 @@ export async function fetchEmployees(): Promise<EmployeeCard[]> {
   return parseResponse<EmployeeCard[]>(res);
 }
 
+export async function fetchEmployee(eid: number): Promise<EmployeeProfile> {
+  const res = await fetch(`/api/employees/${eid}`, { headers: authHeader() });
+  return parseResponse<EmployeeProfile>(res);
+}
+
 export async function createEmployee(payload: CreateEmployeePayload): Promise<EmployeeCard> {
   const res = await fetch("/api/employees", {
-    method:  "POST",
-    headers: authHeader(),
-    body:    JSON.stringify(payload),
+    method: "POST", headers: authHeader(), body: JSON.stringify(payload),
   });
   return parseResponse<EmployeeCard>(res);
 }
 
+export async function updateEmployee(
+  eid: number, payload: UpdateProfilePayload,
+): Promise<EmployeeProfile> {
+  const res = await fetch(`/api/employees/${eid}`, {
+    method: "PATCH", headers: authHeader(), body: JSON.stringify(payload),
+  });
+  return parseResponse<EmployeeProfile>(res);
+}
+
 export async function updateEmployeeStatus(
-  eid: number,
-  payload: UpdateStatusPayload,
+  eid: number, payload: UpdateStatusPayload,
 ): Promise<EmployeeCard> {
   const res = await fetch(`/api/employees/${eid}/status`, {
-    method:  "PATCH",
-    headers: authHeader(),
-    body:    JSON.stringify(payload),
+    method: "PATCH", headers: authHeader(), body: JSON.stringify(payload),
   });
   return parseResponse<EmployeeCard>(res);
 }

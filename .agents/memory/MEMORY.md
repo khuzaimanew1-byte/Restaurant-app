@@ -7,4 +7,6 @@
 - [Vite split-React crash fix](vite-split-react-crash.md) — "Invalid hook call" crash caused by Replit WebSocket drop + dep re-optimisation; fixed in viteHmrReconnect plugin in vite.config.ts.
 - [Frontend status SSOT](frontend-status-ssot.md) — `dbStatusToUi` / `uiStatusToDb` live in `employee.service.ts`; never inline these mappings in components or hooks.
 - [Shift-timing SSOT refactor](shift-timing-ssot.md) — all shift logic + SVG icons extracted to services/shift-timing.tsx; OfficeTiming header to ui/OfficeTiming.tsx + styles/office-timing.css.
-- [EmployeeModal pattern](employee-modal-pattern.md) — ui/EmployeeModal reusable modal; demo data via getDemoProfile(id); EmployeeProfile type is SSOT; all pills use .stat-pill base.
+- [EmployeeModal pattern](employee-modal-pattern.md) — modal now fetches real data via useEmployee(id); profile ref retains data during 220ms exit animation; no Pill component (use stat-pill class).
+- [Employee edit flow](employee-edit-flow.md) — modal edit button → closes modal → App.tsx editEmployee state → AddEmployeePage in edit mode; profile update via PATCH /api/employees/:id, shift via PATCH :id/status.
+- [useOfficeTiming SSOT](office-timing-ssot.md) — localStorage key office_timing_v1; shared by dashboard, add/edit form; OfficeTiming.tsx unchanged (takes props); AdminDashboard uses hook directly.

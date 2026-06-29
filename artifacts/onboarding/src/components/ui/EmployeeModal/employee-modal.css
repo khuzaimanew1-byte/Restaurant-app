@@ -13,11 +13,6 @@
   max-width: 680px;
   max-height: 90dvh;
   border-radius: 14px;
-  border: 1px solid rgba(212,175,55,.38);
-  box-shadow:
-    0 0 0 1px rgba(212,175,55,.08),
-    0 32px 72px rgba(0,0,0,.78),
-    inset 0 1px 0 rgba(255,255,255,.05);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 28px 28px 24px;
@@ -26,24 +21,45 @@
 .em-panel::-webkit-scrollbar { display: none; }
 @media (max-width: 480px) { .em-panel { padding: 20px 16px 18px; border-radius: 12px; } }
 
-/* ── Decorative corner lines ─────────────────────────────── */
+/* ── Decorative corner positions ─────────────────────────── */
+/* Appearance (bg-image, size) → employee-modal-bg.css       */
 .em-corner {
   position: absolute;
-  width: 20px; height: 20px;
   pointer-events: none;
-  opacity: .80;
 }
-.em-corner-tl { top: 8px;  left: 8px;  border-top:    1.5px solid var(--adm-gold); border-left:  1.5px solid var(--adm-gold); }
-.em-corner-tr { top: 8px;  right: 8px; border-top:    1.5px solid var(--adm-gold); border-right: 1.5px solid var(--adm-gold); }
-.em-corner-bl { bottom: 8px; left: 8px;  border-bottom: 1.5px solid var(--adm-gold); border-left:  1.5px solid var(--adm-gold); }
-.em-corner-br { bottom: 8px; right: 8px; border-bottom: 1.5px solid var(--adm-gold); border-right: 1.5px solid var(--adm-gold); }
 
-/* ── Close button ────────────────────────────────────────── */
+/* ── Action buttons — close + edit ──────────────────────── */
 .em-close {
   position: absolute;
   top: 12px; right: 12px;
   color: var(--adm-text-muted);
   z-index: 2;
+}
+.em-edit {
+  position: absolute;
+  top: 12px; right: 44px;
+  color: var(--adm-gold);
+  opacity: .80;
+  z-index: 2;
+}
+.em-edit:hover { opacity: 1; }
+
+/* ── Loading skeleton ────────────────────────────────────── */
+.em-panel-loading { min-height: 260px; }
+.em-skel {
+  width: 100%; height: 180px;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,.03) 25%,
+    rgba(255,255,255,.07) 50%,
+    rgba(255,255,255,.03) 75%);
+  background-size: 200% 100%;
+  animation: em-shim 1.5s ease-in-out infinite;
+  border-radius: 8px;
+  margin-top: 52px;
+}
+@keyframes em-shim {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
 }
 
 /* ── Header ──────────────────────────────────────────────── */
@@ -75,10 +91,10 @@
 .em-sal-wrap {
   flex-shrink: 0;
   align-self: flex-start;
-  padding-right: 28px; /* clear close button */
+  padding-right: 56px; /* clear both buttons */
 }
 
-/* Age · DOB sub-line — uses .ty-cap from typography.css */
+/* Age · DOB sub-line */
 .em-sub {
   display: flex;
   align-items: center;
@@ -172,7 +188,6 @@
   display: flex;
   align-items: baseline;
   gap: 9px;
-  /* text style → .ty-body from typography.css */
 }
 .em-bullet-dot {
   flex-shrink: 0;
@@ -186,7 +201,6 @@
 
 /* ── Speciality ──────────────────────────────────────────── */
 .em-spec-section { margin-top: 18px; }
-/* .ty-lbl used for header, .ty-body for list text */
 .em-spec-list {
   font-family: var(--font-mono);
   font-size: 13px;
@@ -197,7 +211,6 @@
 }
 
 /* ── Contact grid ────────────────────────────────────────── */
-/* 3-col grid: [gender | cnic | lang] / [phone | email | —] / [addr: full] */
 .em-contact {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -228,4 +241,12 @@
 .em-ci--full {
   grid-column: 1 / -1;
   white-space: normal;
+}
+
+/* ── Empty-state placeholder ─────────────────────────────── */
+.em-empty-val {
+  opacity: .28;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: .03em;
 }
