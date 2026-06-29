@@ -49,7 +49,7 @@ Thumbs.db
 .local/
 .replit-artifact/
 **/.replit-artifact/**
-attatched-assets/
+attached_assets/
 
 .env
 .replit
